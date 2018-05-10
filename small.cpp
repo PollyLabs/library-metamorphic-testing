@@ -1,6 +1,7 @@
 #include "isl-noexceptions.h"
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include <list>
 #include <tuple>
 #include <string>
@@ -16,6 +17,40 @@ typedef struct {
     const isl::space *space;
     const isl::local_space *ls;
 } Parameters;
+
+typedef struct {
+    unsigned int seed;
+    unsigned int max_dims;
+    unsigned int max_params;
+    unsigned int max_set_count;
+} Arguments;
+
+Arguments
+parse_args(int argc, char **argv)
+{
+    Arguments args = { 42, 20, 20, 10 };
+    int i = 1;
+    while (i < argc) {
+        if (!strcmp(argv[i], "--dims")) {
+            args.max_dims = atoi(argv[++i]);
+        }
+        else if (!strcmp(argv[i], "--params")) {
+            args.max_params = atoi(argv[++i]);
+        }
+        else if (!strcmp(argv[i], "--seed")) {
+            args.seed = atoi(argv[++i]);
+        }
+        else if (!strcmp(argv[i], "--set-count")) {
+            args.max_set_count = atoi(argv[++i]);
+        }
+        else {
+            std::cout << "Found unknown argument: " << argv[i] << std::endl;
+            exit(1);
+        }
+        i++;
+    }
+    return args;
+}
 
 std::vector<isl::pw_aff>
 generate_dims(isl::local_space ls, isl::dim type)
@@ -125,13 +160,15 @@ generate_set(const Parameters &pars)
 int
 main(int argc, char **argv)
 {
+    Arguments args = parse_args(argc, argv);
+
     isl_ctx *ctx_ptr = isl_ctx_alloc();
     const isl::ctx ctx(ctx_ptr);
-    std::srand(41);
+    std::srand(args.seed);
 
-    const unsigned int dims = std::rand() % 20;
-    const unsigned int params = std::rand() % 20;
-    const unsigned int set_count = std::rand() % 10;
+    const unsigned int dims = std::rand() % args.max_dims;
+    const unsigned int params = std::rand() % args.max_params;
+    const unsigned int set_count = std::rand() % args.max_set_count;
     //std::cout << "--Dims: " << dims << std::endl;
     //std::cout << "--Params: " << params << std::endl;
     const isl::space space = isl::space(ctx, dims, params);
