@@ -12,6 +12,8 @@
 #include <vector>
 #include <queue>
 
+#include "isl-noexceptions.h"
+
 namespace set_fuzzer {
 
 typedef struct {

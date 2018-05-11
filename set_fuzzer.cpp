@@ -1,4 +1,3 @@
-#include "isl-noexceptions.h"
 #include "set_fuzzer.hpp"
 
 namespace set_fuzzer {
@@ -133,7 +132,7 @@ generate_one_set(const Parameters &pars)
         gen_set_ops[std::rand() % (sizeof(gen_set_ops) /
                                    sizeof(gen_set_ops)[0])].op;
     isl::set generated_set = (lhs.*op)(rhs);
-    std::cout << "GSET " << generated_set.to_str() << std::endl;
+    //std::cout << "GSET " << generated_set.to_str() << std::endl;
     return generated_set;
 }
 
@@ -143,7 +142,7 @@ fuzz_set(Arguments args)
     //Arguments args = parse_args(argc, argv);
 
     isl_ctx *ctx_ptr = isl_ctx_alloc();
-    const isl::ctx ctx(ctx_ptr);
+    isl::ctx ctx(ctx_ptr);
     std::srand(args.seed);
 
     const unsigned int dims = std::rand() % args.max_dims + 1;
@@ -165,7 +164,7 @@ fuzz_set(Arguments args)
     isl::set final_set = isl::set::universe(space);
     for (int i = 0; i < set_count; i++)
         final_set = final_set.intersect(generate_one_set(pars));
-    std::cout << "FSET " << final_set.to_str() << std::endl;
+    //std::cout << "FSET " << final_set.to_str() << std::endl;
 
     return final_set;
 }
