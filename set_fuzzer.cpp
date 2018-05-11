@@ -1,29 +1,7 @@
 #include "isl-noexceptions.h"
-#include <iostream>
-#include <cstdlib>
-#include <cstring>
-#include <list>
-#include <tuple>
-#include <string>
-#include <limits>
-#include <experimental/random>
-#include <vector>
-#include <queue>
+#include "set_fuzzer.hpp"
 
-typedef struct {
-    const unsigned int dims;
-    const unsigned int params;
-    const isl::ctx *ctx;
-    const isl::space *space;
-    const isl::local_space *ls;
-} Parameters;
-
-typedef struct {
-    unsigned int seed;
-    unsigned int max_dims;
-    unsigned int max_params;
-    unsigned int max_set_count;
-} Arguments;
+namespace set_fuzzer {
 
 Arguments
 parse_args(int argc, char **argv)
@@ -129,7 +107,7 @@ struct {
 };
 
 isl::set
-generate_set(const Parameters &pars)
+generate_one_set(const Parameters &pars)
 {
     // Generate list of identifiers
     std::vector<isl::pw_aff> dims = generate_dims(*pars.ls, isl::dim::param);
@@ -159,10 +137,10 @@ generate_set(const Parameters &pars)
     return generated_set;
 }
 
-int
-main(int argc, char **argv)
+isl::set
+fuzz_set(Arguments args)
 {
-    Arguments args = parse_args(argc, argv);
+    //Arguments args = parse_args(argc, argv);
 
     isl_ctx *ctx_ptr = isl_ctx_alloc();
     const isl::ctx ctx(ctx_ptr);
@@ -186,8 +164,10 @@ main(int argc, char **argv)
 
     isl::set final_set = isl::set::universe(space);
     for (int i = 0; i < set_count; i++)
-        final_set = final_set.intersect(generate_set(pars));
+        final_set = final_set.intersect(generate_one_set(pars));
     std::cout << "FSET " << final_set.to_str() << std::endl;
 
-    return 0;
+    return final_set;
+}
+
 }

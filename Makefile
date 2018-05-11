@@ -3,19 +3,22 @@ IPATH = -I./include
 LPATH = -L./libs
 LIB = -lisl
 CFLAGS = $(IPATH) $(LPATH) $(LIB) -g
-OBJ = set_fuzzer.o
 OUTDIR = ./bin
 MKDIR = mkdir -p
 
-all: dirs set_fuzzer
+OBJ = \
+	set_fuzzer.o \
+	isl_tester.o
+
+all: dirs isl_tester
 
 dirs:
 	${MKDIR} ${OUTDIR}
 
-%.o: %.cpp
+%.o: %.cpp %.hpp
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-set_fuzzer: $(OBJ)
+isl_tester: $(OBJ)
 	$(CC) -o $(OUTDIR)/$@ $^ $(CFLAGS)
 
 clean:
