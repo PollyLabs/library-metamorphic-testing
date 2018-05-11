@@ -147,14 +147,16 @@ generate_set(const Parameters &pars)
         std::cout << "RHSDIM " << pa.to_str() << std::endl;*/
     isl::pw_aff lhs = generate_expr(lhs_dims, pars);
     isl::pw_aff rhs = generate_expr(rhs_dims, pars);
-    std::cout << "LHS " << lhs.to_str() << std::endl;
-    std::cout << "RHS " << rhs.to_str() << std::endl;
+    //std::cout << "LHS " << lhs.to_str() << std::endl;
+    //std::cout << "RHS " << rhs.to_str() << std::endl;
 
     // Create set
     isl::set (isl::pw_aff::*op)(isl::pw_aff) const =
         gen_set_ops[std::rand() % (sizeof(gen_set_ops) /
                                    sizeof(gen_set_ops)[0])].op;
-    return (lhs.*op)(rhs);
+    isl::set generated_set = (lhs.*op)(rhs);
+    std::cout << "GSET " << generated_set.to_str() << std::endl;
+    return generated_set;
 }
 
 int
@@ -166,9 +168,9 @@ main(int argc, char **argv)
     const isl::ctx ctx(ctx_ptr);
     std::srand(args.seed);
 
-    const unsigned int dims = std::rand() % args.max_dims;
-    const unsigned int params = std::rand() % args.max_params;
-    const unsigned int set_count = std::rand() % args.max_set_count;
+    const unsigned int dims = std::rand() % args.max_dims + 1;
+    const unsigned int params = std::rand() % args.max_params + 1;
+    const unsigned int set_count = std::rand() % args.max_set_count + 1;
     //std::cout << "--Dims: " << dims << std::endl;
     //std::cout << "--Params: " << params << std::endl;
     const isl::space space = isl::space(ctx, dims, params);
@@ -184,8 +186,8 @@ main(int argc, char **argv)
 
     isl::set final_set = isl::set::universe(space);
     for (int i = 0; i < set_count; i++)
-        final_set.intersect(generate_set(pars));
-    std::cout << final_set.to_str() << std::endl;
+        final_set = final_set.intersect(generate_set(pars));
+    std::cout << "FSET " << final_set.to_str() << std::endl;
 
     return 0;
 }
