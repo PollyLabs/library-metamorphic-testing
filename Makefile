@@ -11,6 +11,7 @@ SAN = -fsanitize=address -fsanitize=undefined
 OBJ = \
 	set_fuzzer.o \
 	set_tester.o \
+	set_meta_tester.o \
 	isl_tester.o
 
 all: dirs isl_tester
