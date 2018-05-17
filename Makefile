@@ -1,7 +1,7 @@
 CC = g++
 IPATH = -I./include
 LPATH = -L./libs
-LIB = -lisl
+LIB = -lisl -lyaml-cpp
 CFLAGS = $(IPATH) $(LPATH) $(LIB) -g
 OUTDIR = ./bin
 MKDIR = mkdir -p

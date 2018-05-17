@@ -1,0 +1,11 @@
+# %i = input
+# %e = empty set
+# %u = universe
+
+identity:
+    - "%i.unite(%i)"
+    - "%i.unite(%e)"
+    - "%i.intersect(%i)"
+    - "%i.intersect(%u)"
+    - "%i.subtract(%e)"
+    - "%u.subtract(%i.complement())"

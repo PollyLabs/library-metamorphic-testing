@@ -2,39 +2,13 @@
 
 namespace set_meta_tester {
 
-enum VAR_TYPE {
-    SET,
-    UNIVERSE,
-    RESULT,
-};
-
-struct {
-    std::string fn_name;
-    std::string fn;
-} set_funcs [] = {
-    { "complement", ".complement()" },
-    { "unite", ".unite(%s)" },
-    { "interesect", ".intersect(%s)" },
-    { "subtract", ".subtract(%s)" },
-};
-
-std::string
-apply_func(isl::set set1, std::vector<isl::set> replace_set_list,
-    std::string func_desc)
-{
-    int index = 0;
-    while (func_desc.find("%s") != std::string::npos) {
-        assert(index < replace_set_list.size());
-        func_desc.replace(func_desc.find("%s"), strlen("%s"),
-            replace_set_list.at(index++).to_str());
-    }
-    return func_desc;
-}
+int indent = 0;
 
 void
-write_line(std::stringstream &ss, std::string line, int indent)
+write_line(std::stringstream &ss, std::string line)
 {
-    while (indent-- > 0)
+    int indent_count = 0;
+    while (indent_count++ < indent)
         ss << "\t";
     ss << line << std::endl;
 }
@@ -47,28 +21,47 @@ prepare_header(std::stringstream &ss)
         "<cassert>",
     };
     for (std::string incl : include_list)
-        write_line(ss, "#include " + incl, 0);
+        write_line(ss, "#include " + incl);
 }
 
 void
 main_pre_setup(std::stringstream &ss)
 {
-    write_line(ss, "int main()", 0);
-    write_line(ss, "{", 0);
-    write_line(ss, "isl_ctx *ctx_ptr = isl_ctx_alloc();", 1);
-    write_line(ss, "isl::ctx ctx(ctx_ptr);", 1);
+    write_line(ss, "int main()");
+    write_line(ss, "{");
+    indent++;
+    write_line(ss, "isl_ctx *ctx_ptr = isl_ctx_alloc();");
+    write_line(ss, "isl::ctx ctx(ctx_ptr);");
 }
+
+void
+gen_var_declarations(std::stringstream &ss, isl::set set)
+{
+    write_line(ss, "isl::set s = isl::set(ctx, \"" + set.to_str() + "\");");
+    write_line(ss, "isl::set u = isl::set::universe(s.get_space());");
+    write_line(ss, "isl::set e = isl::set::empty(s.get_space());");
+}
+
 
 void
 main_post_setup(std::stringstream &ss)
 {
-    write_line(ss, "}", 0);
+    write_line(ss, "assert(r1.is_equal(r2));");
+    indent--;
+    write_line(ss, "}");
 }
 
 std::string
-gen_meta_func(isl::set set, const std::vector<std::string> relation_list)
+gen_meta_func(isl::set set, const YAML::Node relation_list, int count)
 {
-    std::string rel = relation_list.at(std::rand() % relation_list.size());
+    std::string rel = "%I";
+    YAML::Node selected_relation_list = relation_list["identity"];
+    while (count-- > 0) {
+        std::string new_rel = selected_relation_list[std::rand() % selected_relation_list.size()].as<std::string>();
+        int pos = new_rel.find("%i");
+        assert(pos != std::string::npos);
+        rel = new_rel.replace(pos, 2, rel);
+    }
     std::cout << rel << std::endl;
     while (true) {
         int pos = rel.find("%");
@@ -76,7 +69,8 @@ gen_meta_func(isl::set set, const std::vector<std::string> relation_list)
             break;
         char type = rel[pos + 1];
         switch (type) {
-            case 'l': rel.replace(pos, 2, "s"); break;
+            case 'i':
+            case 'I': rel.replace(pos, 2, "s"); break;
             case 'e': rel.replace(pos, 2, "e"); break;
             case 'u': rel.replace(pos, 2, "u"); break;
         }
@@ -87,61 +81,22 @@ gen_meta_func(isl::set set, const std::vector<std::string> relation_list)
     return rel;
 }
 
-/*std::string
-gen_new_var_name(std::map<std::string, isl::set> &var_map, VAR_TYPE vt)
-{
-    std::string prefix;
-    switch(vt):
-        case VAR_TYPE::SET: prefix = "s"; break;
-        case VAR_TYPE::UNIVERSE: prefix = "u"; break;
-        case VAR_TYPE::RESULT: prefix = "r"; break;
-
-    int index = 0;
-    while (var_map.count(prefix + index) != 0)
-        index++;
-    return prefix + std::to_string(index);
-}
-
-void
-define_set_var(std::stringstream &ss, isl::set set,
-    std::map<isl::set, std::string> &var_map)
-{
-    std::string new_var_name = gen_new_var_name(var_map, VAR_TYPE::SET);
-    std::string set_def = "isl::set " + new_var_name + " = isl::set(ctx, \"";
-    set_def += set.to_str() + "\");";
-    write_line(ss, set_def, 1);
-    var_map.insert(std::pair(set, new_var_name));
-}
-
-void
-define_universe_set_var(std::stringstream &ss, isl::set set,
-    std::map<isl::set, std::string> &var_map)
-{
-    std::string new_var_name = gen_new_var_name(var_map, VAR_TYPE::UNIVERSE);
-    std::string set_def = "isl::set " + new_var_name + " = isl::set::universe(";
-    write_line(ss, set_def, 1);
-    var_map.insert(std::pair<isl::set, std::string>(set, new_var_name));
-}*/
-
 void
 run_simple(isl::set set_in)
 {
-    std::ifstream ifs("set_meta_tests", std::ios::in);
-    std::vector<std::string> relation_list;
-    for (std::string curr_rel; getline(ifs, curr_rel);)
-        relation_list.push_back(curr_rel);
+    YAML::Node relation_list = YAML::LoadFile("set_meta_tests.yaml");
 
     std::stringstream ss;
     prepare_header(ss);
     ss << std::endl;
     main_pre_setup(ss);
-    ss << "\tisl::set s = isl::set(ctx, \"" << set_in.to_str() << "\");\n";
-    ss << "\tisl::set u = isl::set::universe(s.get_space());\n";
-    ss << "\tisl::set e = isl::set::empty(s.get_space());\n";
+    gen_var_declarations(ss, set_in);
 
-    ss << "\tisl::set r1 = " << gen_meta_func(set_in, relation_list) << ";\n";
-    ss << "\tisl::set r2 = " << gen_meta_func(set_in, relation_list) << ";\n";
-    ss << "\tassert(r1.is_equal(r2));\n";
+    int meta_rel_count = std::rand() % 5;
+    std::string r1_expr = gen_meta_func(set_in, relation_list, meta_rel_count);
+    std::string r2_expr = gen_meta_func(set_in, relation_list, meta_rel_count);
+    write_line(ss, "isl::set r1 = " + r1_expr +  ";");
+    write_line(ss, "isl::set r2 = " + r2_expr +  ";");
 
     main_post_setup(ss);
 
