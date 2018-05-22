@@ -137,17 +137,14 @@ generate_one_set(const Parameters &pars)
 }
 
 isl::set
-fuzz_set(Arguments args)
+fuzz_set(isl::ctx ctx, Arguments args)
 {
     //Arguments args = parse_args(argc, argv);
-
-    isl_ctx *ctx_ptr = isl_ctx_alloc();
-    isl::ctx ctx(ctx_ptr);
     std::srand(args.seed);
 
-    const unsigned int dims = std::rand() % args.max_dims + 1;
-    const unsigned int params = std::rand() % args.max_params + 1;
-    const unsigned int set_count = std::rand() % args.max_set_count + 1;
+    const unsigned int dims = std::rand() % (args.max_dims + 1);
+    const unsigned int params = std::rand() % (args.max_params + 1);
+    const unsigned int set_count = std::rand() % (args.max_set_count + 1);
     //std::cout << "--Dims: " << dims << std::endl;
     //std::cout << "--Params: " << params << std::endl;
     const isl::space space = isl::space(ctx, dims, params);

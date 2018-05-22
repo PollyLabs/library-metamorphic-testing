@@ -31,6 +31,8 @@ main_pre_setup(std::stringstream &ss)
     write_line(ss, "{");
     indent++;
     write_line(ss, "isl_ctx *ctx_ptr = isl_ctx_alloc();");
+    write_line(ss, "{");
+    indent++;
     write_line(ss, "isl::ctx ctx(ctx_ptr);");
 }
 
@@ -49,6 +51,9 @@ main_post_setup(std::stringstream &ss)
     write_line(ss, "assert(r1.is_equal(r2));");
     indent--;
     write_line(ss, "}");
+    write_line(ss, "isl_ctx_free(ctx_ptr);");
+    indent--;
+    write_line(ss, "}");
 }
 
 std::string
@@ -58,7 +63,7 @@ gen_meta_func(isl::set set, const YAML::Node relation_list, int count)
     YAML::Node selected_relation_list = relation_list["identity"];
     while (count-- > 0) {
         std::string new_rel = selected_relation_list[std::rand() % selected_relation_list.size()].as<std::string>();
-        int pos = new_rel.find("%i");
+        int pos = new_rel.find("%1");
         assert(pos != std::string::npos);
         rel = new_rel.replace(pos, 2, rel);
     }

@@ -39,7 +39,7 @@ void split_dims(const std::vector<isl::pw_aff> &,
     std::vector<isl::pw_aff> &,
     std::vector<isl::pw_aff> &);
 isl::set generate_one_set(const Parameters&);
-isl::set fuzz_set(Arguments = { 42, 20, 20, 10});
+isl::set fuzz_set(isl::ctx, Arguments = { 42, 20, 20, 10});
 
 }
 
