@@ -57,12 +57,23 @@ main_post_setup(std::stringstream &ss)
 }
 
 std::string
-gen_meta_func(isl::set set, const YAML::Node relation_list, int count)
+get_relation(const YAML::Node relation_list)
+{
+    int selected_relation_id = std::rand() % relation_list.size();
+    YAML::const_iterator it = relation_list.begin();
+    while (--selected_relation_id > 0)
+        it++;
+    YAML::Node selected_relation_list = it->second;
+    return selected_relation_list[std::rand() % selected_relation_list.size()]
+            .as<std::string>();
+}
+
+std::string
+gen_meta_func(const YAML::Node relation_list, int count)
 {
     std::string rel = "%I";
-    YAML::Node selected_relation_list = relation_list["identity"];
     while (count-- > 0) {
-        std::string new_rel = selected_relation_list[std::rand() % selected_relation_list.size()].as<std::string>();
+        std::string new_rel = get_relation(relation_list);
         int pos = new_rel.find("%1");
         assert(pos != std::string::npos);
         rel = new_rel.replace(pos, 2, rel);
@@ -86,10 +97,24 @@ gen_meta_func(isl::set set, const YAML::Node relation_list, int count)
     return rel;
 }
 
+std::pair<std::string, std::string>
+gen_pair_exprs(const YAML::Node relation_list, int meta_rel_count)
+{
+    std::string expr1 = gen_meta_func(relation_list, meta_rel_count);
+    std::string expr2;
+    do {
+        expr2 = gen_meta_func(relation_list, meta_rel_count);
+    } while (!expr1.compare(expr2));
+    return std::pair<std::string, std::string>(expr1, expr2);
+}
+
 void
 run_simple(isl::set set_in)
 {
-    YAML::Node relation_list = YAML::LoadFile("set_meta_tests.yaml");
+    YAML::Node meta_input = YAML::LoadFile("set_meta_tests.yaml");
+    YAML::Node relation_list = meta_input["relations"];
+    YAML::Node generator_list = meta_input["generators"];
+    std::string variant = "single_distinct";
 
     std::stringstream ss;
     prepare_header(ss);
@@ -98,8 +123,17 @@ run_simple(isl::set set_in)
     gen_var_declarations(ss, set_in);
 
     int meta_rel_count = std::rand() % 5;
-    std::string r1_expr = gen_meta_func(set_in, relation_list, meta_rel_count);
-    std::string r2_expr = gen_meta_func(set_in, relation_list, meta_rel_count);
+    std::string r1_expr, r2_expr;
+    if (!variant.compare("single_random")) {
+        r1_expr = gen_meta_func(relation_list, meta_rel_count);
+        r2_expr = gen_meta_func(relation_list, meta_rel_count);
+    }
+    else if (!variant.compare("single_distinct")) {
+        std::pair<std::string, std::string> exprs =
+            gen_pair_exprs(relation_list, meta_rel_count);
+        r1_expr = exprs.first;
+        r2_expr = exprs.second;
+    }
     write_line(ss, "isl::set r1 = " + r1_expr +  ";");
     write_line(ss, "isl::set r2 = " + r2_expr +  ";");
 

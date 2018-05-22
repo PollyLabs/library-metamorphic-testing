@@ -1,11 +1,27 @@
-# %i = input
+# %n, where n is an integer = input set
 # %e = empty set
 # %u = universe
 
-identity:
-    - "%i.unite(%i)"
-    - "%i.unite(%e)"
-    - "%i.intersect(%i)"
-    - "%i.intersect(%u)"
-    - "%i.subtract(%e)"
-    - "%u.subtract(%i.complement())"
+generators:
+    universe:
+        - "%1.unite(%1.complement())"
+
+    empty:
+        - "%1.intersect(%1.complement())"
+        - "%1.subtract(%1)"
+
+relations:
+    identity:
+        - "%1.unite(%1)"
+        - "%1.unite(%e)"
+        - "%1.intersect(%1)"
+        - "%1.intersect(%u)"
+        - "%1.subtract(%e)"
+        - "%u.subtract(%1.complement())"
+        - "%1.complement().complement()"
+        - "%1.coalesce()"
+        - "%1.detect_equalities()"
+
+    subtract:
+        - "%1.subtract(%2)"
+        - "%1.intersect(%2.complement)"

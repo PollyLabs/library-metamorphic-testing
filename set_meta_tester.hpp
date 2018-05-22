@@ -20,7 +20,9 @@ void prepare_header(std::stringstream &);
 void main_pre_setup(std::stringstream &);
 void gen_var_declarations(std::stringstream &, isl::set);
 void main_post_setup(std::stringstream &);
-std::string gen_meta_func(isl::set, const YAML::Node, int);
+std::string get_relation(const YAML::Node);
+std::string gen_meta_func(const YAML::Node, int);
+std::pair<std::string, std::string> gen_pair_exprs(const YAML::Node, int);
 void run_simple(isl::set);
 
 }
