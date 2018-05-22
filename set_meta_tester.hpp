@@ -21,6 +21,7 @@ void main_pre_setup(std::stringstream &);
 void gen_var_declarations(std::stringstream &, isl::set);
 void main_post_setup(std::stringstream &);
 std::string get_relation(const YAML::Node);
+std::string get_generator(const YAML::Node, const std::string);
 std::string gen_meta_func(const YAML::Node, int);
 std::pair<std::string, std::string> gen_pair_exprs(const YAML::Node, int);
 void run_simple(isl::set);

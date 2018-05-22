@@ -57,23 +57,36 @@ main_post_setup(std::stringstream &ss)
 }
 
 std::string
+get_generator(const YAML::Node generator_list, std::string type)
+{
+    YAML::Node typed_generator_list;
+    try {
+        typed_generator_list = generator_list[type];
+    } catch (YAML::KeyNotFound) {
+        std::cout << "Could not find given type " << type << std::endl;
+        exit(1);
+    }
+    return typed_generator_list[std::rand() % typed_generator_list.size()].as<std::string>();
+}
+
+std::string
 get_relation(const YAML::Node relation_list)
 {
     int selected_relation_id = std::rand() % relation_list.size();
     YAML::const_iterator it = relation_list.begin();
     while (--selected_relation_id > 0)
         it++;
-    YAML::Node selected_relation_list = it->second;
+    const YAML::Node selected_relation_list = it->second;
     return selected_relation_list[std::rand() % selected_relation_list.size()]
             .as<std::string>();
 }
 
 std::string
-gen_meta_func(const YAML::Node relation_list, int count)
+gen_meta_func(const YAML::Node meta_list, int count)
 {
     std::string rel = "%I";
     while (count-- > 0) {
-        std::string new_rel = get_relation(relation_list);
+        std::string new_rel = get_relation(meta_list["relations"]);
         int pos = new_rel.find("%1");
         assert(pos != std::string::npos);
         rel = new_rel.replace(pos, 2, rel);
@@ -84,12 +97,16 @@ gen_meta_func(const YAML::Node relation_list, int count)
         if (pos == std::string::npos)
             break;
         char type = rel[pos + 1];
-        switch (type) {
-            case 'i':
-            case 'I': rel.replace(pos, 2, "s"); break;
-            case 'e': rel.replace(pos, 2, "e"); break;
-            case 'u': rel.replace(pos, 2, "u"); break;
-        }
+        if (std::isdigit(type))
+            rel.replace(pos, 2, "s");
+        else
+            switch (type) {
+                case 'I': rel.replace(pos, 2, "s"); break;
+                case 'e': rel.replace(pos, 2,
+                    get_generator(meta_list["generators"], "empty")); break;
+                case 'u': rel.replace(pos, 2,
+                    get_generator(meta_list["generators"], "universe")); break;
+            }
     }
     if (rel[0] == '.')
         rel.insert(0, "s");
@@ -98,12 +115,12 @@ gen_meta_func(const YAML::Node relation_list, int count)
 }
 
 std::pair<std::string, std::string>
-gen_pair_exprs(const YAML::Node relation_list, int meta_rel_count)
+gen_pair_exprs(const YAML::Node meta_list, int meta_rel_count)
 {
-    std::string expr1 = gen_meta_func(relation_list, meta_rel_count);
+    std::string expr1 = gen_meta_func(meta_list, meta_rel_count);
     std::string expr2;
     do {
-        expr2 = gen_meta_func(relation_list, meta_rel_count);
+        expr2 = gen_meta_func(meta_list, meta_rel_count);
     } while (!expr1.compare(expr2));
     return std::pair<std::string, std::string>(expr1, expr2);
 }
@@ -111,9 +128,7 @@ gen_pair_exprs(const YAML::Node relation_list, int meta_rel_count)
 void
 run_simple(isl::set set_in)
 {
-    YAML::Node meta_input = YAML::LoadFile("set_meta_tests.yaml");
-    YAML::Node relation_list = meta_input["relations"];
-    YAML::Node generator_list = meta_input["generators"];
+    YAML::Node meta_list = YAML::LoadFile("set_meta_tests.yaml");
     std::string variant = "single_distinct";
 
     std::stringstream ss;
@@ -125,12 +140,12 @@ run_simple(isl::set set_in)
     int meta_rel_count = std::rand() % 5;
     std::string r1_expr, r2_expr;
     if (!variant.compare("single_random")) {
-        r1_expr = gen_meta_func(relation_list, meta_rel_count);
-        r2_expr = gen_meta_func(relation_list, meta_rel_count);
+        r1_expr = gen_meta_func(meta_list, meta_rel_count);
+        r2_expr = gen_meta_func(meta_list, meta_rel_count);
     }
     else if (!variant.compare("single_distinct")) {
         std::pair<std::string, std::string> exprs =
-            gen_pair_exprs(relation_list, meta_rel_count);
+            gen_pair_exprs(meta_list, meta_rel_count);
         r1_expr = exprs.first;
         r2_expr = exprs.second;
     }
