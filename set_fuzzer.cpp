@@ -2,32 +2,6 @@
 
 namespace set_fuzzer {
 
-Arguments
-parse_args(int argc, char **argv)
-{
-    Arguments args = { 42, 20, 20, 10 };
-    int i = 1;
-    while (i < argc) {
-        if (!strcmp(argv[i], "--dims")) {
-            args.max_dims = atoi(argv[++i]);
-        }
-        else if (!strcmp(argv[i], "--params")) {
-            args.max_params = atoi(argv[++i]);
-        }
-        else if (!strcmp(argv[i], "--seed")) {
-            args.seed = atoi(argv[++i]);
-        }
-        else if (!strcmp(argv[i], "--set-count")) {
-            args.max_set_count = atoi(argv[++i]);
-        }
-        else {
-            std::cout << "Found unknown argument: " << argv[i] << std::endl;
-            exit(1);
-        }
-        i++;
-    }
-    return args;
-}
 
 std::vector<isl::pw_aff>
 generate_dims(isl::local_space ls, isl::dim type)
@@ -41,35 +15,98 @@ generate_dims(isl::local_space ls, isl::dim type)
 /* Possible operations for expression generation
  */
 struct {
+    isl::pw_aff (isl::pw_aff::*op)(void) const;
+} unary_expr_ops[] = {
+    { &isl::pw_aff::ceil },
+    { &isl::pw_aff::floor },
+};
+
+struct {
+    isl::pw_aff (isl::pw_aff::*op)(isl::val val) const;
+} val_bin_expr_ops[] = {
+    { &isl::pw_aff::mod },
+    { &isl::pw_aff::scale },
+};
+
+struct {
     isl::pw_aff (isl::pw_aff::*op)(isl::pw_aff other) const;
-} expr_ops[] = {
+} bin_expr_ops[] = {
     { &isl::pw_aff::add },
     { &isl::pw_aff::sub },
+    //{ &isl::pw_aff::div },
+    //{ &isl::pw_aff::mul },
+    { &isl::pw_aff::max },
+    { &isl::pw_aff::min },
 };
+
+template<typename T>
+const unsigned int
+get_random_func_id(T &func_struct)
+{
+    return (std::rand() % sizeof(func_struct) / sizeof(func_struct[0]));
+}
+
+isl::val
+generate_expr(const Parameters &pars)
+{
+    isl::val new_val(*pars.ctx, (long) std::rand() % 10 + 1);
+    return new_val;
+}
 
 isl::pw_aff
 generate_expr(isl::pw_aff &input, const Parameters &pars)
 {
-    if (std::rand() % 2) {
-        input = input.mul(isl::pw_aff(isl::set::universe(*pars.space),
-                                      isl::val(*pars.ctx, std::rand() % 42)));
-    }
+    //if (std::rand() % 5) {
+        //isl::pw_aff (isl::pw_aff::*op)(void) const =
+            //unary_expr_ops[get_random_func_id(unary_expr_ops);
+        //input = input.mul(isl::pw_aff(isl::set::universe(*pars.space),
+                                      //isl::val(*pars.ctx, std::rand() % 42)));
+    //}
     return input;
 }
 
 isl::pw_aff
-generate_expr(std::vector<isl::pw_aff> inputs, const Parameters &pars)
+generate_expr(std::vector<isl::pw_aff> inputs, unsigned int max_operand_count,
+    const Parameters &pars)
 {
     isl::pw_aff new_expr = generate_expr(inputs.back(), pars);
-    inputs.pop_back();
-    while (!inputs.empty()) {
+    while (max_operand_count-- > 0) {
+        std::cout << "OPCOUNT " << max_operand_count << std::endl;
+        switch (std::rand() % 3) {
+            case 0: {
+                isl::pw_aff dim_add = generate_expr(inputs.at(std::rand() % inputs.size()), pars);
+                isl::pw_aff (isl::pw_aff::*pw_op)(isl::pw_aff) const =
+                    bin_expr_ops[get_random_func_id(bin_expr_ops)].op;
+                new_expr = (new_expr.*pw_op)(dim_add);
+                break;
+            }
+            case 1: {
+                isl::val val_add = generate_expr(pars);
+                isl::pw_aff (isl::pw_aff::*pw_op)(isl::val) const =
+                    val_bin_expr_ops[get_random_func_id(val_bin_expr_ops)].op;
+                new_expr = (new_expr.*pw_op)(val_add);
+                break;
+            }
+            case 2: {
+                isl::val val_expr = generate_expr(pars);
+                isl::pw_aff val_bin_add(isl::set::universe(*pars.space), val_expr);
+                isl::pw_aff (isl::pw_aff::*pw_op)(isl::pw_aff) const =
+                    bin_expr_ops[get_random_func_id(bin_expr_ops)].op;
+                new_expr = (new_expr.*pw_op)(val_bin_add);
+                break;
+            }
+            // Does it do this implicitly?
+            /*case 2: {
+                std::cout << "BEFORE FLOOR " << new_expr.to_str() << std::endl;
+                isl::pw_aff (isl::pw_aff::*u_op)(void) const =
+                    unary_expr_ops[get_random_func_id(unary_expr_ops)].op;
+                new_expr = (new_expr.*u_op)();
+                std::cout << "AFTER FLOOR " << new_expr.to_str() << std::endl;
+                break;
+            }*/
+        }
         //std::cout << "EXPR " << new_expr.to_str() << std::endl;
-        //std::cout << "FRONT " << inputs.front().to_str() << std::endl;
-        isl::pw_aff (isl::pw_aff::*op)(isl::pw_aff) const =
-            expr_ops[std::rand() % (sizeof(expr_ops) / sizeof(expr_ops)[0])].op;
-        new_expr = (new_expr.*op)(generate_expr(inputs.back(), pars));
-
-        inputs.pop_back();
+        //std::cout << "BACK" << inputs.back().to_str() << std::endl;
     }
     return new_expr;
 }
@@ -122,8 +159,8 @@ generate_one_set(const Parameters &pars)
         std::cout << "LHSDIM " << pa.to_str() << std::endl;
     for (isl::pw_aff pa : rhs_dims)
         std::cout << "RHSDIM " << pa.to_str() << std::endl;*/
-    isl::pw_aff lhs = generate_expr(lhs_dims, pars);
-    isl::pw_aff rhs = generate_expr(rhs_dims, pars);
+    isl::pw_aff lhs = generate_expr(lhs_dims, 2, pars);
+    isl::pw_aff rhs = generate_expr(rhs_dims, 6, pars);
     //std::cout << "LHS " << lhs.to_str() << std::endl;
     //std::cout << "RHS " << rhs.to_str() << std::endl;
 
@@ -132,21 +169,32 @@ generate_one_set(const Parameters &pars)
         gen_set_ops[std::rand() % (sizeof(gen_set_ops) /
                                    sizeof(gen_set_ops)[0])].op;
     isl::set generated_set = (lhs.*op)(rhs);
-    //std::cout << "GSET " << generated_set.to_str() << std::endl;
+    std::cout << "GSET " << generated_set.to_str() << std::endl;
     return generated_set;
 }
 
 isl::set
-fuzz_set(isl::ctx ctx, Arguments args)
+fuzz_set(isl::ctx ctx, const unsigned int max_dims,
+    const unsigned int max_params,
+    const unsigned int max_set_count)
 {
     //Arguments args = parse_args(argc, argv);
-    std::srand(args.seed);
+    //std::cout << "--Max_Dims: " << max_dims << std::endl;
+    //std::cout << "--Max_Params: " << max_params << std::endl;
+    //std::cout << "--Max_Set_Count: " << max_set_count << std::endl;
 
-    const unsigned int dims = std::rand() % (args.max_dims + 1);
-    const unsigned int params = std::rand() % (args.max_params + 1);
-    const unsigned int set_count = std::rand() % (args.max_set_count + 1);
+    unsigned int dims = std::rand() % (max_dims + 1);
+    if (!dims)
+        dims++;
+    unsigned int params = std::rand() % (max_params + 1);
+    if (!params)
+        params++;
+    unsigned int set_count = std::rand() % (max_set_count + 1);
+    if (!set_count)
+        set_count++;
     //std::cout << "--Dims: " << dims << std::endl;
     //std::cout << "--Params: " << params << std::endl;
+    //std::cout << "--Set_Count: " << set_count << std::endl;
     const isl::space space = isl::space(ctx, dims, params);
     const isl::local_space ls = isl::local_space(space);
     Parameters pars = { dims, params, &ctx, &space, &ls };
@@ -161,7 +209,7 @@ fuzz_set(isl::ctx ctx, Arguments args)
     isl::set final_set = isl::set::universe(space);
     for (int i = 0; i < set_count; i++)
         final_set = final_set.intersect(generate_one_set(pars));
-    //std::cout << "FSET " << final_set.to_str() << std::endl;
+    std::cout << "FSET " << final_set.to_str() << std::endl;
 
     return final_set;
 }

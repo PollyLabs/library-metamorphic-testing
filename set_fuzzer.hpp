@@ -25,21 +25,23 @@ typedef struct {
 } Parameters;
 
 typedef struct {
-    unsigned int seed;
     unsigned int max_dims;
     unsigned int max_params;
     unsigned int max_set_count;
 } Arguments;
 
 std::vector<isl::pw_aff> generate_dims(isl::local_space, isl::dim);
+template<typename T> const unsigned int get_random_func_id(T &);
+isl::val generate_expr(const Parameters &);
 isl::pw_aff generate_expr(isl::pw_aff &, const Parameters &);
 isl::pw_aff generate_expr(std::vector<isl::pw_aff>,
-    const Parameters &);
+    unsigned int max_operand_count, const Parameters &);
 void split_dims(const std::vector<isl::pw_aff> &,
     std::vector<isl::pw_aff> &,
     std::vector<isl::pw_aff> &);
 isl::set generate_one_set(const Parameters&);
-isl::set fuzz_set(isl::ctx, Arguments = { 42, 20, 20, 10});
+isl::set fuzz_set(isl::ctx, const unsigned int,
+    const unsigned int, const unsigned int);
 
 }
 
