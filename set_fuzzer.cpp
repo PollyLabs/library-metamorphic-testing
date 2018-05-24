@@ -71,7 +71,7 @@ generate_expr(std::vector<isl::pw_aff> inputs, unsigned int max_operand_count,
 {
     isl::pw_aff new_expr = generate_expr(inputs.back(), pars);
     while (max_operand_count-- > 0) {
-        std::cout << "OPCOUNT " << max_operand_count << std::endl;
+        //std::cout << "OPCOUNT " << max_operand_count << std::endl;
         switch (std::rand() % 3) {
             case 0: {
                 isl::pw_aff dim_add = generate_expr(inputs.at(std::rand() % inputs.size()), pars);
@@ -169,7 +169,7 @@ generate_one_set(const Parameters &pars)
         gen_set_ops[std::rand() % (sizeof(gen_set_ops) /
                                    sizeof(gen_set_ops)[0])].op;
     isl::set generated_set = (lhs.*op)(rhs);
-    std::cout << "GSET " << generated_set.to_str() << std::endl;
+    //std::cout << "GSET " << generated_set.to_str() << std::endl;
     return generated_set;
 }
 
@@ -209,7 +209,7 @@ fuzz_set(isl::ctx ctx, const unsigned int max_dims,
     isl::set final_set = isl::set::universe(space);
     for (int i = 0; i < set_count; i++)
         final_set = final_set.intersect(generate_one_set(pars));
-    std::cout << "FSET " << final_set.to_str() << std::endl;
+    //std::cout << "FSET " << final_set.to_str() << std::endl;
 
     return final_set;
 }

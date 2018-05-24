@@ -9,6 +9,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include <queue>
 #include <vector>
 #include <iostream>
 #include <random>
@@ -20,10 +21,11 @@ void prepare_header(std::stringstream &);
 void main_pre_setup(std::stringstream &);
 void gen_var_declarations(std::stringstream &, isl::set);
 void main_post_setup(std::stringstream &);
+std::queue<std::string> gen_meta_relation(unsigned int);
 std::string get_relation(const YAML::Node);
 std::string get_generator(const YAML::Node, const std::string);
-std::string gen_meta_func(const YAML::Node, int);
-std::pair<std::string, std::string> gen_pair_exprs(const YAML::Node, int);
+std::string gen_meta_func(const YAML::Node, std::queue<std::string>);
+std::pair<std::string, std::string> gen_pair_exprs(const YAML::Node, std::queue<std::string>);
 void run_simple(isl::set);
 
 }

@@ -66,30 +66,43 @@ get_generator(const YAML::Node generator_list, std::string type)
         std::cout << "Could not find given type " << type << std::endl;
         exit(1);
     }
-    return typed_generator_list[std::rand() % typed_generator_list.size()].as<std::string>();
+    return typed_generator_list[std::rand() % typed_generator_list.size()]
+            .as<std::string>();
+}
+
+std::queue<std::string>
+gen_meta_relation(const YAML::Node relation_list, unsigned int count)
+{
+    std::queue<std::string> meta_relation;
+    while (count-- > 0) {
+        int relation_id = std::rand() % relation_list.size();
+        YAML::const_iterator it = relation_list.begin();
+        while (relation_id-- > 0)
+            it++;
+        meta_relation.push(it->first.as<std::string>());
+    }
+    return meta_relation;
 }
 
 std::string
-get_relation(const YAML::Node relation_list)
+get_relation(const YAML::Node relation_list, std::string relation_type)
 {
-    int selected_relation_id = std::rand() % relation_list.size();
-    YAML::const_iterator it = relation_list.begin();
-    while (--selected_relation_id > 0)
-        it++;
-    const YAML::Node selected_relation_list = it->second;
+    const YAML::Node selected_relation_list = relation_list[relation_type];
     return selected_relation_list[std::rand() % selected_relation_list.size()]
             .as<std::string>();
 }
 
 std::string
-gen_meta_func(const YAML::Node meta_list, int count)
+gen_meta_func(const YAML::Node meta_list, std::queue<std::string> meta_relation)
 {
     std::string rel = "%I";
-    while (count-- > 0) {
-        std::string new_rel = get_relation(meta_list["relations"]);
+    while (!meta_relation.empty()) {
+        std::string new_rel = get_relation(meta_list["relations"],
+                                            meta_relation.front());
         int pos = new_rel.find("%1");
         assert(pos != std::string::npos);
         rel = new_rel.replace(pos, 2, rel);
+        meta_relation.pop();
     }
     std::cout << rel << std::endl;
     while (true) {
@@ -115,12 +128,12 @@ gen_meta_func(const YAML::Node meta_list, int count)
 }
 
 std::pair<std::string, std::string>
-gen_pair_exprs(const YAML::Node meta_list, int meta_rel_count)
+gen_pair_exprs(const YAML::Node meta_list, std::queue<std::string> meta_rel)
 {
-    std::string expr1 = gen_meta_func(meta_list, meta_rel_count);
+    std::string expr1 = gen_meta_func(meta_list, meta_rel);
     std::string expr2;
     do {
-        expr2 = gen_meta_func(meta_list, meta_rel_count);
+        expr2 = gen_meta_func(meta_list, meta_rel);
     } while (!expr1.compare(expr2));
     return std::pair<std::string, std::string>(expr1, expr2);
 }
@@ -137,15 +150,17 @@ run_simple(isl::set set_in)
     main_pre_setup(ss);
     gen_var_declarations(ss, set_in);
 
-    int meta_rel_count = std::rand() % 5;
+    unsigned int meta_rel_count = std::rand() % 5 + 1;
     std::string r1_expr, r2_expr;
+    std::queue<std::string> meta_rel = gen_meta_relation(
+                                        meta_list["relations"], meta_rel_count);
     if (!variant.compare("single_random")) {
-        r1_expr = gen_meta_func(meta_list, meta_rel_count);
-        r2_expr = gen_meta_func(meta_list, meta_rel_count);
+        r1_expr = gen_meta_func(meta_list, meta_rel);
+        r2_expr = gen_meta_func(meta_list, meta_rel);
     }
     else if (!variant.compare("single_distinct")) {
         std::pair<std::string, std::string> exprs =
-            gen_pair_exprs(meta_list, meta_rel_count);
+            gen_pair_exprs(meta_list, meta_rel);
         r1_expr = exprs.first;
         r2_expr = exprs.second;
     }
