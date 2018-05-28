@@ -99,9 +99,17 @@ gen_meta_func(const YAML::Node meta_list, std::queue<std::string> meta_relation)
     while (!meta_relation.empty()) {
         std::string new_rel = get_relation(meta_list["relations"],
                                             meta_relation.front());
-        int pos = new_rel.find("%1");
-        assert(pos != std::string::npos);
-        rel = new_rel.replace(pos, 2, rel);
+        assert(new_rel.find("%1") != std::string::npos);
+        int pos = 0;
+        while (pos < new_rel.size()) {
+            pos = new_rel.find("%", pos);
+            if (pos == std::string::npos)
+                break;
+            else if (std::isdigit(new_rel[pos + 1]))
+                new_rel = new_rel.replace(pos, 2, rel);
+            pos++;
+        }
+        rel = new_rel;
         meta_relation.pop();
     }
     std::cout << rel << std::endl;
