@@ -58,7 +58,7 @@ gen_var_declarations(std::stringstream &ss, isl::set set)
 void
 main_post_setup(std::stringstream &ss)
 {
-    write_line(ss, "assert(r1.is_equal(r2));");
+    write_line(ss, "assert(r0.is_equal(r1));");
     indent--;
     write_line(ss, "}");
     write_line(ss, "isl_ctx_free(ctx_ptr);");
@@ -84,13 +84,16 @@ std::queue<std::string>
 gen_meta_relation(const YAML::Node relation_list, unsigned int count)
 {
     std::queue<std::string> meta_relation;
+    std::cout << "REL ";
     while (count-- > 0) {
         int relation_id = std::rand() % relation_list.size();
         YAML::const_iterator it = relation_list.begin();
         while (relation_id-- > 0)
             it++;
         meta_relation.push(it->first.as<std::string>());
+        std::cout << it->first.as<std::string>() << " ";
     }
+    std::cout << std::endl;
     return meta_relation;
 }
 
@@ -102,58 +105,59 @@ get_relation(const YAML::Node relation_list, std::string relation_type)
             .as<std::string>();
 }
 
-std::string
-gen_meta_func(const YAML::Node meta_list, std::queue<std::string> meta_relation)
+void
+replace_meta_inputs(std::string &rel, const std::string input_var,
+    const YAML::Node meta_list)
 {
-    std::string rel = "%I";
-    while (!meta_relation.empty()) {
-        std::string new_rel = get_relation(meta_list["relations"],
-                                            meta_relation.front());
-        assert(new_rel.find("%1") != std::string::npos);
-        int pos = 0;
-        while (pos < new_rel.size()) {
-            pos = new_rel.find("%", pos);
-            if (pos == std::string::npos)
-                break;
-            else if (std::isdigit(new_rel[pos + 1]))
-                new_rel = new_rel.replace(pos, 2, rel);
-            pos++;
-        }
-        rel = new_rel;
-        meta_relation.pop();
-    }
-    std::cout << rel << std::endl;
     while (true) {
         int pos = rel.find("%");
         if (pos == std::string::npos)
             break;
         char type = rel[pos + 1];
         if (std::isdigit(type))
-            rel.replace(pos, 2, "s");
+            rel.replace(pos, 2, input_var);
         else
             switch (type) {
-                case 'I': rel.replace(pos, 2, "s"); break;
                 case 'e': rel.replace(pos, 2,
                     get_generator(meta_list["generators"], "empty")); break;
                 case 'u': rel.replace(pos, 2,
                     get_generator(meta_list["generators"], "universe")); break;
+                default:
+                    std::cout << "Unknown input modifier %" << type << std::endl;
+                    exit(1);
             }
     }
     if (rel[0] == '.')
-        rel.insert(0, "s");
-    std::cout << rel << std::endl;
-    return rel;
+        rel.insert(0, input_var);
 }
 
-std::pair<std::string, std::string>
-gen_pair_exprs(const YAML::Node meta_list, std::queue<std::string> meta_rel)
+std::string
+gen_meta_func(const std::string input_var, std::string meta_relation,
+    const YAML::Node meta_list)
 {
-    std::string expr1 = gen_meta_func(meta_list, meta_rel);
-    std::string expr2;
-    do {
-        expr2 = gen_meta_func(meta_list, meta_rel);
-    } while (!expr1.compare(expr2));
-    return std::pair<std::string, std::string>(expr1, expr2);
+    std::string new_rel = get_relation(meta_list["relations"], meta_relation);
+    assert(new_rel.find("%1") != std::string::npos);
+    std::cout << new_rel << std::endl;
+    replace_meta_inputs(new_rel, input_var, meta_list);
+    std::cout << new_rel << std::endl;
+    return new_rel;
+}
+
+std::string
+gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<std::string> meta_rel,
+    const YAML::Node meta_list, std::set<std::string> gen_exprs)
+{
+    std::string input_var = "r" + std::to_string(var_count);
+    std::string new_expr = gen_meta_func("s", meta_rel.front(), meta_list);
+    write_line(ss, "isl::set " + input_var + " = " + new_expr + ";");
+    meta_rel.pop();
+    while (!meta_rel.empty()) {
+        new_expr = gen_meta_func(input_var, meta_rel.front(), meta_list);
+        write_line(ss, input_var + " = " + new_expr + ";");
+        meta_rel.pop();
+    }
+
+    return "yes";
 }
 
 void
@@ -173,19 +177,8 @@ run_simple(isl::set set_in, isl_tester::Arguments &args)
     std::string r1_expr, r2_expr;
     std::queue<std::string> meta_rel = gen_meta_relation(
                                         meta_list["relations"], meta_rel_count);
-    if (!variant.compare("single_random")) {
-        r1_expr = gen_meta_func(meta_list, meta_rel);
-        r2_expr = gen_meta_func(meta_list, meta_rel);
-    }
-    else if (!variant.compare("single_distinct")) {
-        std::pair<std::string, std::string> exprs =
-            gen_pair_exprs(meta_list, meta_rel);
-        r1_expr = exprs.first;
-        r2_expr = exprs.second;
-    }
-    write_line(ss, "isl::set r1 = " + r1_expr +  ";");
-    write_line(ss, "isl::set r2 = " + r2_expr +  ";");
-
+    gen_meta_expr(ss, 0, meta_rel, meta_list, std::set<std::string>());
+    gen_meta_expr(ss, 1, meta_rel, meta_list, std::set<std::string>());
     main_post_setup(ss);
 
     std::ofstream ofs;
