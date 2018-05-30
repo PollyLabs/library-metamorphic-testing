@@ -14,6 +14,16 @@ write_line(std::stringstream &ss, std::string line)
 }
 
 void
+write_args(std::stringstream &ss, isl_tester::Arguments args)
+{
+    write_line(ss, "// Seed: " + std::to_string(args.seed));
+    write_line(ss, "// Max dims: " + std::to_string(args.max_dims));
+    write_line(ss, "// Max params: " + std::to_string(args.max_params));
+    write_line(ss, "// Max set count: " + std::to_string(args.max_set_count));
+    write_line(ss, "");
+}
+
+void
 prepare_header(std::stringstream &ss)
 {
     std::vector<std::string> include_list = {
@@ -147,12 +157,13 @@ gen_pair_exprs(const YAML::Node meta_list, std::queue<std::string> meta_rel)
 }
 
 void
-run_simple(isl::set set_in)
+run_simple(isl::set set_in, isl_tester::Arguments &args)
 {
     YAML::Node meta_list = YAML::LoadFile("set_meta_tests.yaml");
     std::string variant = "single_distinct";
 
     std::stringstream ss;
+    write_args(ss, args);
     prepare_header(ss);
     ss << std::endl;
     main_pre_setup(ss);

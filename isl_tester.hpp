@@ -1,12 +1,11 @@
 #ifndef ISL_TESTER_HPP
 #define ISL_TESTER_HPP
 
+#include <iostream>
+#include <cstring>
 #include <random>
 
 #include "isl-noexceptions.h"
-#include "set_fuzzer.hpp"
-#include "set_tester.hpp"
-#include "set_meta_tester.hpp"
 
 namespace isl_tester {
 
@@ -26,6 +25,19 @@ struct Arguments {
     Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3) {}
 };
 
+}
+
+namespace set_meta_tester {
+    void run_simple(isl::set, isl_tester::Arguments &);
+}
+
+namespace set_fuzzer {
+    isl::set fuzz_set(isl::ctx, const unsigned int,
+        const unsigned int, const unsigned int);
+}
+
+namespace set_tester {
+    int run_tests(isl::set, isl::set);
 }
 
 #endif

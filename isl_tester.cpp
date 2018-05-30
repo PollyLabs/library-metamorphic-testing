@@ -70,7 +70,7 @@ main(int argc, char **argv)
         isl::set set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
                             args.max_params, args.max_set_count);
         std::cout << set1.to_str() << std::endl;
-        set_meta_tester::run_simple(set1);
+        set_meta_tester::run_simple(set1, args);
     }
     else {
         std::cout << "Unknown option " << argv[1] << std::endl;
