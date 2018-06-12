@@ -26,6 +26,7 @@ void write_args(std::stringstream &, isl_tester::Arguments);
 void prepare_header(std::stringstream &);
 void main_pre_setup(std::stringstream &);
 void gen_var_declarations(std::stringstream &, isl::set);
+void gen_coalesce_split_test(std::stringstream &);
 void main_post_setup(std::stringstream &);
 std::queue<std::string> gen_meta_relation(unsigned int);
 std::string get_relation(const YAML::Node);

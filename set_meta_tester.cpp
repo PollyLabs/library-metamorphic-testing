@@ -54,6 +54,17 @@ gen_var_declarations(std::stringstream &ss, isl::set set)
     write_line(ss, "isl::set e = isl::set::empty(s.get_space());");
 }
 
+void
+gen_coalesce_split_test(std::stringstream &ss)
+{
+    write_line(ss, "s = s.convex_hull();");
+    write_line(ss, "isl::point p = s.sample_point();");
+    write_line(ss, "isl::set split1 = s.upper_bound_si(isl::dim::set, 0, p.get_coordinate_val(isl::dim::set, 0).get_num_si());");
+    write_line(ss, "isl::set split2 = s.lower_bound_si(isl::dim::set, 0, p.get_coordinate_val(isl::dim::set, 0).get_num_si());");
+    write_line(ss, "isl::union_set split_us = isl::union_set(split1);");
+    write_line(ss, "split_us.add_set(split2);");
+    write_line(ss, "s = split_us.coalesce().sample();");
+}
 
 void
 main_post_setup(std::stringstream &ss)
@@ -153,10 +164,11 @@ gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<st
     meta_rel.pop();
     while (!meta_rel.empty()) {
         new_expr = gen_meta_func(input_var, meta_rel.front(), meta_list);
+        if (meta_rel.front() == "identity" && new_expr.find("coalesce") == std::string::npos)
+            continue;
         write_line(ss, input_var + " = " + new_expr + ";");
         meta_rel.pop();
     }
-
     return "yes";
 }
 
@@ -172,11 +184,13 @@ run_simple(isl::set set_in, isl_tester::Arguments &args)
     ss << std::endl;
     main_pre_setup(ss);
     gen_var_declarations(ss, set_in);
+    gen_coalesce_split_test(ss);
 
     unsigned int meta_rel_count = std::rand() % 5 + 1;
     std::string r1_expr, r2_expr;
     std::queue<std::string> meta_rel = gen_meta_relation(
                                         meta_list["relations"], meta_rel_count);
+    meta_rel.push("identity");
     gen_meta_expr(ss, 0, meta_rel, meta_list, std::set<std::string>());
     gen_meta_expr(ss, 1, meta_rel, meta_list, std::set<std::string>());
     main_post_setup(ss);
