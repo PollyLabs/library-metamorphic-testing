@@ -3,6 +3,7 @@ meta_runner.py
 * refactor method arrangement and logging
 * add flag for mode (currently coverage testing and random testing)
 * move coverage files to somewhere local
+* add limit on time or number of tests to run
 
 set_meta_tester.cpp
 * add flag for coalescing test generation
