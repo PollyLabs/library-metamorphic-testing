@@ -30,7 +30,7 @@ run_unary_tests(isl::set set)
     set.sample_point();
     //set.min_val(); // TODO Need affine expression generator
     //set.max_val();
-    set.dim_max(0); // unbounded optimum
+    set.dim_max(0); // unbounded optimum -- is_bounded
     set.dim_min(0);
     set.solutions(); // not a wrapping space
     set.coefficients();
