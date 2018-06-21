@@ -1,7 +1,12 @@
 #!/usr/bin/python
+import argparse
 import subprocess
 import shutil
 import os
+
+###############################################################################
+# Set working paths and constants (move these to config file?)
+###############################################################################
 
 os.chdir("/home/sentenced/Documents/Internships/2018_ETH/work/sets")
 
@@ -19,6 +24,19 @@ coverage_target = 40
 
 log_writer = open(log_file, 'w')
 seed_max = 10
+
+###############################################################################
+# Argument parsing
+###############################################################################
+
+parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
+parser.add_argument("mode", choices=["bounded", "coverage", "continuous"],
+    help = "Define the mode in which to run the testing.")
+args = parser.parse_args()
+
+###############################################################################
+# Helper functions
+###############################################################################
 
 def generate_test(seed, timeout, isl_tester_path):
     seed = str(seed)
@@ -67,6 +85,20 @@ def get_coverage():
     gcov_output = gcov_output[0].split(":")[1].split("%")[0]
     return float(gcov_output)
 
+
+
+###############################################################################
+# Testing mode functions
+###############################################################################
+
+def bounded_testing(seed_max):
+    for seed in range(0, seed_max):
+        log_writer.write("=== Testing seed " + str(seed) + "\n")
+        print("== Run seed " + str(seed))
+        generate_test(seed, timeout, isl_tester_path)
+        compile_test(test_compile_path, test_compile_dir)
+        execute_test(timeout, test_run_path)
+
 def coverage_testing(coverage_target):
     curr_coverage = 0
     seed = 0
@@ -89,12 +121,24 @@ def coverage_testing(coverage_target):
         seed += 1
     gather_coverage_files()
 
-def random_testing(seed_max):
-    for seed in range(0, seed_max):
-        log_writer.write("=== Testing seed " + str(seed) + "\n")
-        print("== Run seed " + str(seed))
-        generate_test(seed, timeout, isl_tester_path)
+# TODO: log generating command, log time to execute, timeout y/n, any other thing?
+def continuous_testing():
+    seed = 0
+    while True:
+        print("=== Running seed " + str(seed), end='\r')
+        generate(test(seed, timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
         execute_test(timeout, test_run_path)
+        seed += 1
 
-coverage_testing(coverage_target)
+###############################################################################
+# Main entry point
+###############################################################################
+
+if args.mode == "bounded":
+    bounded_testing(seed_max)
+elif args.mode == "coverage":
+    coverage_testing(coverage_target)
+elif args.mode == "continuous":
+    raise Exception("Not implemented")
+exit(0)
