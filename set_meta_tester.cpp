@@ -14,12 +14,14 @@ write_line(std::stringstream &ss, std::string line)
 }
 
 void
-write_args(std::stringstream &ss, isl_tester::Arguments args)
+write_args(std::stringstream &ss, isl_tester::Arguments args,
+   std::string meta_rel)
 {
     write_line(ss, "// Seed: " + std::to_string(args.seed));
     write_line(ss, "// Max dims: " + std::to_string(args.max_dims));
     write_line(ss, "// Max params: " + std::to_string(args.max_params));
     write_line(ss, "// Max set count: " + std::to_string(args.max_set_count));
+    write_line(ss, "// Meta relation: " + meta_rel);
     write_line(ss, "");
 }
 
@@ -109,6 +111,17 @@ gen_meta_relation(const YAML::Node relation_list, unsigned int count)
 }
 
 std::string
+get_meta_relation(std::queue<std::string> meta_rel_queue)
+{
+    std::string string_rel = "";
+    while (!meta_rel_queue.empty()) {
+        string_rel += meta_rel_queue.front() + "-";
+        meta_rel_queue.pop();
+    }
+    return string_rel;
+}
+
+std::string
 get_relation(const YAML::Node relation_list, std::string relation_type)
 {
     const YAML::Node selected_relation_list = relation_list[relation_type];
@@ -178,19 +191,19 @@ run_simple(isl::set set_in, isl_tester::Arguments &args)
     YAML::Node meta_list = YAML::LoadFile("set_meta_tests.yaml");
     std::string variant = "single_distinct";
 
-    std::stringstream ss;
-    write_args(ss, args);
-    prepare_header(ss);
-    ss << std::endl;
-    main_pre_setup(ss);
-    gen_var_declarations(ss, set_in);
-    gen_coalesce_split_test(ss);
-
     unsigned int meta_rel_count = std::rand() % 5 + 1;
     std::string r1_expr, r2_expr;
     std::queue<std::string> meta_rel = gen_meta_relation(
                                         meta_list["relations"], meta_rel_count);
     meta_rel.push("identity");
+
+    std::stringstream ss;
+    write_args(ss, args, get_meta_relation(meta_rel));
+    prepare_header(ss);
+    ss << std::endl;
+    main_pre_setup(ss);
+    gen_var_declarations(ss, set_in);
+    gen_coalesce_split_test(ss);
     gen_meta_expr(ss, 0, meta_rel, meta_list, std::set<std::string>());
     gen_meta_expr(ss, 1, meta_rel, meta_list, std::set<std::string>());
     main_post_setup(ss);

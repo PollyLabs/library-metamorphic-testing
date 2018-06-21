@@ -22,13 +22,14 @@ namespace isl_tester {
 namespace set_meta_tester {
 
 void write_line(std::stringstream &, std::string);
-void write_args(std::stringstream &, isl_tester::Arguments);
+void write_args(std::stringstream &, isl_tester::Arguments, std::string);
 void prepare_header(std::stringstream &);
 void main_pre_setup(std::stringstream &);
 void gen_var_declarations(std::stringstream &, isl::set);
 void gen_coalesce_split_test(std::stringstream &);
 void main_post_setup(std::stringstream &);
 std::queue<std::string> gen_meta_relation(unsigned int);
+std::string get_meta_relation(std::queue<std::string>);
 std::string get_relation(const YAML::Node);
 std::string get_generator(const YAML::Node, const std::string);
 void replace_meta_inputs(std::string &, const std::string, const YAML::Node);
