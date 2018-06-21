@@ -1,16 +1,21 @@
 #!/usr/bin/python
 import subprocess
 import shutil
+import os
+
+os.chdir("/home/sentenced/Documents/Internships/2018_ETH/work/sets")
 
 isl_tester_path = "./bin/isl_tester"
 test_compile_dir = "./out"
 test_compile_path = "./compile.sh"
 test_run_path = "./out/test"
-test_save_dir = "./out/cov_tests/"
+coverage_output_dir = "./out/coverage/"
 log_file = "./out/meta_test.log"
 timeout = 30
-coverage_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce"
-coverage_target = 80
+coverage_source_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/isl_coalesce.c"
+coverage_notes_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcno"
+coverage_data_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcda"
+coverage_target = 40
 
 log_writer = open(log_file, 'w')
 seed_max = 10
@@ -49,8 +54,13 @@ def execute_test(timeout, test_run_path):
         return
     log_writer.write("- Ending test execution\n")
 
+def gather_coverage_files():
+    shutil.copy(coverage_source_file, coverage_output_dir)
+    shutil.copy(coverage_notes_file, coverage_output_dir)
+
 def get_coverage():
-    cmd = ["gcov", coverage_file]
+    shutil.copy(coverage_data_file, coverage_output_dir)
+    cmd = ["gcov", coverage_output_dir + "isl_coalesce"]
     gcov_output = subprocess.check_output(cmd, encoding="UTF-8", stderr = subprocess.DEVNULL)
     gcov_output = [x for x in gcov_output.split("\n\n") if "coalesce" in x]
     gcov_output = [x for x in gcov_output[0].split("\n") if "Lines executed" in x]
@@ -60,17 +70,24 @@ def get_coverage():
 def coverage_testing(coverage_target):
     curr_coverage = 0
     seed = 0
-    while (curr_coverage < coverage_target):
+    if (os.path.exists(coverage_output_dir)):
+        shutil.rmtree(coverage_output_dir)
+    os.mkdir(coverage_output_dir)
+    if (os.path.exists(coverage_data_file)):
+        os.remove(coverage_data_file)
+    gather_coverage_files()
+    while (curr_coverage < coverage_target and seed < 50):
         print("=== Running seed " + str(seed), end='\r')
         generate_test(seed, timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
         execute_test(timeout, test_run_path)
         new_coverage = get_coverage()
         if new_coverage > curr_coverage:
-            shutil.move("./out/test.cpp", "./out/cov_tests/test_" + str(seed) + ".cpp")
+            shutil.move(test_run_path + ".cpp", coverage_output_dir + "test_" + str(seed) + ".cpp")
             curr_coverage = new_coverage
             print("New coverage at " + str(curr_coverage))
         seed += 1
+    gather_coverage_files()
 
 def random_testing(seed_max):
     for seed in range(0, seed_max):
