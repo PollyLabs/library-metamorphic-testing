@@ -34,7 +34,7 @@ std::string get_relation(const YAML::Node);
 std::string get_generator(const YAML::Node, const std::string);
 void replace_meta_inputs(std::string &, const std::string, const YAML::Node);
 std::string gen_meta_func(const std::string, std::string, const YAML::Node);
-std::string gen_meta_expr(std::stringstream &, const unsigned int, std::queue<std::string>, const YAML::Node, std::set<std::string>);
+size_t gen_meta_expr(std::stringstream &, const unsigned int, std::queue<std::string>, const YAML::Node, std::set<size_t>);
 void run_simple(isl::set, isl_tester::Arguments &);
 
 }

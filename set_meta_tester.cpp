@@ -71,7 +71,6 @@ gen_coalesce_split_test(std::stringstream &ss)
 void
 main_post_setup(std::stringstream &ss)
 {
-    write_line(ss, "assert(r0.is_equal(r1));");
     indent--;
     write_line(ss, "}");
     write_line(ss, "isl_ctx_free(ctx_ptr);");
@@ -167,22 +166,36 @@ gen_meta_func(const std::string input_var, std::string meta_relation,
     return new_rel;
 }
 
-std::string
+size_t
 gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<std::string> meta_rel,
-    const YAML::Node meta_list, std::set<std::string> gen_exprs)
+    const YAML::Node meta_list, std::set<size_t> gen_exprs)
 {
+    std::hash<std::string> string_hash_func;
+    std::queue<std::string> new_expr_string = std::queue<std::string>();
+    size_t new_expr_hash;
     std::string input_var = "r" + std::to_string(var_count);
-    std::string new_expr = gen_meta_func("s", meta_rel.front(), meta_list);
-    write_line(ss, "isl::set " + input_var + " = " + new_expr + ";");
-    meta_rel.pop();
-    while (!meta_rel.empty()) {
-        new_expr = gen_meta_func(input_var, meta_rel.front(), meta_list);
-        if (meta_rel.front() == "identity" && new_expr.find("coalesce") == std::string::npos)
-            continue;
-        write_line(ss, input_var + " = " + new_expr + ";");
+    unsigned int max_tries = 10;
+    unsigned int curr_tries = 0;
+    do {
+        std::string new_expr = gen_meta_func("s", meta_rel.front(), meta_list);
+        std::queue<std::string> new_expr_strings = std::queue<std::string>();
+        new_expr_hash = string_hash_func(new_expr);
+        new_expr_string.push("isl::set " + input_var + " = " + new_expr + ";");
         meta_rel.pop();
+        while (!meta_rel.empty()) {
+            new_expr = gen_meta_func(input_var, meta_rel.front(), meta_list);
+            new_expr_string.push(input_var + " = " + new_expr + ";");
+            new_expr_hash += string_hash_func(new_expr);
+            meta_rel.pop();
+        }
+        curr_tries += 1;
+    } while (gen_exprs.count(new_expr_hash) != 0 || curr_tries > max_tries);
+    while (!new_expr_string.empty()) {
+        write_line(ss, new_expr_string.front());
+        new_expr_string.pop();
     }
-    return "yes";
+    write_line(ss, "assert(r0.is_equal(r" + std::to_string(var_count) + "));");
+    return new_expr_hash;
 }
 
 void
@@ -190,12 +203,13 @@ run_simple(isl::set set_in, isl_tester::Arguments &args)
 {
     YAML::Node meta_list = YAML::LoadFile("./set_meta_tests.yaml");
     std::string variant = "single_distinct";
+    const unsigned int variant_count = 20;
+    std::set<size_t> generated_exprs = std::set<size_t>();
 
-    unsigned int meta_rel_count = std::rand() % 5 + 1;
+    unsigned int meta_rel_count = std::rand() % 7 + 1;
     std::string r1_expr, r2_expr;
     std::queue<std::string> meta_rel = gen_meta_relation(
                                         meta_list["relations"], meta_rel_count);
-    meta_rel.push("identity");
 
     std::stringstream ss;
     write_args(ss, args, get_meta_relation(meta_rel));
@@ -203,9 +217,9 @@ run_simple(isl::set set_in, isl_tester::Arguments &args)
     ss << std::endl;
     main_pre_setup(ss);
     gen_var_declarations(ss, set_in);
-    gen_coalesce_split_test(ss);
-    gen_meta_expr(ss, 0, meta_rel, meta_list, std::set<std::string>());
-    gen_meta_expr(ss, 1, meta_rel, meta_list, std::set<std::string>());
+    //gen_coalesce_split_test(ss);
+    for (int i = 0; i < variant_count; i++)
+        generated_exprs.insert(gen_meta_expr(ss, i, meta_rel, meta_list, generated_exprs));
     main_post_setup(ss);
 
     std::ofstream ofs;
