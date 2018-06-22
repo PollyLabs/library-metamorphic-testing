@@ -2,7 +2,9 @@
 #define ISL_TESTER_HPP
 
 #include <iostream>
+#include <fstream>
 #include <cstring>
+#include <cassert>
 #include <random>
 
 #include "isl-noexceptions.h"
@@ -21,9 +23,14 @@ struct Arguments {
     unsigned int max_dims;
     unsigned int max_params;
     unsigned int max_set_count;
+    std::string input_sets;
 
-    Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3) {}
+    Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3), input_sets("") {}
 };
+
+Arguments parse_args(int, char **);
+std::vector<std::string> gather_sets(std::string);
+isl::set retrieve_set(isl::ctx, std::vector<std::string>);
 
 }
 

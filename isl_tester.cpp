@@ -33,6 +33,9 @@ parse_args(int argc, char **argv)
         else if (!strcmp(argv[i], "--set-count")) {
             args.max_set_count = atoi(argv[++i]);
         }
+        else if (!strcmp(argv[i], "--input-sets-file")) {
+            args.input_sets = argv[++i];
+        }
         else {
             std::cout << "Found unknown argument: " << argv[i] << std::endl;
             exit(1);
@@ -40,6 +43,24 @@ parse_args(int argc, char **argv)
         i++;
     }
     return args;
+}
+
+std::vector<std::string>
+gather_sets(std::string file_path)
+{
+    std::vector<std::string> input_sets = std::vector<std::string>();
+    std::string line_buffer;
+    std::ifstream input_file(file_path.c_str());
+    assert(input_file.good() && "Could not open given file.");
+    while (std::getline(input_file, line_buffer))
+        input_sets.push_back(line_buffer);
+    return input_sets;
+}
+
+isl::set
+retrieve_set(isl::ctx ctx, std::vector<std::string> input_sets)
+{
+    return isl::set(ctx, input_sets[std::rand() % input_sets.size()]);
 }
 
 }
@@ -54,21 +75,34 @@ main(int argc, char **argv)
 
     if (args.mode == isl_tester::Modes::SET_FUZZ) {
         isl::set fuzzed_set = set_fuzzer::fuzz_set(ctx, args.max_dims,
-                                args.max_params, args.max_set_count);
+                            args.max_params, args.max_set_count);
         std::cout << fuzzed_set.to_str() << std::endl;
     }
     else if (args.mode == isl_tester::Modes::SET_TEST) {
-        isl::set set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
-                            args.max_params, args.max_set_count);
-        isl::set set2 = set_fuzzer::fuzz_set(ctx, args.max_dims,
-                            args.max_params, args.max_set_count);
+        isl::set set1, set2;
+        if (args.input_sets != "") {
+            std::vector<std::string> input_sets = isl_tester::gather_sets(args.input_sets);
+            set1 = isl_tester::retrieve_set(ctx, input_sets);
+            set2 = isl_tester::retrieve_set(ctx, input_sets);
+        } else {
+            set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
+                                args.max_params, args.max_set_count);
+            set2 = set_fuzzer::fuzz_set(ctx, args.max_dims,
+                                args.max_params, args.max_set_count);
+        }
         std::cout << set1.to_str() << std::endl;
         std::cout << set2.to_str() << std::endl;
         set_tester::run_tests(set1, set2);
     }
     else if (args.mode == isl_tester::Modes::SET_META) {
-        isl::set set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
-                            args.max_params, args.max_set_count);
+        isl::set set1;
+        if (args.input_sets != "") {
+            std::vector<std::string> input_sets = isl_tester::gather_sets(args.input_sets);
+            set1 = isl_tester::retrieve_set(ctx, input_sets);
+        } else {
+            set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
+                                args.max_params, args.max_set_count);
+        }
         std::cout << set1.to_str() << std::endl;
         set_meta_tester::run_simple(set1, args);
     }
