@@ -171,28 +171,31 @@ gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<st
     const YAML::Node meta_list, std::set<size_t> gen_exprs)
 {
     std::hash<std::string> string_hash_func;
-    std::queue<std::string> new_expr_string = std::queue<std::string>();
     size_t new_expr_hash;
+    std::queue<std::string> new_expr_strings;
     std::string input_var = "r" + std::to_string(var_count);
     unsigned int max_tries = 10;
     unsigned int curr_tries = 0;
     do {
-        std::string new_expr = gen_meta_func("s", meta_rel.front(), meta_list);
-        std::queue<std::string> new_expr_strings = std::queue<std::string>();
+        std::queue<std::string> meta_rel_copy = std::queue<std::string>(meta_rel);
+        std::string new_expr = gen_meta_func("s", meta_rel_copy.front(), meta_list);
+        new_expr_strings = std::queue<std::string>();
         new_expr_hash = string_hash_func(new_expr);
-        new_expr_string.push("isl::set " + input_var + " = " + new_expr + ";");
-        meta_rel.pop();
-        while (!meta_rel.empty()) {
-            new_expr = gen_meta_func(input_var, meta_rel.front(), meta_list);
-            new_expr_string.push(input_var + " = " + new_expr + ";");
+        new_expr_strings.push("isl::set " + input_var + " = " + new_expr + ";");
+        meta_rel_copy.pop();
+        while (!meta_rel_copy.empty()) {
+            new_expr = gen_meta_func(input_var, meta_rel_copy.front(), meta_list);
+            new_expr_strings.push(input_var + " = " + new_expr + ";");
             new_expr_hash += string_hash_func(new_expr);
-            meta_rel.pop();
+            meta_rel_copy.pop();
         }
         curr_tries += 1;
-    } while (gen_exprs.count(new_expr_hash) != 0 || curr_tries > max_tries);
-    while (!new_expr_string.empty()) {
-        write_line(ss, new_expr_string.front());
-        new_expr_string.pop();
+    } while (gen_exprs.count(new_expr_hash) != 0 && curr_tries < max_tries);
+    if (curr_tries >= max_tries)
+        return -1;
+    while (!new_expr_strings.empty()) {
+        write_line(ss, new_expr_strings.front());
+        new_expr_strings.pop();
     }
     write_line(ss, "assert(r0.is_equal(r" + std::to_string(var_count) + "));");
     return new_expr_hash;
@@ -218,8 +221,12 @@ run_simple(isl::set set_in, isl_tester::Arguments &args)
     main_pre_setup(ss);
     gen_var_declarations(ss, set_in);
     //gen_coalesce_split_test(ss);
-    for (int i = 0; i < variant_count; i++)
-        generated_exprs.insert(gen_meta_expr(ss, i, meta_rel, meta_list, generated_exprs));
+    for (int i = 0; i < variant_count; i++) {
+        size_t result = gen_meta_expr(ss, i, meta_rel, meta_list, generated_exprs);
+        if (result == -1)
+            break;
+        generated_exprs.insert(result);
+    }
     main_post_setup(ss);
 
     std::ofstream ofs;
