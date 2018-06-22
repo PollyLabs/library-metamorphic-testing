@@ -104,7 +104,7 @@ gen_meta_relation(const YAML::Node relation_list, unsigned int count)
         while (relation_id-- > 0)
             it++;
         meta_relation.push(it->first.as<std::string>());
-        std::cout << it->first.as<std::string>() << " ";
+        //std::cout << it->first.as<std::string>() << " ";
     }
     std::cout << std::endl;
     return meta_relation;
@@ -161,9 +161,9 @@ gen_meta_func(const std::string input_var, std::string meta_relation,
 {
     std::string new_rel = get_relation(meta_list["relations"], meta_relation);
     assert(new_rel.find("%1") != std::string::npos);
-    std::cout << new_rel << std::endl;
+    //std::cout << new_rel << std::endl;
     replace_meta_inputs(new_rel, input_var, meta_list);
-    std::cout << new_rel << std::endl;
+    //std::cout << new_rel << std::endl;
     return new_rel;
 }
 
@@ -188,7 +188,7 @@ gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<st
 void
 run_simple(isl::set set_in, isl_tester::Arguments &args)
 {
-    YAML::Node meta_list = YAML::LoadFile("set_meta_tests.yaml");
+    YAML::Node meta_list = YAML::LoadFile("./set_meta_tests.yaml");
     std::string variant = "single_distinct";
 
     unsigned int meta_rel_count = std::rand() % 5 + 1;
