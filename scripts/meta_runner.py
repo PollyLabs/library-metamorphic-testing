@@ -1,14 +1,19 @@
 #!/usr/bin/python
 import argparse
+import datetime
 import subprocess
 import shutil
 import os
+import random
+import sys
+import time
 
 ###############################################################################
 # Set working paths and constants (move these to config file?)
 ###############################################################################
 
-os.chdir("/home/sentenced/Documents/Internships/2018_ETH/work/sets")
+working_dir = "/home/sentenced/Documents/Internships/2018_ETH/work/sets"
+os.chdir(working_dir)
 
 isl_tester_path = "./bin/isl_tester"
 test_compile_dir = "./out"
@@ -16,6 +21,8 @@ test_compile_path = "./compile.sh"
 test_run_path = "./out/test"
 coverage_output_dir = "./out/coverage/"
 log_file = "./out/meta_test.log"
+input_sets_file = "./input_tests/input_sets_autotuner"
+input_sets_temp = os.path.abspath("./input_tests/input_sets_temp")
 timeout = 30
 coverage_source_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/isl_coalesce.c"
 coverage_notes_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcno"
@@ -30,7 +37,7 @@ seed_max = 10
 ###############################################################################
 
 parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
-parser.add_argument("mode", choices=["bounded", "coverage", "continuous"],
+parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
     help = "Define the mode in which to run the testing.")
 args = parser.parse_args()
 
@@ -38,39 +45,46 @@ args = parser.parse_args()
 # Helper functions
 ###############################################################################
 
-def generate_test(seed, timeout, isl_tester_path):
+def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
     seed = str(seed)
     timeout = str(timeout)
-    generator_cmd = ["timeout", timeout, isl_tester_path, "-m", "SET_META", "-s", seed]
-    log_writer.write("- Starting generation\n")
+    generator_cmd = [isl_tester_path, "-m", "SET_META", "-s", seed]
+    # generator_cmd = [isl_tester_path, "-m", "SET_META", "-s", seed]
+    if input_file_path:
+        generator_cmd.extend(["--input-sets-file", input_file_path])
+    # print("CMD is " + " ".join(generator_cmd))
     generator_proc = subprocess.Popen(generator_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = generator_proc.communicate()
-    log_writer.write("STDOUT:\n" + out + "\n")
-    log_writer.write("STDERR:\n" + err + "\n")
+    print(out)
     if generator_proc.returncode != 0:
-        return
-    log_writer.write("- End generation\n")
+        print("Return code: %s\n" % (generator_proc.returncode))
+        print("%s \n%s\n" % (out, err))
+        log_writer.write("!!! Generation failure\n")
+        log_writer.write("CMD:\n" + " ".join(generator_cmd) + "\n")
+        log_writer.write("RETURNCODE: " + str(generator_proc.returncode) + "\n")
+        log_writer.write("STDOUT:\n" + out + "\n")
+        log_writer.write("STDERR:\n" + err + "\n")
+    return generator_proc.returncode
 
 def compile_test(test_compile_path, test_compile_dir):
     try:
-        log_writer.write("- Starting compile\n")
         compile_cmd = [test_compile_path]
         compile_proc = subprocess.run(compile_cmd, shell=True, check=True, cwd=test_compile_dir)
-        log_writer.write("- End compile\n")
     except subprocess.CalledProcessError:
-        print("Failed compiling.")
+        log_writer.write("!!! Compilation Failure\n")
 
 def execute_test(timeout, test_run_path):
     timeout = str(timeout)
     test_cmd = ["timeout", timeout, test_run_path]
-    log_writer.write("- Starting test execution\n")
+    start_time = time.time()
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = test_proc.communicate()
-    log_writer.write("STDOUT:\n" + out + "\n")
-    log_writer.write("STDERR:\n" + err + "\n")
     if test_proc.returncode != 0:
-        return
-    log_writer.write("- Ending test execution\n")
+        log_writer.write("!!! Execution fail\n")
+        log_writer.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
+        log_writer.write("RUNTIME: " + str(time.time() - start_time) + "\n")
+        log_writer.write("STDOUT:\n" + out + "\n")
+        log_writer.write("STDERR:\n" + err + "\n")
 
 def gather_coverage_files():
     shutil.copy(coverage_source_file, coverage_output_dir)
@@ -85,15 +99,13 @@ def get_coverage():
     gcov_output = gcov_output[0].split(":")[1].split("%")[0]
     return float(gcov_output)
 
-
-
 ###############################################################################
 # Testing mode functions
 ###############################################################################
 
 def bounded_testing(seed_max):
     for seed in range(0, seed_max):
-        log_writer.write("=== Testing seed " + str(seed) + "\n")
+        log_writer.write("SEED " + str(seed) + " ====================\n")
         print("== Run seed " + str(seed))
         generate_test(seed, timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
@@ -125,20 +137,47 @@ def coverage_testing(coverage_target):
 def continuous_testing():
     seed = 0
     while True:
-        print("=== Running seed " + str(seed), end='\r')
-        generate(test(seed, timeout, isl_tester_path)
+        date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        print(date_time + " Running seed " + str(seed), end='\r')
+        generate_test(seed, timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
         execute_test(timeout, test_run_path)
         seed += 1
 
+def targeted_testing():
+    max_tests_per_set = 10
+    input_sets = []
+    with open(input_sets_file, 'r') as input_reader:
+        for line in input_reader:
+            input_sets.append(line)
+    for input_cnt,input_set in enumerate(input_sets):
+        with open(input_sets_temp, 'w') as temp_writer:
+            temp_writer.write(input_set)
+        for x in range(0, max_tests_per_set):
+            seed = random.randint(0, 2 ** 31)
+            date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+            print("%s Running  %d of %d (set %d of %d)\n"
+                % (date_time, x + 1, max_tests_per_set, input_cnt + 1, len(input_sets)),
+                    end='\r')
+            if generate_test(seed, timeout, isl_tester_path, input_sets_temp) != 0:
+                continue
+            compile_test(test_compile_path, test_compile_dir)
+            execute_test(timeout, test_run_path)
+
 ###############################################################################
 # Main entry point
 ###############################################################################
+
+log_writer.write("TIMEOUT: " + str(timeout) + "\n")
+log_writer.write("MODE: " + args.mode + "\n")
+log_writer.write("\n")
 
 if args.mode == "bounded":
     bounded_testing(seed_max)
 elif args.mode == "coverage":
     coverage_testing(coverage_target)
 elif args.mode == "continuous":
-    raise Exception("Not implemented")
+    continuous_testing()
+elif args.mode == "targeted":
+    targeted_testing()
 exit(0)
