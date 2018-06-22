@@ -56,11 +56,11 @@ def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
     generator_proc = subprocess.Popen(generator_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = generator_proc.communicate()
     print(out)
+    log_writer.write("CMD:\n" + " ".join(generator_cmd) + "\n")
     if generator_proc.returncode != 0:
         print("Return code: %s\n" % (generator_proc.returncode))
         print("%s \n%s\n" % (out, err))
         log_writer.write("!!! Generation failure\n")
-        log_writer.write("CMD:\n" + " ".join(generator_cmd) + "\n")
         log_writer.write("RETURNCODE: " + str(generator_proc.returncode) + "\n")
         log_writer.write("STDOUT:\n" + out + "\n")
         log_writer.write("STDERR:\n" + err + "\n")
@@ -153,16 +153,15 @@ def targeted_testing():
     for input_cnt,input_set in enumerate(input_sets):
         with open(input_sets_temp, 'w') as temp_writer:
             temp_writer.write(input_set)
-        for x in range(0, max_tests_per_set):
-            seed = random.randint(0, 2 ** 31)
-            date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-            print("%s Running  %d of %d (set %d of %d)\n"
-                % (date_time, x + 1, max_tests_per_set, input_cnt + 1, len(input_sets)),
-                    end='\r')
-            if generate_test(seed, timeout, isl_tester_path, input_sets_temp) != 0:
-                continue
-            compile_test(test_compile_path, test_compile_dir)
-            execute_test(timeout, test_run_path)
+        seed = random.randint(0, 2 ** 31)
+        date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        print("%s Running set %d of %d\n"
+            % (date_time, input_cnt + 1, len(input_sets)),
+                end='\r')
+        if generate_test(seed, timeout, isl_tester_path, input_sets_temp) != 0:
+            continue
+        compile_test(test_compile_path, test_compile_dir)
+        execute_test(timeout, test_run_path)
 
 ###############################################################################
 # Main entry point
@@ -171,6 +170,8 @@ def targeted_testing():
 log_writer.write("TIMEOUT: " + str(timeout) + "\n")
 log_writer.write("MODE: " + args.mode + "\n")
 log_writer.write("\n")
+
+random.seed(42)
 
 if args.mode == "bounded":
     bounded_testing(seed_max)
