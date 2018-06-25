@@ -66,14 +66,16 @@ def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
         log_writer.write("RETURNCODE: " + str(generator_proc.returncode) + "\n")
         log_writer.write("STDOUT:\n" + out + "\n")
         log_writer.write("STDERR:\n" + err + "\n")
-    return generator_proc.returncode
+    return generator_proc.returncode == 0
 
 def compile_test(test_compile_path, test_compile_dir):
     try:
         compile_cmd = [test_compile_path]
         compile_proc = subprocess.run(compile_cmd, shell=True, check=True, cwd=test_compile_dir)
+        return True
     except subprocess.CalledProcessError:
         log_writer.write("!!! Compilation Failure\n")
+        return False
 
 def execute_test(timeout, test_run_path):
     timeout = str(timeout)
@@ -163,11 +165,13 @@ def targeted_testing():
         print("%s Running set %d of %d\n"
             % (date_time, input_cnt + 1, len(input_sets)),
                 end='\r')
-        if generate_test(seed, timeout, isl_tester_path, input_sets_temp) != 0:
+        if not generate_test(seed, timeout, isl_tester_path, input_sets_temp):
             continue
-        compile_test(test_compile_path, test_compile_dir)
-        if execute_test(timeout, test_run_path):
-            shutil.copy(test_source_path, output_tests_folder + "/test_" + str(input_cnt) + ".cpp")
+        if not compile_test(test_compile_path, test_compile_dir):
+            shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(input_cnt) + ".cpp")
+            continue
+        if not execute_test(timeout, test_run_path):
+            shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(input_cnt) + ".cpp")
 
 ###############################################################################
 # Main entry point
