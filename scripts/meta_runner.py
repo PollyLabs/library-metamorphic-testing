@@ -115,9 +115,13 @@ def bounded_testing(seed_max):
         log_writer.write(80 * "=" + "\n")
         log_writer.write("SEED: " + str(seed))
         print(date_time + " Running seed " + str(seed), end='\r')
-        generate_test(seed, timeout, isl_tester_path)
-        compile_test(test_compile_path, test_compile_dir)
-        execute_test(timeout, test_run_path)
+        if not generate_test(seed, timeout, isl_tester_path):
+            continue
+        if not compile_test(test_compile_path, test_compile_dir):
+            shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(input_cnt) + ".cpp")
+            continue
+        if not execute_test(timeout, test_run_path):
+            shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(input_cnt) + ".cpp")
 
 def coverage_testing(coverage_target):
     curr_coverage = 0
