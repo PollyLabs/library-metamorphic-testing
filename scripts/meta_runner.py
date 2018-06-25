@@ -18,11 +18,13 @@ os.chdir(working_dir)
 isl_tester_path = "./bin/isl_tester"
 test_compile_dir = "./out"
 test_compile_path = "./compile.sh"
+test_source_path = "./out/test.cpp"
 test_run_path = "./out/test"
 coverage_output_dir = "./out/coverage/"
 log_file = "./out/meta_test.log"
 input_sets_file = "./input_tests/input_sets_autotuner"
 input_sets_temp = os.path.abspath("./input_tests/input_sets_temp")
+output_tests_folder = "./out/out_tests"
 timeout = 30
 coverage_source_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/isl_coalesce.c"
 coverage_notes_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcno"
@@ -85,6 +87,7 @@ def execute_test(timeout, test_run_path):
         log_writer.write("RUNTIME: " + str(time.time() - start_time) + "\n")
         log_writer.write("STDOUT:\n" + out + "\n")
         log_writer.write("STDERR:\n" + err + "\n")
+    return test_proc.returncode == 0
 
 def gather_coverage_files():
     shutil.copy(coverage_source_file, coverage_output_dir)
@@ -153,6 +156,8 @@ def targeted_testing():
     for input_cnt,input_set in enumerate(input_sets):
         with open(input_sets_temp, 'w') as temp_writer:
             temp_writer.write(input_set)
+        log_writer.write(80 * "=" + "\n")
+        log_writer.write("SET: " + input_set)
         seed = random.randint(0, 2 ** 31)
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         print("%s Running set %d of %d\n"
@@ -161,7 +166,8 @@ def targeted_testing():
         if generate_test(seed, timeout, isl_tester_path, input_sets_temp) != 0:
             continue
         compile_test(test_compile_path, test_compile_dir)
-        execute_test(timeout, test_run_path)
+        if execute_test(timeout, test_run_path):
+            shutil.copy(test_source_path, output_tests_folder + "/test_" + str(input_cnt) + ".cpp")
 
 ###############################################################################
 # Main entry point
@@ -170,6 +176,10 @@ def targeted_testing():
 log_writer.write("TIMEOUT: " + str(timeout) + "\n")
 log_writer.write("MODE: " + args.mode + "\n")
 log_writer.write("\n")
+
+if (os.path.exists(output_tests_folder)):
+    shutil.rmtree(output_tests_folder)
+os.mkdir(output_tests_folder)
 
 random.seed(42)
 
