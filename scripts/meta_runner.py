@@ -32,7 +32,6 @@ coverage_data_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib
 coverage_target = 40
 
 log_writer = open(log_file, 'w')
-seed_max = 10
 
 ###############################################################################
 # Argument parsing
@@ -41,6 +40,8 @@ seed_max = 10
 parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
 parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
     help = "Define the mode in which to run the testing.")
+parser.add_argument("--seed-max", type=int, default=1000,
+    help = "[bounded] Set the max number of tests to run (seed starts at 0)")
 args = parser.parse_args()
 
 ###############################################################################
@@ -110,8 +111,10 @@ def get_coverage():
 
 def bounded_testing(seed_max):
     for seed in range(0, seed_max):
-        log_writer.write("SEED " + str(seed) + " ====================\n")
-        print("== Run seed " + str(seed))
+        date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        log_writer.write(80 * "=" + "\n")
+        log_writer.write("SEED: " + str(seed))
+        print(date_time + " Running seed " + str(seed), end='\r')
         generate_test(seed, timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
         execute_test(timeout, test_run_path)
@@ -143,6 +146,8 @@ def continuous_testing():
     seed = 0
     while True:
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        log_writer.write(80 * "=" + "\n")
+        log_writer.write("SEED: " + str(seed))
         print(date_time + " Running seed " + str(seed), end='\r')
         generate_test(seed, timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
@@ -188,7 +193,7 @@ os.mkdir(output_tests_folder)
 random.seed(42)
 
 if args.mode == "bounded":
-    bounded_testing(seed_max)
+    bounded_testing(args.seed_max)
 elif args.mode == "coverage":
     coverage_testing(coverage_target)
 elif args.mode == "continuous":
