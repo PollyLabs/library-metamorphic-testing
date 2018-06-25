@@ -1,0 +1,929 @@
+[B, C, T, b1, b0, b2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : b1 = 0 and b2 = 0 and -6 - 7b0 + var_s1_t <= 224*floor((var_s1_t)/224) <= -7b0 + var_s1_t }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 16 = 0 and (-t0 + mean_s0_b) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 15 }
+[B, C, T, b0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : -6 - 7b0 + O_s0_t <= 14*floor((O_s0_t)/14) <= -7b0 + O_s0_t }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 7 = 0 and (-t0 + var_s0_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and t2 = 0 and (-t0 + output_s0_k) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T] -> { S_5[var_s2_t, var_s2_b] : 0 <= var_s2_t < T and 0 <= var_s2_b < B }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_b) mod 8 = 0 and (-t0 + O_s0_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 8 = 0 and (-t0 + mean_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 7 }
+[B, C, T, b0, b1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : b1 = 0 and -15 - 16b0 + centered_s0_t <= 32*floor((centered_s0_t)/32) <= -16b0 + centered_s0_t }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -7 - 8b1 + output_s1_k <= 24*floor((output_s1_k)/24) <= -8b1 + output_s1_k and -1 - 2b0 + output_s1_m <= 32*floor((output_s1_m)/32) <= -2b0 + output_s1_m }
+[B, C, T, t0] -> { S_3[var_s0_t, var_s0_b] : (-t0 + var_s0_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, b1, b0, b2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : b2 = 0 and -127 - 128b0 + O_s0_t <= 512*floor((O_s0_t)/512) <= -128b0 + O_s0_t and -127 - 128b1 + O_s0_b <= 32768*floor((O_s0_b)/32768) <= -128b1 + O_s0_b }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 127 and 0 <= t0 <= 3 and 0 <= b0 <= 127 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 384 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -31 - 32b0 + output_s0_m <= 160*floor((output_s0_m)/160) <= -32b0 + output_s0_m }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 5 = 0 and (-t0 + output_s1_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 4 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -199 - 200b0 + output_s0_m <= 12600*floor((output_s0_m)/12600) <= -200b0 + output_s0_m }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : 0 <= output_s1_m < M and 0 <= output_s1_k < K and 0 <= output_s1_r_n < N }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_m) mod 100 = 0 and 0 <= t0 <= 99 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : (-b1 + output_s0_k) mod 8 = 0 and 0 <= b1 <= 7 and -31 - 32b0 + output_s0_m <= 512*floor((output_s0_m)/512) <= -32b0 + output_s0_m }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -399 - 400b0 + output_s1_m <= 25600*floor((output_s1_m)/25600) <= -400b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b0 = 0 and 0 <= t0 <= 255 and 0 <= b2 <= 7 and 0 <= b1 <= 3 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t0 = 0 and t2 = 0 and (-t1 + output_s0_m) mod 100 = 0 and 0 <= t1 <= 99 }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t1 = 0 and t2 = 0 and (-t0 + var_s2_b) mod 7 = 0 and 0 <= t0 <= 6 }
+[B, C, T, b0, b1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : -3 - 4b1 + centered_s0_b <= 256*floor((centered_s0_b)/256) <= -4b1 + centered_s0_b and -255 - 256b0 + centered_s0_t <= 16384*floor((centered_s0_t)/16384) <= -256b0 + centered_s0_t }
+[B, C, T] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : mean_s1_b >= 28 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_r_n) mod 63 = 0 and 0 <= t0 <= 62 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (t1 + centered_s0_b) mod 2 = 0 and (-t0 + centered_s0_c) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 1 }
+[B, C, T] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : B = 32 and C = 64 and T = 7 and 0 <= mean_s1_t <= 6 and 0 <= mean_s1_b <= 27 and 0 <= mean_s1_c <= 63 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t0 = 0 and t2 = 0 and (-t1 + var_s1_t) mod 64 = 0 and 0 <= t1 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 8 }
+[B, C, T, b0] -> { S_0[mean_s0_t, mean_s0_b] : -6 - 7b0 + mean_s0_t <= 28*floor((mean_s0_t)/28) <= -7b0 + mean_s0_t }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (t1 + var_s1_t) mod 2 = 0 and (-t0 + var_s1_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 1 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 72 = 0 and 0 <= t0 <= 71 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 16 = 0 and (-t0 + output_s0_k) mod 25 = 0 and 0 <= t0 <= 24 and 0 <= t1 <= 15 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t1 = 0 and t2 = 0 and (-t0 + O_s0_b) mod 4 = 0 and 0 <= t0 <= 3 }
+[B, C, T, b0, b1] -> { S_0[mean_s0_t, mean_s0_b] : b1 = 0 and -15 - 16b0 + mean_s0_t <= 32*floor((mean_s0_t)/32) <= -16b0 + mean_s0_t }
+[B, C, T, b0, b1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : b1 = 0 and -15 - 16b0 + mean_s1_t <= 32*floor((mean_s1_t)/32) <= -16b0 + mean_s1_t }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -4 - 5b0 + output_s1_m <= 160*floor((output_s1_m)/160) <= -5b0 + output_s1_m }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and -63 - 64b1 + output_s1_k <= 256*floor((output_s1_k)/256) <= -64b1 + output_s1_k }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -2 - 3b0 + output_s1_m <= 384*floor((output_s1_m)/384) <= -3b0 + output_s1_m }
+[B, C, T, t0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t0 + var_s1_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 35 and 0 <= output_s1_r_n <= 23 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 9 = 0 and (-t0 + output_s0_k) mod 4 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 3 }
+[B, C, T, b0] -> { S_3[var_s0_t, var_s0_b] : (-b0 + var_s0_t) mod 7 = 0 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 31 and 0 <= t0 <= 1 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -255 - 256b0 + output_s0_m <= 8192*floor((output_s0_m)/8192) <= -256b0 + output_s0_m }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (t1 + output_s1_m) mod 2 = 0 and (-t0 + output_s1_k) mod 7 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 6 }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 8 = 0 and (-t0 + var_s0_b) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 124 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 1 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_b) mod 16 = 0 and (-t0 + centered_s0_c) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 16 = 0 and (-t0 + output_s1_k) mod 25 = 0 and 0 <= t0 <= 24 and 0 <= t1 <= 15 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -255 - 256b0 + output_s0_m <= 512*floor((output_s0_m)/512) <= -256b0 + output_s0_m and -12 - 13b1 + output_s0_k <= 104*floor((output_s0_k)/104) <= -13b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 31 and 0 <= b1 <= 2 and 0 <= b0 <= 4 }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (t1 + var_s0_t) mod 2 = 0 and (-t0 + var_s0_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 35 and 0 <= t0 <= 7 and 0 <= b1 <= 8 and 0 <= b0 <= 17 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and (-t0 + output_s0_k) mod 72 = 0 and 0 <= t0 <= 71 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and (-b0 + output_s1_m) mod 5 = 0 and 0 <= b0 <= 4 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -255 - 256b0 + output_s0_m <= 8192*floor((output_s0_m)/8192) <= -256b0 + output_s0_m and -127 - 128b1 + output_s0_k <= 384*floor((output_s0_k)/384) <= -128b1 + output_s0_k }
+[B, C, T, b0, b1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : -255 - 256b1 + mean_s1_b <= 1024*floor((mean_s1_b)/1024) <= -256b1 + mean_s1_b and -6 - 7b0 + mean_s1_t <= 224*floor((mean_s1_t)/224) <= -7b0 + mean_s1_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 7 and 0 <= b0 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 6 and 0 <= b1 <= 2 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 62 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 63 and 0 <= b2 <= 255 and 0 <= b1 <= 2 and 0 <= b0 <= 31 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -127 - 128b0 + output_s0_m <= 896*floor((output_s0_m)/896) <= -128b0 + output_s0_m and -3 - 4b1 + output_s0_k <= 1024*floor((output_s0_k)/1024) <= -4b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 7 and 0 <= b2 <= 12 and 0 <= b1 <= 511 and 0 <= b0 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 199 and 0 <= b1 <= 99 and 0 <= b0 <= 62 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and (-t0 + output_s0_k) mod 8 = 0 and 0 <= t0 <= 7 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t2 = 0 and (-t1 + var_s1_t) mod 4 = 0 and (-t0 + var_s1_b) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[B, C, T, t0] -> { S_0[mean_s0_t, mean_s0_b] : (-t0 + mean_s0_b) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 8 = 0 and (-t0 + var_s1_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 7 }
+[B, C, T, b0, b1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : b0 = 0 and b1 = 0 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (t1 + output_s1_m) mod 2 = 0 and (-t0 + output_s1_k) mod 26 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 25 }
+[B, C, T, b1, b0, b2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : b1 = 0 and b2 = 0 and -127 - 128b0 + centered_s0_t <= 4096*floor((centered_s0_t)/4096) <= -128b0 + centered_s0_t }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 18 = 0 and (-t0 + output_s0_k) mod 9 = 0 and 0 <= t0 <= 8 and 0 <= t1 <= 17 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 63 and 0 <= b2 <= 8 and 0 <= b1 <= 15 and 0 <= b0 <= 12 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 71 and 0 <= t0 <= 3 }
+[C1, C2, C3, H, N, W] -> { S_0[O_s0_n, O_s0_c1, O_s0_c3, O_s0_h, O_s0_w] : C1 = 512 and C2 = 8 and C3 = 2 and H = 28 and N = 32 and W = 28 and 0 <= O_s0_n <= 31 and 0 <= O_s0_c1 <= 511 and 0 <= O_s0_c3 <= 1 and 0 <= O_s0_h <= 27 and 0 <= O_s0_w <= 27 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -6 - 7b0 + output_s0_m <= 224*floor((output_s0_m)/224) <= -7b0 + output_s0_m }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t0 = 0 and t2 = 0 and (-t1 + var_s0_t) mod 64 = 0 and 0 <= t1 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 35 and 0 <= b0 <= 25 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : 0 <= t1 <= 4 and 0 <= t0 <= 8 and 0 <= t2 <= 2 and 0 <= b2 <= 71 and 0 <= b1 <= 6 and 0 <= b0 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 62 }
+[B, C, T, b0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : -127 - 128b0 + mean_s1_t <= 32768*floor((mean_s1_t)/32768) <= -128b0 + mean_s1_t }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t0 = 0 and (-t1 + output_s0_m) mod 36 = 0 and 0 <= t1 <= 35 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 4 = 0 and (-t0 + var_s1_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 3 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b0 = 0 and b2 = 0 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -63 - 64b0 + output_s0_m <= 128*floor((output_s0_m)/128) <= -64b0 + output_s0_m }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 5 = 0 and (-t0 + output_s0_k) mod 13 = 0 and 0 <= t0 <= 12 and 0 <= t1 <= 4 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and b2 = 0 and -255 - 256b1 + output_s1_k <= 16384*floor((output_s1_k)/16384) <= -256b1 + output_s1_k }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 200 = 0 and 0 <= t0 <= 199 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t0 = 0 and (-t2 + centered_s0_t) mod 64 = 0 and (-t1 + centered_s0_b) mod 7 = 0 and 0 <= t1 <= 6 and 0 <= t2 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 7 and 0 <= b0 <= 255 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 25 and 0 <= b1 <= 2 }
+[B, C, T, b0, b1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : b0 = 0 and b1 = 0 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 500 and M = 100 and N = 400 and 0 <= output_s1_m <= 99 and 0 <= output_s1_k <= 499 and 0 <= output_s1_r_n <= 377 }
+[B, C, T, b1, b0, b2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : b1 = 0 and b0 = 0 and b2 = 0 }
+[B, C, T] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : var_s1_b >= 28 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 8 = 0 and (-t0 + output_s0_k) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 36 = 0 and (-t0 + output_s1_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 35 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 63 and 0 <= b0 <= 17 }
+[B, C, T] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : 0 <= centered_s0_t < T and 0 <= centered_s0_b < B and 0 <= centered_s0_c < C }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 6 and 0 <= b0 <= 4 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[B, C, T, t0] -> { S_0[mean_s0_t, mean_s0_b] : (-t0 + mean_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 13 = 0 and (-t0 + output_s0_k) mod 4 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 3 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_r_n) mod 250 = 0 and 0 <= t0 <= 249 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -255 - 256b0 + output_s1_m <= 1024*floor((output_s1_m)/1024) <= -256b0 + output_s1_m }
+[B, C, T, b0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-b0 + mean_s1_t) mod 7 = 0 and 0 <= b0 <= 6 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -31 - 32b0 + output_s1_m <= 160*floor((output_s1_m)/160) <= -32b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 4 and 0 <= b1 <= 1 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and t2 = 0 and (-t0 + output_s0_k) mod 9 = 0 and 0 <= t0 <= 8 }
+[B, C, T, b0] -> { S_5[var_s2_t, var_s2_b] : b0 = 0 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 375 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 32 = 0 and (-t0 + output_s0_k) mod 5 = 0 and 0 <= t0 <= 4 and 0 <= t1 <= 31 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 500 = 0 and 0 <= t0 <= 499 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and (-t0 + output_s1_k) mod 72 = 0 and 0 <= t0 <= 71 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 63 and 0 <= output_s1_r_n <= 23 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t0 = 0 and t2 = 0 and (-t1 + mean_s1_t) mod 64 = 0 and 0 <= t1 <= 63 }
+[B, C, T, b0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-b0 + O_s0_t) mod 7 = 0 and 0 <= b0 <= 6 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 16 = 0 and (-t0 + mean_s1_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 15 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 8 = 0 and 0 <= t0 <= 7 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t0 = 0 and (-t1 + output_s1_m) mod 32 = 0 and 0 <= t1 <= 31 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -255 - 256b0 + output_s0_m <= 768*floor((output_s0_m)/768) <= -256b0 + output_s0_m }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -4 - 5b0 + output_s1_m <= 320*floor((output_s1_m)/320) <= -5b0 + output_s1_m }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t1 = 0 and t2 = 0 and (-t0 + centered_s0_b) mod 4 = 0 and 0 <= t0 <= 3 }
+[B, C, T, t0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t0 + centered_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 124 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -62 - 63b0 + output_s0_m <= 1008*floor((output_s0_m)/1008) <= -63b0 + output_s0_m and -3 - 4b1 + output_s0_k <= 800*floor((output_s0_k)/800) <= -4b1 + output_s0_k }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t2 = 0 and (-t1 + centered_s0_t) mod 4 = 0 and (-t0 + centered_s0_b) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -7 - 8b1 + output_s0_k <= 24*floor((output_s0_k)/24) <= -8b1 + output_s0_k and -1 - 2b0 + output_s0_m <= 32*floor((output_s0_m)/32) <= -2b0 + output_s0_m }
+[B, C, T, b1, b0, b2] -> { S_5[var_s2_t, var_s2_b] : b2 = 0 and -127 - 128b0 + var_s2_t <= 512*floor((var_s2_t)/512) <= -128b0 + var_s2_t and -127 - 128b1 + var_s2_b <= 32768*floor((var_s2_b)/32768) <= -128b1 + var_s2_b }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 500 and M = 100 and N = 400 and 0 <= output_s1_m <= 99 and 0 <= output_s1_k <= 499 and 0 <= output_s1_r_n <= 383 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 50 = 0 and 0 <= t0 <= 49 }
+[B, C, T, t0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t0 + var_s1_b) mod 128 = 0 and 0 <= t0 <= 127 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 128 = 0 and 0 <= t0 <= 127 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 500 and M = 100 and N = 400 and 0 <= output_s1_m <= 99 and 0 <= output_s1_k <= 499 and 0 <= output_s1_r_n <= 399 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 31 and 0 <= b0 <= 15 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 32 = 0 and (t0 + output_s0_k) mod 2 = 0 and 0 <= t0 <= 1 and 0 <= t1 <= 31 }
+[B, C, T, b1, b0, b2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : b1 = 0 and b2 = 0 and -127 - 128b0 + var_s1_t <= 4096*floor((var_s1_t)/4096) <= -128b0 + var_s1_t }
+[B, C, T, b0, b1] -> { S_5[var_s2_t, var_s2_b] : -255 - 256b1 + var_s2_b <= 1024*floor((var_s2_b)/1024) <= -256b1 + var_s2_b and -6 - 7b0 + var_s2_t <= 224*floor((var_s2_t)/224) <= -7b0 + var_s2_t }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 4 = 0 and (-t0 + output_s1_k) mod 63 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 62 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and b2 = 0 and -2 - 3b1 + output_s1_k <= 12*floor((output_s1_k)/12) <= -3b1 + output_s1_k }
+[B, C, T, t0] -> { S_5[var_s2_t, var_s2_b] : (-t0 + var_s2_b) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, b1, b0, b2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : b1 = 0 and b0 = 0 and b2 = 0 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t1 = 0 and t2 = 0 and (-t0 + mean_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and -127 - 128b0 + output_s1_m <= 4608*floor((output_s1_m)/4608) <= -128b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 399 and 0 <= b1 <= 6 and 0 <= b0 <= 49 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_t) mod 8 = 0 and (-t0 + centered_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 7 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 4 = 0 and (-t0 + output_s0_k) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (t1 + output_s0_m) mod 2 = 0 and (-t0 + output_s0_k) mod 256 = 0 and 0 <= t0 <= 255 and 0 <= t1 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 7 and 0 <= b1 <= 7 and 0 <= b0 <= 1 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_b) mod 7 = 0 and (-t0 + var_s1_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 8 = 0 and (-t0 + output_s1_k) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t2 = 0 and (t1 + O_s0_t) mod 2 = 0 and (t0 + O_s0_b) mod 2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 12 and 0 <= b1 <= 5 and 0 <= b0 <= 23 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t2 = 0 and (-t1 + mean_s0_t) mod 64 = 0 and (-t0 + mean_s0_b) mod 4 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 3 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_k >= 65 or output_s1_r_n >= 24 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -12 - 13b0 + output_s1_m <= 6500*floor((output_s1_m)/6500) <= -13b0 + output_s1_m and -6 - 7b1 + output_s1_k <= 1750*floor((output_s1_k)/1750) <= -7b1 + output_s1_k }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and -2 - 3b0 + output_s1_m <= 24*floor((output_s1_m)/24) <= -3b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 249 }
+[B, C, T, b0, b1] -> { S_3[var_s0_t, var_s0_b] : -3 - 4b1 + var_s0_b <= 256*floor((var_s0_b)/256) <= -4b1 + var_s0_b and -255 - 256b0 + var_s0_t <= 16384*floor((var_s0_t)/16384) <= -256b0 + var_s0_t }
+[B, C, T, t0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t0 + centered_s0_c) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, t0] -> { S_3[var_s0_t, var_s0_b] : (-t0 + var_s0_b) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t1 = 0 and t2 = 0 and (-t0 + mean_s1_b) mod 4 = 0 and 0 <= t0 <= 3 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -1 - 2b0 + output_s1_m <= 512*floor((output_s1_m)/512) <= -2b0 + output_s1_m }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_k) mod 18 = 0 and (-t0 + output_s1_r_n) mod 9 = 0 and 0 <= t0 <= 8 and 0 <= t1 <= 17 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 71 and 0 <= output_s1_r_n <= 20 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -7 - 8b1 + output_s1_k <= 64*floor((output_s1_k)/64) <= -8b1 + output_s1_k and -3 - 4b0 + output_s1_m <= 1024*floor((output_s1_m)/1024) <= -4b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 3 and 0 <= b0 <= 255 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (output_s1_k + 4*floor((output_s1_k)/32)) mod 9 = t1 and (-t0 + output_s1_r_n) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 8 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_t) mod 16 = 0 and (-t0 + O_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 15 }
+[B, C, T, b1, b0, b2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : b2 = 0 and -127 - 128b0 + mean_s1_t <= 512*floor((mean_s1_t)/512) <= -128b0 + mean_s1_t and -127 - 128b1 + mean_s1_b <= 32768*floor((mean_s1_b)/32768) <= -128b1 + mean_s1_b }
+[B, C, T, b1, b0, b2] -> { S_0[mean_s0_t, mean_s0_b] : b1 = 0 and b0 = 0 and b2 = 0 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b0 = 0 and 0 <= t1 <= 31 and 0 <= t0 <= 1 and 0 <= t2 <= 3 and 0 <= b2 <= 4 and 0 <= b1 <= 63 }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 7 = 0 and (-t0 + mean_s0_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 21 }
+[B, C, T, b0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-b0 + mean_s1_t) mod 32 = 0 and 0 <= b0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 2 }
+[B, C, T, b0, b1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : -3 - 4b1 + var_s1_b <= 256*floor((var_s1_b)/256) <= -4b1 + var_s1_b and -255 - 256b0 + var_s1_t <= 16384*floor((var_s1_t)/16384) <= -256b0 + var_s1_t }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 6 }
+[B, C, T, t0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t0 = 0 }
+[B, C, T, b1, b0, b2] -> { S_3[var_s0_t, var_s0_b] : b1 = 0 and b2 = 0 and -127 - 128b0 + var_s0_t <= 4096*floor((var_s0_t)/4096) <= -128b0 + var_s0_t }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 63 and 0 <= b0 <= 3 }
+[B, C, T, b0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : -31 - 32b0 + mean_s1_t <= 4096*floor((mean_s1_t)/4096) <= -32b0 + mean_s1_t }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -127 - 128b0 + output_s0_m <= 896*floor((output_s0_m)/896) <= -128b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 6 and 0 <= b0 <= 3 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 256 }
+[B, C, T, b1, b0, b2] -> { S_0[mean_s0_t, mean_s0_b] : b2 = 0 and -127 - 128b0 + mean_s0_t <= 512*floor((mean_s0_t)/512) <= -128b0 + mean_s0_t and -127 - 128b1 + mean_s0_b <= 32768*floor((mean_s0_b)/32768) <= -128b1 + mean_s0_b }
+[B, C, T, t0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t0 + mean_s1_b) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, b0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : -6 - 7b0 + mean_s1_t <= 14*floor((mean_s1_t)/14) <= -7b0 + mean_s1_t }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 6 and 0 <= b0 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 24 and 0 <= b1 <= 199 and 0 <= b0 <= 15 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t2 = 0 and (t1 + var_s1_t) mod 2 = 0 and (t0 + var_s1_b) mod 2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t1 = 0 and t2 = 0 and (-t0 + var_s2_b) mod 4 = 0 and 0 <= t0 <= 3 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 63 and 0 <= b1 <= 3 and 0 <= b0 <= 31 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t1 = 0 and t2 = 0 and (-t0 + mean_s1_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 18 = 0 and (-t0 + output_s0_k) mod 3 = 0 and 0 <= t0 <= 2 and 0 <= t1 <= 17 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -3 - 4b0 + output_s1_m <= 20*floor((output_s1_m)/20) <= -4b0 + output_s1_m }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 3 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 36 = 0 and 0 <= t0 <= 35 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t1 = 0 and t2 = 0 and (-t0 + O_s0_c) mod 16 = 0 and 0 <= t0 <= 15 }
+[B, C, T, t0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t0 + centered_s0_c) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, b0, b1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : b1 = 0 and -15 - 16b0 + O_s0_t <= 32*floor((O_s0_t)/32) <= -16b0 + O_s0_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 127 and 0 <= b0 <= 31 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -63 - 64b0 + output_s0_m <= 4608*floor((output_s0_m)/4608) <= -64b0 + output_s0_m }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -255 - 256b0 + output_s1_m <= 2048*floor((output_s1_m)/2048) <= -256b0 + output_s1_m }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 250 = 0 and 0 <= t0 <= 249 }
+[B, C, T, b0, b1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : -3 - 4b1 + mean_s1_b <= 256*floor((mean_s1_b)/256) <= -4b1 + mean_s1_b and -255 - 256b0 + mean_s1_t <= 16384*floor((mean_s1_t)/16384) <= -256b0 + mean_s1_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 12 and 0 <= b0 <= 1 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 31 and 0 <= b1 <= 31 and 0 <= b0 <= 6 }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (t1 + mean_s0_t) mod 2 = 0 and (-t0 + mean_s0_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 1 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -3 - 4b0 + output_s0_m <= 12*floor((output_s0_m)/12) <= -4b0 + output_s0_m }
+[B, C, T, t0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t0 + O_s0_c) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t0 = 0 and t2 = 0 and (-t1 + var_s1_t) mod 7 = 0 and 0 <= t1 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 2 and 0 <= t2 <= 1 and 0 <= b0 <= 63 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 71 and 0 <= output_s1_r_n <= 24 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -25 - 26b1 + output_s1_k <= 182*floor((output_s1_k)/182) <= -26b1 + output_s1_k and -8 - 9b0 + output_s1_m <= 27*floor((output_s1_m)/27) <= -9b0 + output_s1_m }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t0 = 0 and (-t1 + output_s1_k) mod 36 = 0 and 0 <= t1 <= 35 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 63 and 0 <= b1 <= 127 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 26 = 0 and 0 <= t0 <= 25 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 26 = 0 and 0 <= t0 <= 25 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 32 = 0 and (t0 + output_s1_k) mod 2 = 0 and 0 <= t1 <= 31 and 0 <= t0 <= 1 }
+[B, C, T, t0] -> { S_3[var_s0_t, var_s0_b] : (-t0 + var_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 71 and 0 <= output_s1_r_n <= 17 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 4 }
+[B, C, T, b0] -> { S_0[mean_s0_t, mean_s0_b] : -31 - 32b0 + mean_s0_t <= 4096*floor((mean_s0_t)/4096) <= -32b0 + mean_s0_t }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and (-t0 + output_s0_k) mod 36 = 0 and 0 <= t0 <= 35 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t1 = 0 and t0 = 0 and t2 = 0 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 7 and 0 <= b0 <= 1 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : (-b0 + output_s0_m) mod 32 = 0 and 0 <= b0 <= 31 and -15 - 16b1 + output_s0_k <= 4096*floor((output_s0_k)/4096) <= -16b1 + output_s0_k }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -1 - 2b0 + output_s1_m <= 52*floor((output_s1_m)/52) <= -2b0 + output_s1_m }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and t2 = 0 and (-t0 + output_s1_k) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_b) mod 16 = 0 and (-t0 + centered_s0_c) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 15 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -62 - 63b0 + output_s1_m <= 1008*floor((output_s1_m)/1008) <= -63b0 + output_s1_m and -3 - 4b1 + output_s1_k <= 800*floor((output_s1_k)/800) <= -4b1 + output_s1_k }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_b) mod 7 = 0 and (-t0 + O_s0_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N] -> { S_0[output_s0_m, output_s0_k] : K = 5 and M = 3 and N = 4 and 0 <= output_s0_m <= 2 and 0 <= output_s0_k <= 4 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 4 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 127 and 0 <= b0 <= 35 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and -127 - 128b0 + output_s0_m <= 4608*floor((output_s0_m)/4608) <= -128b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 17 and 0 <= t0 <= 2 and 0 <= b0 <= 1 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and b2 = 0 and -25 - 26b1 + output_s0_k <= 78*floor((output_s0_k)/78) <= -26b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 249 and 0 <= b1 <= 49 and 0 <= b0 <= 15 }
+[B, C, T, t0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t0 + var_s1_b) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 31 and 0 <= b1 <= 31 and 0 <= b0 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 63 and 0 <= b0 <= 7 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -7 - 8b1 + output_s0_k <= 128*floor((output_s0_k)/128) <= -8b1 + output_s0_k and -1 - 2b0 + output_s0_m <= 4*floor((output_s0_m)/4) <= -2b0 + output_s0_m }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (t1 + output_s1_m) mod 2 = 0 and (-t0 + output_s1_k) mod 8 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 7 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and t2 = 0 and (-t0 + output_s1_k) mod 5 = 0 and 0 <= t0 <= 4 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 125 = 0 and 0 <= t0 <= 124 }
+[B, C, T, b0] -> { S_3[var_s0_t, var_s0_b] : -6 - 7b0 + var_s0_t <= 28*floor((var_s0_t)/28) <= -7b0 + var_s0_t }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -24 - 25b0 + output_s1_m <= 50*floor((output_s1_m)/50) <= -25b0 + output_s1_m and -3 - 4b1 + output_s1_k <= 400*floor((output_s1_k)/400) <= -4b1 + output_s1_k }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_b) mod 7 = 0 and (-t0 + centered_s0_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 249 and 0 <= b2 <= 499 and 0 <= b1 <= 499 and 0 <= b0 <= 31 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t0 = 0 and (-t1 + output_s0_m) mod 100 = 0 and 0 <= t1 <= 99 }
+[B, C, T, b0, b1] -> { S_0[mean_s0_t, mean_s0_b] : b0 = 0 and b1 = 0 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 5 = 0 and (t0 + output_s1_k) mod 2 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 1 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 18 = 0 and (-t0 + output_s1_k) mod 9 = 0 and 0 <= t0 <= 8 and 0 <= t1 <= 17 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 18 }
+[B, C, T, t0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t0 = 0 }
+[B, C, T, b0] -> { S_5[var_s2_t, var_s2_b] : -6 - 7b0 + var_s2_t <= 28*floor((var_s2_t)/28) <= -7b0 + var_s2_t }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and (-t0 + output_s0_k) mod 7 = 0 and 0 <= t0 <= 6 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 8 = 0 and (-t0 + var_s1_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 7 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -127 - 128b0 + output_s1_m <= 896*floor((output_s1_m)/896) <= -128b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_b) mod 8 = 0 and (-t0 + centered_s0_c) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 7 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : 0 <= t1 <= 63 and 0 <= t0 <= 3 and 0 <= t2 <= 1 and 0 <= b2 <= 255 and 0 <= b1 <= 6 and 0 <= b0 <= 6 }
+[B, C, T, b0] -> { S_5[var_s2_t, var_s2_b] : (-b0 + var_s2_t) mod 32 = 0 and 0 <= b0 <= 31 }
+[B, C, T, b0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : -31 - 32b0 + var_s1_t <= 4096*floor((var_s1_t)/4096) <= -32b0 + var_s1_t }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-b0 + output_s1_m) mod 3 = 0 and 0 <= b0 <= 2 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 31 and 0 <= t2 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 17 and 0 <= t0 <= 2 }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 16 = 0 and (-t0 + var_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 15 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 12 and 0 <= b1 <= 7 }
+[B, C, T, b0, b1] -> { S_3[var_s0_t, var_s0_b] : -255 - 256b1 + var_s0_b <= 1024*floor((var_s0_b)/1024) <= -256b1 + var_s0_b and -6 - 7b0 + var_s0_t <= 224*floor((var_s0_t)/224) <= -7b0 + var_s0_t }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 5 = 0 and 0 <= t0 <= 4 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 1 and 0 <= t2 <= 31 and 0 <= b1 <= 2 and 0 <= b0 <= 255 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t1 = 0 and (-t0 + O_s0_c) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N] -> { S_0[output_s0_m, output_s0_k] : 0 <= output_s0_m < M and 0 <= output_s0_k < K }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and (-b1 + output_s1_k) mod 128 = 0 and 0 <= b1 <= 127 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -399 - 400b0 + output_s0_m <= 25600*floor((output_s0_m)/25600) <= -400b0 + output_s0_m }
+[B, C, T] -> { S_3[var_s0_t, var_s0_b] : 0 <= var_s0_t < T and 0 <= var_s0_b < B }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -4 - 5b0 + output_s0_m <= 160*floor((output_s0_m)/160) <= -5b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 71 and 0 <= t0 <= 4 }
+[B, C, T, b1, b0, b2] -> { S_3[var_s0_t, var_s0_b] : b1 = 0 and b2 = 0 and -6 - 7b0 + var_s0_t <= 224*floor((var_s0_t)/224) <= -7b0 + var_s0_t }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t1 = 0 and t2 = 0 and (-t0 + var_s1_b) mod 8 = 0 and 0 <= t0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : 0 <= t1 <= 1 and 0 <= t0 <= 25 and 0 <= t2 <= 3 and 0 <= b2 <= 2 and 0 <= b1 <= 2 and 0 <= b0 <= 8 }
+[B, C, T, t0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t0 + var_s1_c) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -63 - 64b0 + output_s0_m <= 1152*floor((output_s0_m)/1152) <= -64b0 + output_s0_m }
+[B, C, T, b0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : -127 - 128b0 + centered_s0_t <= 32768*floor((centered_s0_t)/32768) <= -128b0 + centered_s0_t }
+[B, C, T, b0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : -6 - 7b0 + var_s1_t <= 28*floor((var_s1_t)/28) <= -7b0 + var_s1_t }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 500 = 0 and 0 <= t0 <= 499 }
+[B, C, T, b1, b0, b2] -> { S_3[var_s0_t, var_s0_b] : b2 = 0 and -127 - 128b0 + var_s0_t <= 512*floor((var_s0_t)/512) <= -128b0 + var_s0_t and -127 - 128b1 + var_s0_b <= 32768*floor((var_s0_b)/32768) <= -128b1 + var_s0_b }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 4 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -4 - 5b0 + output_s0_m <= 320*floor((output_s0_m)/320) <= -5b0 + output_s0_m }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (t1 + var_s2_t) mod 2 = 0 and (-t0 + var_s2_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 1 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and -49 - 50b0 + output_s0_m <= 350*floor((output_s0_m)/350) <= -50b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 63 and 0 <= b1 <= 1 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 7 and 0 <= b0 <= 7 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and (-t0 + output_s1_k) mod 36 = 0 and 0 <= t0 <= 35 }
+[C1, C2, C3, H, N, W] -> { S_0[O_s0_n, O_s0_c1, O_s0_c3, O_s0_h, O_s0_w] : 0 <= O_s0_n < N and 0 <= O_s0_c1 < C1 and 0 <= O_s0_c3 < C3 and 0 <= O_s0_h < H and 0 <= O_s0_w < W }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t2 = 0 and (t1 + mean_s1_t) mod 2 = 0 and (t0 + mean_s1_b) mod 2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and b1 = 0 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t2 + O_s0_t) mod 4 = 0 and (-t1 + O_s0_b) mod 4 = 0 and (-t0 + O_s0_c) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 and 0 <= t2 <= 3 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 128 = 0 and (-t0 + output_s1_k) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t1 = 0 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 4 and 0 <= b1 <= 1 }
+[B, C, T, b0] -> { S_0[mean_s0_t, mean_s0_b] : -6 - 7b0 + mean_s0_t <= 14*floor((mean_s0_t)/14) <= -7b0 + mean_s0_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 25 and 0 <= b1 <= 2 and 0 <= b0 <= 15 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 99 and 0 <= b1 <= 7 and 0 <= b0 <= 3 }
+[B, C, T, b0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : -31 - 32b0 + O_s0_t <= 4096*floor((O_s0_t)/4096) <= -32b0 + O_s0_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 1 and 0 <= t2 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 255 and 0 <= b1 <= 255 and 0 <= b0 <= 31 }
+[B, C, T, b0] -> { S_3[var_s0_t, var_s0_b] : -6 - 7b0 + var_s0_t <= 14*floor((var_s0_t)/14) <= -7b0 + var_s0_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 7 and 0 <= t2 <= 3 and 0 <= b1 <= 63 and 0 <= b0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 127 and 0 <= b0 <= 6 }
+[B, C, T, b0, b1] -> { S_0[mean_s0_t, mean_s0_b] : -255 - 256b1 + mean_s0_b <= 1024*floor((mean_s0_b)/1024) <= -256b1 + mean_s0_b and -6 - 7b0 + mean_s0_t <= 224*floor((mean_s0_t)/224) <= -7b0 + mean_s0_t }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 31 and 0 <= b1 <= 7 and 0 <= b0 <= 15 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 6 and 0 <= b2 <= 17 and 0 <= b1 <= 25 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 124 and 0 <= b2 <= 6 and 0 <= b1 <= 12 and 0 <= b0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t1 = 0 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 2 and 0 <= b1 <= 4 }
+[B, C, T, t0] -> { S_5[var_s2_t, var_s2_b] : (-t0 + var_s2_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 6 and 0 <= b0 <= 7 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -17 - 18b0 + output_s0_m <= 468*floor((output_s0_m)/468) <= -18b0 + output_s0_m }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 16 = 0 and (-t0 + var_s1_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 3 and 0 <= b1 <= 15 and 0 <= b0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 255 and 0 <= b0 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 99 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 255 and 0 <= b2 <= 63 and 0 <= b1 <= 255 and 0 <= b0 <= 127 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_k) mod 9 = 0 and (-t0 + output_s1_r_n) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 8 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -6 - 7b0 + output_s1_m <= 224*floor((output_s1_m)/224) <= -7b0 + output_s1_m }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -127 - 128b0 + output_s1_m <= 896*floor((output_s1_m)/896) <= -128b0 + output_s1_m and -3 - 4b1 + output_s1_k <= 1024*floor((output_s1_k)/1024) <= -4b1 + output_s1_k }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t0 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 63 and 0 <= t2 <= 3 and 0 <= b0 <= 15 }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 16 = 0 and (-t0 + var_s2_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[B, C, T, b1, b0, b2] -> { S_5[var_s2_t, var_s2_b] : b1 = 0 and b2 = 0 and -6 - 7b0 + var_s2_t <= 224*floor((var_s2_t)/224) <= -7b0 + var_s2_t }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -12 - 13b1 + output_s1_k <= 91*floor((output_s1_k)/91) <= -13b1 + output_s1_k and -1 - 2b0 + output_s1_m <= 250*floor((output_s1_m)/250) <= -2b0 + output_s1_m }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 31 and 0 <= b1 <= 255 and 0 <= b0 <= 255 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 and 0 <= t2 <= 3 }
+[B, C, T, b0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : -6 - 7b0 + centered_s0_t <= 14*floor((centered_s0_t)/14) <= -7b0 + centered_s0_t }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t0 = 0 and (-t1 + output_s0_m) mod 32 = 0 and 0 <= t1 <= 31 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -255 - 256b0 + output_s1_m <= 8192*floor((output_s1_m)/8192) <= -256b0 + output_s1_m and -127 - 128b1 + output_s1_k <= 384*floor((output_s1_k)/384) <= -128b1 + output_s1_k }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 16 = 0 and (-t0 + mean_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 15 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 127 and 0 <= b0 <= 15 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 15 and 0 <= b0 <= 6 }
+[B, C, T, t0] -> { S_0[mean_s0_t, mean_s0_b] : (-t0 + mean_s0_b) mod 128 = 0 and 0 <= t0 <= 127 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 32 = 0 and (-t0 + output_s1_k) mod 5 = 0 and 0 <= t0 <= 4 and 0 <= t1 <= 31 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and (-t0 + output_s1_m) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 499 and 0 <= b2 <= 99 and 0 <= b1 <= 99 and 0 <= b0 <= 1 }
+[C1, C2, C3, H, N, W, t1, t0, t2] -> { S_1[O_s1_n, O_s1_c1, O_s1_c3, O_s1_h, O_s1_w, O_s1_r_c2] : (-t2 + O_s1_c3) mod 4 = 0 and (-t1 + O_s1_h) mod 8 = 0 and (-t0 + O_s1_w) mod 4 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 3 and 0 <= t2 <= 3 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t0 = 0 and t2 = 0 and (-t1 + output_s1_m) mod 100 = 0 and 0 <= t1 <= 99 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 128 = 0 and 0 <= t0 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 499 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 71 and 0 <= output_s1_r_n <= 25 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 15 and 0 <= t2 <= 1 and 0 <= b1 <= 7 and 0 <= b0 <= 2 }
+[B, C, T, b0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : b0 = 0 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_b) mod 8 = 0 and (-t0 + O_s0_c) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 127 and 0 <= b0 <= 31 }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t1 = 0 and t2 = 0 and (-t0 + var_s2_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b2 = 0 and 0 <= t0 <= 3 and 0 <= t2 <= 7 and 0 <= b1 <= 255 and 0 <= b0 <= 3 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 63 and 0 <= t2 <= 3 and 0 <= b1 <= 6 }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 4 = 0 and (-t0 + var_s2_b) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and b2 = 0 and b0 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 and 0 <= t2 <= 6 and 0 <= b1 <= 7 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 8 = 0 and (-t0 + mean_s1_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 6 and 0 <= t2 <= 6 }
+[B, C, T, b1, b0, b2] -> { S_5[var_s2_t, var_s2_b] : b1 = 0 and b0 = 0 and b2 = 0 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t0 = 0 and t2 = 0 and (-t1 + var_s0_t) mod 7 = 0 and 0 <= t1 <= 6 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -99 - 100b1 + output_s0_k <= 1300*floor((output_s0_k)/1300) <= -100b1 + output_s0_k and -1 - 2b0 + output_s0_m <= 256*floor((output_s0_m)/256) <= -2b0 + output_s0_m }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 255 and 0 <= b1 <= 1 and 0 <= b0 <= 31 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_k >= 496 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 500 and M = 100 and N = 400 and 0 <= output_s1_m <= 99 and 0 <= output_s1_k <= 499 and 0 <= output_s1_r_n <= 249 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 49 and 0 <= b1 <= 199 and 0 <= b0 <= 15 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t1 = 0 and t2 = 0 and (-t0 + mean_s1_b) mod 7 = 0 and 0 <= t0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (t1 + output_s0_m) mod 2 = 0 and (-t0 + output_s0_k) mod 7 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 6 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b0 = 0 and 0 <= t0 <= 7 and 0 <= t2 <= 7 and 0 <= b2 <= 6 and 0 <= b1 <= 31 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (t1 + output_s0_m) mod 2 = 0 and (-t0 + output_s0_k) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 1 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t0 = 0 and t2 = 0 and (-t1 + mean_s0_t) mod 64 = 0 and 0 <= t1 <= 63 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 4 = 0 and (-t0 + mean_s1_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 3 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and -15 - 16b0 + output_s0_m <= 800*floor((output_s0_m)/800) <= -16b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 17 and 0 <= t0 <= 2 and 0 <= b0 <= 1 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 4 = 0 and 0 <= t0 <= 3 }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : t1 = 0 and (-t0 + mean_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 31 }
+[B, C, T, b0, b1] -> { S_3[var_s0_t, var_s0_b] : b1 = 0 and -15 - 16b0 + var_s0_t <= 32*floor((var_s0_t)/32) <= -16b0 + var_s0_t }
+[B, C, T] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : 0 <= var_s1_t < T and 0 <= var_s1_b < B and 0 <= var_s1_c < C }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 8 = 0 and (-t0 + mean_s0_b) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 249 and 0 <= b0 <= 12 }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 8 = 0 and (-t0 + mean_s0_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 7 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and -15 - 16b1 + output_s1_k <= 6400*floor((output_s1_k)/6400) <= -16b1 + output_s1_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 17 and 0 <= t0 <= 8 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 7 = 0 and (-t0 + output_s0_k) mod 9 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 8 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 63 and 0 <= b2 <= 15 and 0 <= b1 <= 1 and 0 <= b0 <= 31 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and -63 - 64b1 + output_s0_k <= 256*floor((output_s0_k)/256) <= -64b1 + output_s0_k }
+[B, C, T] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : B = 32 and C = 64 and T = 7 and 0 <= O_s0_t <= 6 and 0 <= O_s0_b <= 31 and 0 <= O_s0_c <= 63 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -6 - 7b0 + output_s0_m <= 182*floor((output_s0_m)/182) <= -7b0 + output_s0_m }
+[B, C, T, b0] -> { S_0[mean_s0_t, mean_s0_b] : (-b0 + mean_s0_t) mod 7 = 0 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 71 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and (-t0 + output_s0_k) mod 128 = 0 and 0 <= t0 <= 127 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_t) mod 4 = 0 and (-t0 + centered_s0_b) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 and 0 <= t2 <= 7 and 0 <= b1 <= 127 and 0 <= b0 <= 6 }
+[B, C, T] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : 0 <= mean_s1_t < T and 0 <= mean_s1_b < B and 0 <= mean_s1_c < C }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t1 = 0 and t2 = 0 and (-t0 + var_s1_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 32 = 0 and (-t0 + output_s0_k) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 31 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 31 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and (-t0 + output_s1_k) mod 128 = 0 and 0 <= t0 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 31 and 0 <= b1 <= 2 and 0 <= b0 <= 2 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 500 and M = 100 and N = 400 and 0 <= output_s1_m <= 99 and 0 <= output_s1_k <= 499 and 0 <= output_s1_r_n <= 255 }
+[B, C, T] -> { S_3[var_s0_t, var_s0_b] : B = 32 and C = 64 and T = 7 and 0 <= var_s0_t <= 6 and 0 <= var_s0_b <= 31 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_r_n) mod 200 = 0 and 0 <= t0 <= 199 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t1 = 0 and t2 = 0 and (-t0 + mean_s1_b) mod 8 = 0 and 0 <= t0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 1 and 0 <= t2 <= 24 and 0 <= b1 <= 499 and 0 <= b0 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 71 and 0 <= b0 <= 3 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t1 = 0 and (-t2 + O_s0_t) mod 8 = 0 and (-t0 + O_s0_c) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t2 <= 7 }
+[C1, C2, C3, H, N, W, t1, t0, t2] -> { S_0[O_s0_n, O_s0_c1, O_s0_c3, O_s0_h, O_s0_w] : (-t2 + O_s0_c3) mod 4 = 0 and (-t1 + O_s0_h) mod 8 = 0 and (-t0 + O_s0_w) mod 4 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 3 and 0 <= t2 <= 3 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 16 = 0 and (-t0 + var_s1_b) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 15 }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 8 = 0 and (-t0 + var_s2_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 7 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-b0 + output_s1_m) mod 32 = 0 and 0 <= b0 <= 31 and -15 - 16b1 + output_s1_k <= 4096*floor((output_s1_k)/4096) <= -16b1 + output_s1_k }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_k >= 64 or output_s1_r_n >= 24 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 3 and 0 <= b0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 124 and 0 <= b2 <= 1 and 0 <= b1 <= 7 and 0 <= b0 <= 1 }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 8 = 0 and (-t0 + var_s2_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and (-b1 + output_s0_k) mod 128 = 0 and 0 <= b1 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 127 and 0 <= b2 <= 99 and 0 <= b1 <= 255 and 0 <= b0 <= 6 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (t1 + O_s0_b) mod 2 = 0 and (-t0 + O_s0_c) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 1 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -255 - 256b0 + output_s0_m <= 4096*floor((output_s0_m)/4096) <= -256b0 + output_s0_m }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 500 and M = 100 and N = 400 and 0 <= output_s1_m <= 99 and 0 <= output_s1_k <= 499 and 0 <= output_s1_r_n <= 374 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and -49 - 50b0 + output_s1_m <= 350*floor((output_s1_m)/350) <= -50b0 + output_s1_m }
+[C1, C2, C3, H, N, W, b1, b0, b2] -> { S_0[O_s0_n, O_s0_c1, O_s0_c3, O_s0_h, O_s0_w] : -7 - 8b2 + O_s0_c3 <= 2048*floor((O_s0_c3)/2048) <= -8b2 + O_s0_c3 and -3 - 4b0 + O_s0_n <= 1024*floor((O_s0_n)/1024) <= -4b0 + O_s0_n and -7 - 8b1 + O_s0_c1 <= 2048*floor((O_s0_c1)/2048) <= -8b1 + O_s0_c1 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 6 }
+[B, C, T, b1, b0, b2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : b1 = 0 and b2 = 0 and -127 - 128b0 + mean_s1_t <= 4096*floor((mean_s1_t)/4096) <= -128b0 + mean_s1_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t1 <= 35 and 0 <= t0 <= 7 and 0 <= b1 <= 1 }
+[B, C, T, b1, b0, b2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : b1 = 0 and b2 = 0 and -6 - 7b0 + O_s0_t <= 224*floor((O_s0_t)/224) <= -7b0 + O_s0_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 499 and 0 <= b1 <= 2 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 99 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 3 = 0 and (-t0 + output_s1_k) mod 13 = 0 and 0 <= t0 <= 12 and 0 <= t1 <= 2 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, b0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : -31 - 32b0 + centered_s0_t <= 4096*floor((centered_s0_t)/4096) <= -32b0 + centered_s0_t }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t1 = 0 and (-t2 + centered_s0_t) mod 4 = 0 and (-t0 + centered_s0_c) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t2 <= 3 }
+[B, C, T, b0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-b0 + O_s0_t) mod 32 = 0 and 0 <= b0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 49 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (t1 + mean_s1_t) mod 2 = 0 and (-t0 + mean_s1_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 1 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -15 - 16b0 + output_s0_m <= 32*floor((output_s0_m)/32) <= -16b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 35 and 0 <= b0 <= 17 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -31 - 32b1 + output_s0_k <= 8192*floor((output_s0_k)/8192) <= -32b1 + output_s0_k and -31 - 32b0 + output_s0_m <= 8192*floor((output_s0_m)/8192) <= -32b0 + output_s0_m }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -255 - 256b0 + output_s1_m <= 8192*floor((output_s1_m)/8192) <= -256b0 + output_s1_m }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 4 = 0 and 0 <= t0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 31 and 0 <= b1 <= 15 and 0 <= b0 <= 3 }
+[B, C, T, b0, b1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : -255 - 256b1 + O_s0_b <= 1024*floor((O_s0_b)/1024) <= -256b1 + O_s0_b and -6 - 7b0 + O_s0_t <= 224*floor((O_s0_t)/224) <= -7b0 + O_s0_t }
+[B, C, T, b0] -> { S_0[mean_s0_t, mean_s0_b] : (-b0 + mean_s0_t) mod 32 = 0 and 0 <= b0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 31 and 0 <= b0 <= 35 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 125 = 0 and 0 <= t0 <= 124 }
+[B, C, T, b0] -> { S_3[var_s0_t, var_s0_b] : -31 - 32b0 + var_s0_t <= 4096*floor((var_s0_t)/4096) <= -32b0 + var_s0_t }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 7 = 0 and (-t0 + output_s1_k) mod 9 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 8 }
+[B, C, T, b0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-b0 + var_s1_t) mod 32 = 0 and 0 <= b0 <= 31 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t0 = 0 and t2 = 0 and (-t1 + mean_s0_t) mod 7 = 0 and 0 <= t1 <= 6 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -7 - 8b1 + output_s0_k <= 64*floor((output_s0_k)/64) <= -8b1 + output_s0_k and -3 - 4b0 + output_s0_m <= 1024*floor((output_s0_m)/1024) <= -4b0 + output_s0_m }
+[B, C, T, t0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t0 + centered_s0_b) mod 128 = 0 and 0 <= t0 <= 127 }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : t1 = 0 and (-t0 + var_s2_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 3 = 0 and (output_s0_k + 3*floor((output_s0_k)/32)) mod 7 = t0 and 0 <= t0 <= 6 and 0 <= t1 <= 2 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 63 and 0 <= b0 <= 1 }
+[B, C, T, b0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : -6 - 7b0 + O_s0_t <= 28*floor((O_s0_t)/28) <= -7b0 + O_s0_t }
+[B, C, T] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : B = 32 and C = 64 and T = 7 and 0 <= centered_s0_t <= 6 and 0 <= centered_s0_b <= 31 and 0 <= centered_s0_c <= 63 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t2 = 0 and (t1 + centered_s0_t) mod 2 = 0 and (t0 + centered_s0_b) mod 2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 249 and 0 <= b1 <= 2 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -24 - 25b0 + output_s1_m <= 50*floor((output_s1_m)/50) <= -25b0 + output_s1_m and -24 - 25b1 + output_s1_k <= 1575*floor((output_s1_k)/1575) <= -25b1 + output_s1_k }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 16 = 0 and (-t0 + var_s0_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t2 = 0 and (-t1 + var_s2_t) mod 64 = 0 and (-t0 + var_s2_b) mod 4 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 3 }
+[B, C, T, b0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : -127 - 128b0 + var_s1_t <= 32768*floor((var_s1_t)/32768) <= -128b0 + var_s1_t }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t1 = 0 and (-t0 + centered_s0_c) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t2 + output_s1_m) mod 25 = 0 and (-t1 + output_s1_k) mod 4 = 0 and (t0 + output_s1_r_n) mod 2 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 1 and 0 <= t2 <= 24 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 and 0 <= t2 <= 7 and 0 <= b1 <= 63 and 0 <= b0 <= 63 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 63 and 0 <= t2 <= 3 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 72 = 0 and 0 <= t0 <= 71 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t1 = 0 and t0 = 0 and t2 = 0 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 18 = 0 and (-t0 + output_s1_k) mod 3 = 0 and 0 <= t0 <= 2 and 0 <= t1 <= 17 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and -2 - 3b0 + output_s0_m <= 24*floor((output_s0_m)/24) <= -3b0 + output_s0_m }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t1 = 0 and t0 = 0 and t2 = 0 }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t1 = 0 and t2 = 0 and (-t0 + var_s2_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_t) mod 8 = 0 and (-t0 + O_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 7 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t0 = 0 and t2 = 0 and (-t1 + mean_s1_t) mod 7 = 0 and 0 <= t1 <= 6 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_k) mod 36 = 0 and (-t0 + output_s1_r_n) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 35 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 6 and 0 <= b0 <= 4 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 7 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 63 = 0 and (-t0 + output_s0_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 62 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 63 and 0 <= b1 <= 3 and 0 <= b0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 62 and 0 <= b0 <= 63 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 3 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -1 - 2b0 + output_s0_m <= 512*floor((output_s0_m)/512) <= -2b0 + output_s0_m }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 3 = 0 and (-t0 + output_s1_k) mod 16 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 15 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 63 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 8 = 0 and (-t0 + output_s1_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 7 and 0 <= b1 <= 9 }
+[B, C, T] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : 0 <= O_s0_t < T and 0 <= O_s0_b < B and 0 <= O_s0_c < C }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 13 = 0 and (-t0 + output_s0_k) mod 3 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 2 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t1 = 0 and t0 = 0 and t2 = 0 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 16 = 0 and (-t0 + var_s1_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 15 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t1 = 0 and (-t2 + centered_s0_t) mod 7 = 0 and (-t0 + centered_s0_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t2 <= 6 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -31 - 32b1 + output_s1_k <= 8192*floor((output_s1_k)/8192) <= -32b1 + output_s1_k and -31 - 32b0 + output_s1_m <= 8192*floor((output_s1_m)/8192) <= -32b0 + output_s1_m }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -12 - 13b0 + output_s0_m <= 6500*floor((output_s0_m)/6500) <= -13b0 + output_s0_m and -6 - 7b1 + output_s0_k <= 1750*floor((output_s0_k)/1750) <= -7b1 + output_s0_k }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and -49 - 50b0 + output_s1_m <= 100*floor((output_s1_m)/100) <= -50b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 71 and 0 <= t0 <= 4 and 0 <= b0 <= 2 }
+[B, C, T, t0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t0 = 0 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 15 and 0 <= t2 <= 1 and 0 <= b0 <= 2 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 5 = 0 and (-t0 + output_s0_k) mod 9 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 8 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b0 = 0 and 0 <= t0 <= 124 and 0 <= b2 <= 7 and 0 <= b1 <= 127 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and b2 = 0 and -25 - 26b1 + output_s1_k <= 78*floor((output_s1_k)/78) <= -26b1 + output_s1_k }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -255 - 256b1 + output_s1_k <= 1024*floor((output_s1_k)/1024) <= -256b1 + output_s1_k and -31 - 32b0 + output_s1_m <= 256*floor((output_s1_m)/256) <= -32b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 8 = 0 and (-t0 + mean_s0_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 16 = 0 and (-t0 + output_s0_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and t2 = 0 and (-t0 + output_s0_k) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 256 = 0 and 0 <= t0 <= 255 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and (-b0 + output_s0_m) mod 8 = 0 and 0 <= b0 <= 7 and -127 - 128b1 + output_s0_k <= 1024*floor((output_s0_k)/1024) <= -128b1 + output_s0_k }
+[B, C, T, b0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-b0 + var_s1_t) mod 7 = 0 and 0 <= b0 <= 6 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 3 and 0 <= b0 <= 255 }
+[B, C, T, t0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t0 + mean_s1_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_b) mod 8 = 0 and (-t0 + O_s0_c) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 7 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_k) mod 16 = 0 and (-t0 + output_s1_r_n) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 378 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t1 = 0 and t2 = 0 and (-t0 + mean_s0_b) mod 4 = 0 and 0 <= t0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 499 and 0 <= b2 <= 499 and 0 <= b1 <= 499 and 0 <= b0 <= 63 }
+[B, C, T, b1, b0, b2] -> { S_0[mean_s0_t, mean_s0_b] : b1 = 0 and b2 = 0 and -6 - 7b0 + mean_s0_t <= 224*floor((mean_s0_t)/224) <= -7b0 + mean_s0_t }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 8 = 0 and (-t0 + var_s2_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 7 }
+[B, C, T, b0, b1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : -3 - 4b1 + O_s0_b <= 256*floor((O_s0_b)/256) <= -4b1 + O_s0_b and -255 - 256b0 + O_s0_t <= 16384*floor((O_s0_t)/16384) <= -256b0 + O_s0_t }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and t2 = 0 and (-t0 + output_s0_k) mod 5 = 0 and 0 <= t0 <= 4 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -124 - 125b0 + output_s1_m <= 16000*floor((output_s1_m)/16000) <= -125b0 + output_s1_m and -49 - 50b1 + output_s1_k <= 25600*floor((output_s1_k)/25600) <= -50b1 + output_s1_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (t1 + output_s1_m) mod 2 = 0 and (-t0 + output_s1_k) mod 3 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 2 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -255 - 256b0 + output_s0_m <= 2048*floor((output_s0_m)/2048) <= -256b0 + output_s0_m }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -25 - 26b1 + output_s0_k <= 182*floor((output_s0_k)/182) <= -26b1 + output_s0_k and -8 - 9b0 + output_s0_m <= 27*floor((output_s0_m)/27) <= -9b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 4 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 3 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t1 = 0 and (-t2 + O_s0_t) mod 4 = 0 and (-t0 + O_s0_c) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t2 <= 3 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -99 - 100b1 + output_s1_k <= 1300*floor((output_s1_k)/1300) <= -100b1 + output_s1_k and -1 - 2b0 + output_s1_m <= 256*floor((output_s1_m)/256) <= -2b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 6 and 0 <= b0 <= 2 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 7 and 0 <= b2 <= 6 and 0 <= b1 <= 63 and 0 <= b0 <= 3 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 7 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -63 - 64b0 + output_s1_m <= 128*floor((output_s1_m)/128) <= -64b0 + output_s1_m }
+[B, C, T, t0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t0 + mean_s1_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 35 and 0 <= b1 <= 2 and 0 <= b0 <= 15 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 5 and M = 3 and N = 4 and 0 <= output_s1_m <= 2 and 0 <= output_s1_k <= 4 and 0 <= output_s1_r_n <= 3 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 72 = 0 and (-t0 + output_s0_k) mod 5 = 0 and 0 <= t0 <= 4 and 0 <= t1 <= 71 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 255 and 0 <= b1 <= 15 and 0 <= b0 <= 1 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (t1 + output_s0_m) mod 2 = 0 and (-t0 + output_s0_k) mod 26 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 25 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -4 - 5b0 + output_s1_m <= 90*floor((output_s1_m)/90) <= -5b0 + output_s1_m }
+[B, C, T, b0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : -6 - 7b0 + var_s1_t <= 14*floor((var_s1_t)/14) <= -7b0 + var_s1_t }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 400 = 0 and 0 <= t0 <= 399 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -99 - 100b0 + output_s1_m <= 700*floor((output_s1_m)/700) <= -100b0 + output_s1_m }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t2 = 0 and (t1 + mean_s0_t) mod 2 = 0 and (t0 + mean_s0_b) mod 2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t1 = 0 and t2 = 0 and (-t0 + mean_s0_b) mod 8 = 0 and 0 <= t0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 99 and 0 <= b0 <= 49 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -199 - 200b1 + output_s1_k <= 80000*floor((output_s1_k)/80000) <= -200b1 + output_s1_k and -255 - 256b0 + output_s1_m <= 1792*floor((output_s1_m)/1792) <= -256b0 + output_s1_m }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t1 = 0 and t2 = 0 and (-t0 + var_s0_b) mod 7 = 0 and 0 <= t0 <= 6 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -255 - 256b0 + output_s1_m <= 512*floor((output_s1_m)/512) <= -256b0 + output_s1_m and -12 - 13b1 + output_s1_k <= 104*floor((output_s1_k)/104) <= -13b1 + output_s1_k }
+[B, C, T, b0, b1] -> { S_0[mean_s0_t, mean_s0_b] : -3 - 4b1 + mean_s0_b <= 256*floor((mean_s0_b)/256) <= -4b1 + mean_s0_b and -255 - 256b0 + mean_s0_t <= 16384*floor((mean_s0_t)/16384) <= -256b0 + mean_s0_t }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_b) mod 8 = 0 and (-t0 + centered_s0_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 8 = 0 and (-t0 + var_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 7 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and b2 = 0 and -255 - 256b1 + output_s0_k <= 16384*floor((output_s0_k)/16384) <= -256b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and 0 <= t1 <= 62 and 0 <= t0 <= 7 and 0 <= b1 <= 4 and 0 <= b0 <= 49 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -7 - 8b1 + output_s1_k <= 128*floor((output_s1_k)/128) <= -8b1 + output_s1_k and -1 - 2b0 + output_s1_m <= 4*floor((output_s1_m)/4) <= -2b0 + output_s1_m }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t0 = 0 and t2 = 0 and (-t1 + var_s2_t) mod 64 = 0 and 0 <= t1 <= 63 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 250 = 0 and 0 <= t0 <= 249 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : 0 <= t1 <= 1 and 0 <= t0 <= 2 and 0 <= t2 <= 15 and 0 <= b2 <= 3 and 0 <= b1 <= 3 and 0 <= b0 <= 3 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t0 = 0 and (-t1 + output_s1_m) mod 100 = 0 and 0 <= t1 <= 99 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 31 and 0 <= t0 <= 1 and 0 <= b0 <= 7 }
+[B, C, T, b1, b0, b2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : b1 = 0 and b2 = 0 and -6 - 7b0 + centered_s0_t <= 224*floor((centered_s0_t)/224) <= -7b0 + centered_s0_t }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t1 = 0 and (-t0 + mean_s1_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 5 = 0 and 0 <= t0 <= 4 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and (-b0 + output_s0_m) mod 5 = 0 and 0 <= b0 <= 4 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -15 - 16b0 + output_s1_m <= 64*floor((output_s1_m)/64) <= -16b0 + output_s1_m }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b0 = 0 and b2 = 0 }
+[B, C, T, b0, b1] -> { S_5[var_s2_t, var_s2_b] : b1 = 0 and -15 - 16b0 + var_s2_t <= 32*floor((var_s2_t)/32) <= -16b0 + var_s2_t }
+[B, C, T, t0] -> { S_0[mean_s0_t, mean_s0_b] : (-t0 + mean_s0_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 5 = 0 and (-t0 + output_s1_k) mod 9 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 8 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : (-b0 + output_s0_m) mod 5 = 0 and 0 <= b0 <= 4 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -24 - 25b0 + output_s0_m <= 50*floor((output_s0_m)/50) <= -25b0 + output_s0_m and -3 - 4b1 + output_s0_k <= 400*floor((output_s0_k)/400) <= -4b1 + output_s0_k }
+[B, C, T, b0] -> { S_5[var_s2_t, var_s2_b] : -31 - 32b0 + var_s2_t <= 4096*floor((var_s2_t)/4096) <= -32b0 + var_s2_t }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_t) mod 4 = 0 and (-t0 + O_s0_b) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 3 and 0 <= b1 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 255 }
+[B, C, T] -> { S_5[var_s2_t, var_s2_b] : B = 32 and C = 64 and T = 7 and 0 <= var_s2_t <= 6 and 0 <= var_s2_b <= 31 }
+[B, C, T, b0] -> { S_3[var_s0_t, var_s0_b] : b0 = 0 }
+[B, C, T, t0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t0 + var_s1_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 63 and 0 <= b2 <= 15 and 0 <= b1 <= 255 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 31 and 0 <= t0 <= 4 and 0 <= b1 <= 255 and 0 <= b0 <= 7 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 13 = 0 and (-t0 + output_s1_k) mod 3 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 2 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 63 = 0 and 0 <= t0 <= 62 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 and 0 <= b0 <= 1 }
+[B, C, T, b1, b0, b2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : b1 = 0 and b2 = 0 and -127 - 128b0 + O_s0_t <= 4096*floor((O_s0_t)/4096) <= -128b0 + O_s0_t }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t1 = 0 and t2 = 0 and (-t0 + var_s2_b) mod 8 = 0 and 0 <= t0 <= 7 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -12 - 13b1 + output_s0_k <= 416*floor((output_s0_k)/416) <= -13b1 + output_s0_k and -2 - 3b0 + output_s0_m <= 108*floor((output_s0_m)/108) <= -3b0 + output_s0_m }
+[B, C, T, b1, b0, b2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : b1 = 0 and b2 = 0 and -6 - 7b0 + mean_s1_t <= 224*floor((mean_s1_t)/224) <= -7b0 + mean_s1_t }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and (-t0 + output_s1_k) mod 8 = 0 and 0 <= t0 <= 7 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 32 = 0 and (-t0 + output_s1_k) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 31 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -7 - 8b0 + output_s0_m <= 56*floor((output_s0_m)/56) <= -8b0 + output_s0_m }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -199 - 200b0 + output_s1_m <= 12600*floor((output_s1_m)/12600) <= -200b0 + output_s1_m }
+[B, C, T, b0] -> { S_0[mean_s0_t, mean_s0_b] : b0 = 0 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t2 = 0 and (-t1 + O_s0_t) mod 64 = 0 and (-t0 + O_s0_b) mod 4 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 3 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 4 = 0 and (-t0 + var_s1_b) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and -15 - 16b1 + output_s0_k <= 6400*floor((output_s0_k)/6400) <= -16b1 + output_s0_k }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-b1 + output_s1_k) mod 8 = 0 and 0 <= b1 <= 7 and -31 - 32b0 + output_s1_m <= 512*floor((output_s1_m)/512) <= -32b0 + output_s1_m }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 8 = 0 and 0 <= t0 <= 7 }
+[B, C, T, t0] -> { S_3[var_s0_t, var_s0_b] : (-t0 + var_s0_b) mod 128 = 0 and 0 <= t0 <= 127 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -15 - 16b0 + output_s0_m <= 64*floor((output_s0_m)/64) <= -16b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 4 and 0 <= b0 <= 1 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 7 and 0 <= b2 <= 127 and 0 <= b1 <= 3 and 0 <= b0 <= 15 }
+[B, C, T, b0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : -127 - 128b0 + O_s0_t <= 32768*floor((O_s0_t)/32768) <= -128b0 + O_s0_t }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : (-b0 + output_s0_m) mod 3 = 0 and 0 <= b0 <= 2 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t0 = 0 and (-t2 + O_s0_t) mod 64 = 0 and (-t1 + O_s0_b) mod 7 = 0 and 0 <= t1 <= 6 and 0 <= t2 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 4 and 0 <= b0 <= 2 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t1 = 0 and t2 = 0 and (-t0 + var_s1_b) mod 7 = 0 and 0 <= t0 <= 6 }
+[B, C, T, t0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t0 + O_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[B, C, T, t0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t0 = 0 }
+[C1, C2, C3, H, N, W, b1, b0, b2] -> { S_1[O_s1_n, O_s1_c1, O_s1_c3, O_s1_h, O_s1_w, O_s1_r_c2] : -7 - 8b2 + O_s1_c3 <= 2048*floor((O_s1_c3)/2048) <= -8b2 + O_s1_c3 and -3 - 4b0 + O_s1_n <= 1024*floor((O_s1_n)/1024) <= -4b0 + O_s1_n and -7 - 8b1 + O_s1_c1 <= 2048*floor((O_s1_c1)/2048) <= -8b1 + O_s1_c1 }
+[B, C, T, b0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : -6 - 7b0 + mean_s1_t <= 28*floor((mean_s1_t)/28) <= -7b0 + mean_s1_t }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t2 = 0 and (-t1 + O_s0_t) mod 4 = 0 and (-t0 + O_s0_b) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 12 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_r_n) mod 400 = 0 and 0 <= t0 <= 399 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t0 = 0 and t2 = 0 and b2 = 0 and 0 <= t1 <= 99 and 0 <= b1 <= 249 and 0 <= b0 <= 49 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -63 - 64b0 + output_s1_m <= 1152*floor((output_s1_m)/1152) <= -64b0 + output_s1_m }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 4 = 0 and (-t0 + output_s1_k) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[C1, C2, C3, H, N, W, t1, t0, t2, b2, b1, b0] -> { [] : 0 <= t1 <= 15 and 0 <= t0 <= 3 and 0 <= t2 <= 3 and 0 <= b2 <= 255 and 0 <= b1 <= 255 and 0 <= b0 <= 255 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -199 - 200b1 + output_s0_k <= 80000*floor((output_s0_k)/80000) <= -200b1 + output_s0_k and -255 - 256b0 + output_s0_m <= 1792*floor((output_s0_m)/1792) <= -256b0 + output_s0_m }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 63 = 0 and 0 <= t0 <= 62 }
+[B, C, T] -> { S_0[mean_s0_t, mean_s0_b] : 0 <= mean_s0_t < T and 0 <= mean_s0_b < B }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 12 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and (-b0 + output_s1_m) mod 8 = 0 and 0 <= b0 <= 7 and -127 - 128b1 + output_s1_k <= 1024*floor((output_s1_k)/1024) <= -128b1 + output_s1_k }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and (-t0 + output_s1_k) mod 7 = 0 and 0 <= t0 <= 6 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b2 = 0 and 0 <= t0 <= 31 and 0 <= t2 <= 6 and 0 <= b1 <= 127 and 0 <= b0 <= 63 }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 4 = 0 and (-t0 + var_s2_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 3 }
+[B, C, T, b0, b1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : b0 = 0 and b1 = 0 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 4 = 0 and (t0 + output_s0_k) mod 2 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 99 and 0 <= b1 <= 7 and 0 <= b0 <= 15 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -24 - 25b0 + output_s0_m <= 50*floor((output_s0_m)/50) <= -25b0 + output_s0_m and -24 - 25b1 + output_s0_k <= 1575*floor((output_s0_k)/1575) <= -25b1 + output_s0_k }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 8 = 0 and (-t0 + var_s0_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 7 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and -63 - 64b1 + output_s0_k <= 576*floor((output_s0_k)/576) <= -64b1 + output_s0_k }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -499 - 500b0 + output_s0_m <= 32000*floor((output_s0_m)/32000) <= -500b0 + output_s0_m }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -199 - 200b1 + output_s0_k <= 10000*floor((output_s0_k)/10000) <= -200b1 + output_s0_k and -127 - 128b0 + output_s0_m <= 2048*floor((output_s0_m)/2048) <= -128b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 63 and 0 <= b1 <= 19 and 0 <= b0 <= 1 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 4 = 0 and (-t0 + mean_s1_b) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 255 and 0 <= b1 <= 255 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t1 = 0 and (-t2 + O_s0_t) mod 7 = 0 and (-t0 + O_s0_c) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t2 <= 6 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t1 = 0 and t2 = 0 and (-t0 + mean_s1_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 250 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t1 = 0 and t2 = 0 and (-t0 + var_s0_b) mod 8 = 0 and 0 <= t0 <= 7 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -99 - 100b0 + output_s0_m <= 700*floor((output_s0_m)/700) <= -100b0 + output_s0_m }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t1 = 0 and (-t0 + var_s1_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 4 = 0 and (-t0 + output_s0_k) mod 16 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 15 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 17 and 0 <= t0 <= 8 and 0 <= b2 <= 17 and 0 <= b1 <= 255 and 0 <= b0 <= 2 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 6 and 0 <= b0 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 31 and 0 <= b2 <= 63 and 0 <= b1 <= 255 and 0 <= b0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 8 and 0 <= b0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 127 and 0 <= b0 <= 4 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -71 - 72b0 + output_s1_m <= 936*floor((output_s1_m)/936) <= -72b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 16 = 0 and (-t0 + mean_s1_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[B, C, T, b0, b1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : -255 - 256b1 + var_s1_b <= 1024*floor((var_s1_b)/1024) <= -256b1 + var_s1_b and -6 - 7b0 + var_s1_t <= 224*floor((var_s1_t)/224) <= -7b0 + var_s1_t }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 8 = 0 and (-t0 + var_s1_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 4 = 0 and (-t0 + output_s1_k) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[B, C, T, b0] -> { S_5[var_s2_t, var_s2_b] : -127 - 128b0 + var_s2_t <= 32768*floor((var_s2_t)/32768) <= -128b0 + var_s2_t }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and -15 - 16b0 + output_s1_m <= 800*floor((output_s1_m)/800) <= -16b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 4 = 0 and (-t0 + var_s0_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 3 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 3 = 0 and (-t0 + output_s0_k) mod 13 = 0 and 0 <= t0 <= 12 and 0 <= t1 <= 2 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 4 = 0 and (-t0 + output_s1_k) mod 16 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 15 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 63 and 0 <= b0 <= 1 }
+[B, C, T, b1, b0, b2] -> { S_0[mean_s0_t, mean_s0_b] : b1 = 0 and b2 = 0 and -127 - 128b0 + mean_s0_t <= 4096*floor((mean_s0_t)/4096) <= -128b0 + mean_s0_t }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t1 = 0 and t2 = 0 and (-t0 + mean_s0_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, b0, b1] -> { S_5[var_s2_t, var_s2_b] : -3 - 4b1 + var_s2_b <= 256*floor((var_s2_b)/256) <= -4b1 + var_s2_b and -255 - 256b0 + var_s2_t <= 16384*floor((var_s2_t)/16384) <= -256b0 + var_s2_t }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_k) mod 72 = 0 and (-t0 + output_s1_r_n) mod 5 = 0 and 0 <= t0 <= 4 and 0 <= t1 <= 71 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 1 }
+[B, C, T, b1, b0, b2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : b2 = 0 and -127 - 128b0 + centered_s0_t <= 512*floor((centered_s0_t)/512) <= -128b0 + centered_s0_t and -127 - 128b1 + centered_s0_b <= 32768*floor((centered_s0_b)/32768) <= -128b1 + centered_s0_b }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 7 = 0 and (-t0 + var_s2_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t1 = 0 and (-t2 + centered_s0_t) mod 7 = 0 and (-t0 + centered_s0_c) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t2 <= 6 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -255 - 256b0 + output_s1_m <= 768*floor((output_s1_m)/768) <= -256b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 16 = 0 and (-t0 + var_s2_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 15 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 50 = 0 and 0 <= t0 <= 49 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -3 - 4b0 + output_s1_m <= 12*floor((output_s1_m)/12) <= -4b0 + output_s1_m }
+[B, C, T, b0, b1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : b1 = 0 and -15 - 16b0 + var_s1_t <= 32*floor((var_s1_t)/32) <= -16b0 + var_s1_t }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t0 = 0 and t2 = 0 and (-t1 + var_s2_t) mod 7 = 0 and 0 <= t1 <= 6 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 72 = 0 and (-t0 + output_s1_k) mod 5 = 0 and 0 <= t0 <= 4 and 0 <= t1 <= 71 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -7 - 8b0 + output_s1_m <= 56*floor((output_s1_m)/56) <= -8b0 + output_s1_m }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 63 and 0 <= b0 <= 31 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t1 = 0 and t2 = 0 and (-t0 + var_s1_b) mod 4 = 0 and 0 <= t0 <= 3 }
+[B, C, T, b1, b0, b2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : b2 = 0 and -127 - 128b0 + var_s1_t <= 512*floor((var_s1_t)/512) <= -128b0 + var_s1_t and -127 - 128b1 + var_s1_b <= 32768*floor((var_s1_b)/32768) <= -128b1 + var_s1_b }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t0 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 6 and 0 <= t2 <= 6 }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 16 = 0 and (-t0 + var_s0_b) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 15 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t2 + centered_s0_t) mod 4 = 0 and (-t1 + centered_s0_b) mod 4 = 0 and (-t0 + centered_s0_c) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 and 0 <= t2 <= 3 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 36 = 0 and (-t0 + output_s0_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 35 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 62 and 0 <= t2 <= 1 and 0 <= b0 <= 63 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t0 = 0 and t2 = 0 and (-t1 + O_s0_t) mod 64 = 0 and 0 <= t1 <= 63 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t2 = 0 and (-t1 + var_s0_t) mod 4 = 0 and (-t0 + var_s0_b) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 4 = 0 and (-t0 + mean_s0_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 3 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and b2 = 0 and -2 - 3b1 + output_s0_k <= 12*floor((output_s0_k)/12) <= -3b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 4 and 0 <= t2 <= 63 and 0 <= b0 <= 31 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t1 = 0 and t2 = 0 and (-t0 + var_s1_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 399 and 0 <= b1 <= 99 and 0 <= b0 <= 1 }
+[B, C, T, t0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t0 + O_s0_b) mod 128 = 0 and 0 <= t0 <= 127 }
+[B, C, T, t0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t0 + mean_s1_b) mod 128 = 0 and 0 <= t0 <= 127 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and (-t0 + output_s0_m) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 199 and 0 <= b0 <= 6 }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t1 = 0 and t0 = 0 and t2 = 0 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t2 = 0 and (t1 + var_s0_t) mod 2 = 0 and (t0 + var_s0_b) mod 2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and -63 - 64b0 + output_s1_m <= 2048*floor((output_s1_m)/2048) <= -64b0 + output_s1_m }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 and -3 - 4b1 + output_s0_k <= 32*floor((output_s0_k)/32) <= -4b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 7 and 0 <= b2 <= 25 and 0 <= b1 <= 7 and 0 <= b0 <= 7 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_r_n >= 24 }
+[B, C, T, t0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t0 + mean_s1_c) mod 64 = 0 and 0 <= t0 <= 63 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t1 = 0 and t2 = 0 and (-t0 + centered_s0_c) mod 16 = 0 and 0 <= t0 <= 15 }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 16 = 0 and (-t0 + mean_s0_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 and 0 <= t2 <= 3 and 0 <= b0 <= 255 }
+[B, C, T] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : B = 32 and C = 64 and T = 7 and 0 <= mean_s1_t <= 6 and 0 <= mean_s1_b <= 31 and 0 <= mean_s1_c <= 63 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_r_n) mod 128 = 0 and 0 <= t0 <= 127 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_b) mod 8 = 0 and (-t0 + centered_s0_c) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 7 }
+[B, C, T, b0, b1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : -255 - 256b1 + centered_s0_b <= 1024*floor((centered_s0_b)/1024) <= -256b1 + centered_s0_b and -6 - 7b0 + centered_s0_t <= 224*floor((centered_s0_t)/224) <= -7b0 + centered_s0_t }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 15 and 0 <= t2 <= 7 and 0 <= b0 <= 15 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -31 - 32b0 + output_s0_m <= 8192*floor((output_s0_m)/8192) <= -32b0 + output_s0_m and -49 - 50b1 + output_s0_k <= 350*floor((output_s0_k)/350) <= -50b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 3 and 0 <= t2 <= 6 and 0 <= b1 <= 399 and 0 <= b0 <= 24 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_t) mod 16 = 0 and (-t0 + centered_s0_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 15 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 36 = 0 and 0 <= t0 <= 35 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 17 and 0 <= t0 <= 2 and 0 <= b0 <= 12 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 35 and 0 <= b0 <= 2 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 5 = 0 and (-t0 + output_s1_k) mod 13 = 0 and 0 <= t0 <= 12 and 0 <= t1 <= 4 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -499 - 500b0 + output_s1_m <= 32000*floor((output_s1_m)/32000) <= -500b0 + output_s1_m }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-b0 + output_s1_m) mod 5 = 0 and 0 <= b0 <= 4 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 35 and 0 <= b0 <= 1 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 15 and 0 <= b1 <= 15 and 0 <= b0 <= 1 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t1 = 0 and t2 = 0 and (-t0 + var_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 8 = 0 and (-t0 + output_s0_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 4 = 0 and (-t0 + output_s0_k) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and -17 - 18b0 + output_s0_m <= 36*floor((output_s0_m)/36) <= -18b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 31 and 0 <= t0 <= 15 and 0 <= b1 <= 3 and 0 <= b0 <= 7 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -15 - 16b0 + output_s1_m <= 32*floor((output_s1_m)/32) <= -16b0 + output_s1_m }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t2 = 0 and (-t1 + centered_s0_t) mod 64 = 0 and (-t0 + centered_s0_b) mod 4 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 249 and 0 <= b0 <= 12 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 8 = 0 and (-t0 + var_s1_b) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 7 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b2 = 0 and 0 <= t0 <= 6 and 0 <= t2 <= 6 and 0 <= b1 <= 3 and 0 <= b0 <= 15 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 63 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (t2 + output_s1_m) mod 2 = 0 and (-t1 + output_s1_k) mod 13 = 0 and (-t0 + output_s1_r_n) mod 3 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 2 and 0 <= t2 <= 1 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t1 = 0 and t2 = 0 and (-t0 + var_s0_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and -3 - 4b1 + output_s1_k <= 32*floor((output_s1_k)/32) <= -4b1 + output_s1_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 31 and 0 <= b0 <= 63 }
+[K, M, N] -> { S_0[output_s0_m, output_s0_k] : K = 500 and M = 100 and N = 400 and 0 <= output_s0_m <= 99 and 0 <= output_s0_k <= 499 }
+[B, C, T, t0, t1] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-t1 + centered_s0_t) mod 4 = 0 and (-t0 + centered_s0_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 3 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (t1 + output_s0_m) mod 2 = 0 and (-t0 + output_s0_k) mod 8 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 7 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t1 = 0 and t2 = 0 and (-t0 + output_s0_k) mod 16 = 0 and 0 <= t0 <= 15 }
+[B, C, T, t0] -> { S_5[var_s2_t, var_s2_b] : (-t0 + var_s2_b) mod 64 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 127 and 0 <= b2 <= 4 and 0 <= b1 <= 4 and 0 <= b0 <= 25 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 63 = 0 and (-t0 + output_s1_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 62 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 62 and 0 <= t0 <= 7 and 0 <= b1 <= 12 and 0 <= b0 <= 127 }
+[C1, C2, C3, H, N, W] -> { S_1[O_s1_n, O_s1_c1, O_s1_c3, O_s1_h, O_s1_w, O_s1_r_c2] : 0 <= O_s1_n < N and 0 <= O_s1_c1 < C1 and 0 <= O_s1_c3 < C3 and 0 <= O_s1_h < H and 0 <= O_s1_w < W and 0 <= O_s1_r_c2 < C2 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_r_n) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, b1, b0, b2] -> { S_5[var_s2_t, var_s2_b] : b1 = 0 and b2 = 0 and -127 - 128b0 + var_s2_t <= 4096*floor((var_s2_t)/4096) <= -128b0 + var_s2_t }
+[B, C, T, b0] -> { S_3[var_s0_t, var_s0_b] : -127 - 128b0 + var_s0_t <= 32768*floor((var_s0_t)/32768) <= -128b0 + var_s0_t }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -4 - 5b1 + output_s1_k <= 1280*floor((output_s1_k)/1280) <= -5b1 + output_s1_k and -15 - 16b0 + output_s1_m <= 128*floor((output_s1_m)/128) <= -16b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 25 and 0 <= b1 <= 2 and 0 <= b0 <= 2 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_k) mod 16 = 0 and (-t0 + output_s1_r_n) mod 25 = 0 and 0 <= t0 <= 24 and 0 <= t1 <= 15 }
+[C1, C2, C3, H, N, W] -> { S_1[O_s1_n, O_s1_c1, O_s1_c3, O_s1_h, O_s1_w, O_s1_r_c2] : C1 = 512 and C2 = 8 and C3 = 2 and H = 28 and N = 32 and W = 28 and 0 <= O_s1_n <= 31 and 0 <= O_s1_c1 <= 511 and 0 <= O_s1_c3 <= 1 and 0 <= O_s1_h <= 27 and 0 <= O_s1_w <= 27 and 0 <= O_s1_r_c2 <= 7 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (t1 + output_s1_m) mod 2 = 0 and (-t0 + output_s1_k) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 71 and 0 <= b1 <= 4 and 0 <= b0 <= 63 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 9 = 0 and (-t0 + output_s1_k) mod 4 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 31 and 0 <= t2 <= 4 and 0 <= b0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 127 and 0 <= b0 <= 6 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 31 and 0 <= b1 <= 255 and 0 <= b0 <= 255 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t0 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 35 and 0 <= b0 <= 10 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -12 - 13b1 + output_s0_k <= 91*floor((output_s0_k)/91) <= -13b1 + output_s0_k and -1 - 2b0 + output_s0_m <= 250*floor((output_s0_m)/250) <= -2b0 + output_s0_m }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t2 = 0 and (-t1 + mean_s1_t) mod 64 = 0 and (-t0 + mean_s1_b) mod 4 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 3 }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t2 = 0 and (-t1 + var_s2_t) mod 4 = 0 and (-t0 + var_s2_b) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 8 = 0 and (-t0 + mean_s1_b) mod 64 = 0 and 0 <= t0 <= 63 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 35 and 0 <= b0 <= 4 }
+[B, C, T, b0] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : b0 = 0 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and 0 <= t1 <= 127 and 0 <= t0 <= 3 and 0 <= b1 <= 71 and 0 <= b0 <= 7 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and b2 = 0 and -255 - 256b0 + output_s1_m <= 4096*floor((output_s1_m)/4096) <= -256b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : t1 = 0 and (-t0 + var_s0_b) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -2 - 3b0 + output_s1_m <= 21*floor((output_s1_m)/21) <= -3b0 + output_s1_m and -31 - 32b1 + output_s1_k <= 832*floor((output_s1_k)/832) <= -32b1 + output_s1_k }
+[B, C, T, t0] -> { S_0[mean_s0_t, mean_s0_b] : t0 = 0 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_t) mod 4 = 0 and (-t0 + O_s0_b) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 255 and 0 <= b0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 4 = 0 and (-t0 + output_s0_k) mod 63 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 62 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 499 and 0 <= b1 <= 399 and 0 <= b0 <= 6 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b1 = 0 and 0 <= t0 <= 127 and 0 <= b2 <= 63 and 0 <= b0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 2 and 0 <= t2 <= 1 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (t1 + output_s0_m) mod 2 = 0 and (-t0 + output_s0_k) mod 3 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 2 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 13 = 0 and (-t0 + output_s1_k) mod 4 = 0 and 0 <= t1 <= 12 and 0 <= t0 <= 3 }
+[B, C, T, t1, t0, t2] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : t2 = 0 and (-t1 + var_s1_t) mod 64 = 0 and (-t0 + var_s1_b) mod 4 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 3 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -255 - 256b1 + output_s0_k <= 1024*floor((output_s0_k)/1024) <= -256b1 + output_s0_k and -31 - 32b0 + output_s0_m <= 256*floor((output_s0_m)/256) <= -32b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 255 and 0 <= b0 <= 199 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and t2 = 0 and (-t0 + output_s1_k) mod 9 = 0 and 0 <= t0 <= 8 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and -63 - 64b0 + output_s0_m <= 2048*floor((output_s0_m)/2048) <= -64b0 + output_s0_m }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -12 - 13b1 + output_s1_k <= 416*floor((output_s1_k)/416) <= -13b1 + output_s1_k and -2 - 3b0 + output_s1_m <= 108*floor((output_s1_m)/108) <= -3b0 + output_s1_m }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 71 and 0 <= output_s1_r_n <= 23 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 127 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 16 = 0 and (-t0 + mean_s1_b) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 15 }
+[B, C, T, b0, b1] -> { S_3[var_s0_t, var_s0_b] : b0 = 0 and b1 = 0 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and t2 = 0 and (-t0 + output_s1_k) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t0 = 0 and 0 <= t1 <= 6 and 0 <= t2 <= 63 and 0 <= b2 <= 1 and 0 <= b1 <= 7 and 0 <= b0 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 199 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -17 - 18b0 + output_s1_m <= 468*floor((output_s1_m)/468) <= -18b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 4 = 0 and (-t0 + var_s0_b) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 6 and 0 <= t0 <= 8 and 0 <= t2 <= 1 and 0 <= b0 <= 3 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 500 and M = 100 and N = 400 and 0 <= output_s1_m <= 99 and 0 <= output_s1_k <= 495 and 0 <= output_s1_r_n <= 399 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and -49 - 50b0 + output_s0_m <= 100*floor((output_s0_m)/100) <= -50b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 49 and 0 <= b0 <= 249 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_k) mod 13 = 0 and 0 <= t0 <= 12 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 16 = 0 and (-t0 + output_s1_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -4 - 5b1 + output_s0_k <= 1280*floor((output_s0_k)/1280) <= -5b1 + output_s0_k and -15 - 16b0 + output_s0_m <= 128*floor((output_s0_m)/128) <= -16b0 + output_s0_m }
+[K, M, N, b0, b1] -> { S_0[output_s0_m, output_s0_k] : -4 - 5b1 + output_s0_k <= 20*floor((output_s0_k)/20) <= -5b1 + output_s0_k and -255 - 256b0 + output_s0_m <= 512*floor((output_s0_m)/512) <= -256b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 3 and 0 <= b1 <= 124 and 0 <= b0 <= 1 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 5 and M = 3 and N = 4 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 1 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t2 = 0 and (-t1 + var_s0_t) mod 64 = 0 and (-t0 + var_s0_b) mod 4 = 0 and 0 <= t1 <= 63 and 0 <= t0 <= 3 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_m) mod 4 = 0 and (t0 + output_s1_k) mod 2 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 1 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 8 = 0 and (-t0 + mean_s1_b) mod 7 = 0 and 0 <= t0 <= 6 and 0 <= t1 <= 7 }
+[B, C, T, b0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-b0 + centered_s0_t) mod 32 = 0 and 0 <= b0 <= 31 }
+[B, C, T, b1, b0, b2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : b1 = 0 and b0 = 0 and b2 = 0 }
+[B, C, T, b0] -> { S_3[var_s0_t, var_s0_b] : (-b0 + var_s0_t) mod 32 = 0 and 0 <= b0 <= 31 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 63 and 0 <= output_s1_r_n <= 20 and 32*floor((-6 - output_s1_k)/32) >= -32 - output_s1_k }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 8 = 0 and (-t0 + mean_s1_b) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 7 }
+[K, M, N] -> { S_0[output_s0_m, output_s0_k] : K = 72 and M = 72 and N = 26 and 0 <= output_s0_m <= 71 and 0 <= output_s0_k <= 71 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 15 and 0 <= t0 <= 24 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 1 and 0 <= t2 <= 24 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 32 = 0 and (t0 + output_s1_k) mod 2 = 0 and 0 <= t0 <= 1 and 0 <= t1 <= 31 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 3 = 0 and (-t0 + output_s0_k) mod 16 = 0 and 0 <= t1 <= 2 and 0 <= t0 <= 15 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_t) mod 7 = 0 and (-t0 + mean_s1_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 127 and 0 <= b2 <= 3 and 0 <= b1 <= 6 and 0 <= b0 <= 255 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t1 = 0 and (-t2 + centered_s0_t) mod 8 = 0 and (-t0 + centered_s0_c) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t2 <= 7 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 7 and 0 <= t2 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and 0 <= t1 <= 127 and 0 <= t0 <= 3 and 0 <= b2 <= 49 and 0 <= b1 <= 249 and 0 <= b0 <= 499 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_r_n) mod 125 = 0 and 0 <= t0 <= 124 }
+[K, M, N, t0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t0 + output_s1_m) mod 100 = 0 and 0 <= t0 <= 99 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and -63 - 64b1 + output_s1_k <= 576*floor((output_s1_k)/576) <= -64b1 + output_s1_k }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -4 - 5b0 + output_s0_m <= 90*floor((output_s0_m)/90) <= -5b0 + output_s0_m }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t2 = 0 and (-t1 + mean_s0_t) mod 4 = 0 and (-t0 + mean_s0_b) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[B, C, T, b0, b1] -> { S_5[var_s2_t, var_s2_b] : b0 = 0 and b1 = 0 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 200 = 0 and 0 <= t0 <= 199 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 127 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 127 and 0 <= b2 <= 63 and 0 <= b1 <= 4 and 0 <= b0 <= 15 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 15 and 0 <= t2 <= 15 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 5 = 0 and (t0 + output_s0_k) mod 2 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 1 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -2 - 3b0 + output_s0_m <= 384*floor((output_s0_m)/384) <= -3b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 127 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (output_s1_m - floor((output_s1_m)/256)) mod 3 = t1 and (-t0 + output_s1_k) mod 13 = 0 and 0 <= t0 <= 12 and -255 - 256t1 + output_s1_m <= 256*floor((output_s1_m)/256) <= 512 - 256t1 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 63 and 0 <= b0 <= 14 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -1 - 2b0 + output_s0_m <= 52*floor((output_s0_m)/52) <= -2b0 + output_s0_m }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 16 = 0 and (-t0 + var_s2_b) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 15 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -124 - 125b0 + output_s0_m <= 16000*floor((output_s0_m)/16000) <= -125b0 + output_s0_m and -49 - 50b1 + output_s0_k <= 25600*floor((output_s0_k)/25600) <= -50b1 + output_s0_k }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 71 and 0 <= b0 <= 25 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 399 and 0 <= b1 <= 6 and 0 <= b0 <= 124 }
+[B, C, T, t0] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t0 + O_s0_c) mod 256 = 0 and 0 <= t0 <= 255 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 71 and 0 <= b2 <= 7 and 0 <= b1 <= 15 and 0 <= b0 <= 31 }
+[B, C, T, b0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : (-b0 + centered_s0_t) mod 7 = 0 and 0 <= b0 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and 0 <= t0 <= 63 and 0 <= b2 <= 24 and 0 <= b1 <= 62 and 0 <= b0 <= 1 }
+[B, C, T, t1, t0, t2] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : t1 = 0 and (-t2 + O_s0_t) mod 7 = 0 and (-t0 + O_s0_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t2 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b0 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 124 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 72 and M = 72 and N = 26 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 8 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 5 = 0 and (-t0 + output_s0_k) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 4 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -199 - 200b1 + output_s1_k <= 10000*floor((output_s1_k)/10000) <= -200b1 + output_s1_k and -127 - 128b0 + output_s1_m <= 2048*floor((output_s1_m)/2048) <= -128b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : 0 <= t1 <= 3 and 0 <= t0 <= 3 and 0 <= t2 <= 4 and 0 <= b2 <= 1 and 0 <= b1 <= 4 and 0 <= b0 <= 1 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 7 and 0 <= b0 <= 255 }
+[B, C, T, t0, t1] -> { S_5[var_s2_t, var_s2_b] : (-t1 + var_s2_t) mod 8 = 0 and (-t0 + var_s2_b) mod 16 = 0 and 0 <= t0 <= 15 and 0 <= t1 <= 7 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 63 and 0 <= b1 <= 3 and 0 <= b0 <= 1 }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b2 = 0 and -2 - 3b0 + output_s0_m <= 21*floor((output_s0_m)/21) <= -3b0 + output_s0_m and -31 - 32b1 + output_s0_k <= 832*floor((output_s0_k)/832) <= -32b1 + output_s0_k }
+[B, C, T, b0] -> { S_0[mean_s0_t, mean_s0_b] : -127 - 128b0 + mean_s0_t <= 32768*floor((mean_s0_t)/32768) <= -128b0 + mean_s0_t }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (-t1 + output_s1_m) mod 3 = 0 and (output_s1_k + 3*floor((output_s1_k)/32)) mod 7 = t0 and 0 <= t0 <= 6 and 0 <= t1 <= 2 }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t2 = 0 and (-t1 + output_s1_k) mod 9 = 0 and (-t0 + output_s1_r_n) mod 4 = 0 and 0 <= t1 <= 8 and 0 <= t0 <= 3 }
+[B, C, T, t1, t0, t2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : t0 = 0 and t2 = 0 and (-t1 + centered_s0_t) mod 64 = 0 and 0 <= t1 <= 63 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_b) mod 16 = 0 and (-t0 + O_s0_c) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 15 }
+[B, C, T, t0, t1] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : (-t1 + mean_s1_b) mod 7 = 0 and (-t0 + mean_s1_c) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -4 - 5b1 + output_s1_k <= 20*floor((output_s1_k)/20) <= -5b1 + output_s1_k and -255 - 256b0 + output_s1_m <= 512*floor((output_s1_m)/512) <= -256b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 6 and 0 <= t2 <= 31 and 0 <= b1 <= 199 and 0 <= b0 <= 1 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -3 - 4b0 + output_s0_m <= 20*floor((output_s0_m)/20) <= -4b0 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : b2 = 0 and b1 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 15 and 0 <= t2 <= 2 and 0 <= b0 <= 2 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 15 }
+[B, C, T, t0] -> { S_5[var_s2_t, var_s2_b] : (-t0 + var_s2_b) mod 128 = 0 and 0 <= t0 <= 127 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and 0 <= t0 <= 127 and 0 <= b1 <= 15 and 0 <= b0 <= 15 }
+[B, C, T] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : B = 32 and C = 64 and T = 7 and 0 <= var_s1_t <= 6 and 0 <= var_s1_b <= 27 and 0 <= var_s1_c <= 63 }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (-t1 + output_s0_m) mod 128 = 0 and (-t0 + output_s0_k) mod 4 = 0 and 0 <= t0 <= 3 and 0 <= t1 <= 127 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -6 - 7b0 + output_s1_m <= 182*floor((output_s1_m)/182) <= -7b0 + output_s1_m }
+[B, C, T, t0, t1] -> { S_0[mean_s0_t, mean_s0_b] : (-t1 + mean_s0_t) mod 4 = 0 and (-t0 + mean_s0_b) mod 128 = 0 and 0 <= t0 <= 127 and 0 <= t1 <= 3 }
+[B, C, T, t1, t0, t2] -> { S_5[var_s2_t, var_s2_b] : t2 = 0 and (t1 + var_s2_t) mod 2 = 0 and (t0 + var_s2_b) mod 2 = 0 and 0 <= t1 <= 1 and 0 <= t0 <= 1 }
+[B, C, T, b0] -> { S_5[var_s2_t, var_s2_b] : (-b0 + var_s2_t) mod 7 = 0 and 0 <= b0 <= 6 }
+[B, C, T, t0, t1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : (-t1 + O_s0_b) mod 16 = 0 and (-t0 + O_s0_c) mod 8 = 0 and 0 <= t0 <= 7 and 0 <= t1 <= 15 }
+[K, M, N, t1, t0, t2] -> { S_0[output_s0_m, output_s0_k] : t2 = 0 and (-t1 + output_s0_m) mod 32 = 0 and (t0 + output_s0_k) mod 2 = 0 and 0 <= t1 <= 31 and 0 <= t0 <= 1 }
+[B, C, T, t0] -> { S_3[var_s0_t, var_s0_b] : t0 = 0 }
+[B, C, T, b0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : -6 - 7b0 + centered_s0_t <= 28*floor((centered_s0_t)/28) <= -7b0 + centered_s0_t }
+[K, M, N, t1, t0, t2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : t1 = 0 and t2 = 0 and (-t0 + output_s1_k) mod 16 = 0 and 0 <= t0 <= 15 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_k >= 64 or output_s1_r_n >= 24 or (36 <= output_s1_k <= 63) }
+[B, C, T, b1, b0, b2] -> { S_3[var_s0_t, var_s0_b] : b1 = 0 and b0 = 0 and b2 = 0 }
+[B, C, T, t0, t1] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : (-t1 + var_s1_t) mod 7 = 0 and (-t0 + var_s1_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 6 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 127 and 0 <= t0 <= 3 and 0 <= b0 <= 255 }
+[K, M, N, t0, t1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : (t1 + output_s1_m) mod 2 = 0 and (-t0 + output_s1_k) mod 256 = 0 and 0 <= t0 <= 255 and 0 <= t1 <= 1 }
+[K, M, N, b0] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : -63 - 64b0 + output_s1_m <= 4608*floor((output_s1_m)/4608) <= -64b0 + output_s1_m }
+[K, M, N, b1, b0, b2] -> { S_0[output_s0_m, output_s0_k] : b1 = 0 and b2 = 0 and -255 - 256b0 + output_s0_m <= 1024*floor((output_s0_m)/1024) <= -256b0 + output_s0_m }
+[B, C, T, t1, t0, t2] -> { S_1[mean_s1_t, mean_s1_b, mean_s1_c] : t2 = 0 and (-t1 + mean_s1_t) mod 4 = 0 and (-t0 + mean_s1_b) mod 4 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 3 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : output_s1_k >= 64 or output_s1_r_n >= 21 or (32*floor((-6 - output_s1_k)/32) <= -33 - output_s1_k) }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : b0 = 0 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b1 = 0 and -17 - 18b0 + output_s1_m <= 36*floor((output_s1_m)/36) <= -18b0 + output_s1_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t1 <= 4 and 0 <= t0 <= 12 and 0 <= b0 <= 71 }
+[K, M, N, b1, b0, b2] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b2 = 0 and -31 - 32b0 + output_s1_m <= 8192*floor((output_s1_m)/8192) <= -32b0 + output_s1_m and -49 - 50b1 + output_s1_k <= 350*floor((output_s1_k)/350) <= -50b1 + output_s1_k }
+[B, C, T, b0] -> { S_5[var_s2_t, var_s2_b] : -6 - 7b0 + var_s2_t <= 14*floor((var_s2_t)/14) <= -7b0 + var_s2_t }
+[C1, C2, C3, H, N, W, t1, t0, t2, b2, b1, b0] -> { [] : C1 = 512 and C2 = 8 and C3 = 2 and H = 28 and N = 32 and W = 28 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 3 and 0 <= t2 <= 1 and 0 <= b1 <= 63 and 0 <= b0 <= 7 }
+[B, C, T, t0, t1] -> { S_3[var_s0_t, var_s0_b] : (-t1 + var_s0_t) mod 8 = 0 and (-t0 + var_s0_b) mod 32 = 0 and 0 <= t0 <= 31 and 0 <= t1 <= 7 }
+[B, C, T, b0] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : b0 = 0 }
+[K, M, N] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : K = 72 and M = 72 and N = 26 and 0 <= output_s1_m <= 71 and 0 <= output_s1_k <= 64 and 0 <= output_s1_r_n <= 23 }
+[B, C, T] -> { S_0[mean_s0_t, mean_s0_b] : B = 32 and C = 64 and T = 7 and 0 <= mean_s0_t <= 6 and 0 <= mean_s0_b <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t1 <= 3 and 0 <= t0 <= 15 }
+[B, C, T, b1, b0, b2] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : b1 = 0 and b0 = 0 and b2 = 0 }
+[B, C, T, t1, t0, t2, b2, b1, b0] -> { [] : B = 32 and C = 64 and T = 7 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and b0 = 0 and 0 <= t0 <= 63 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 32 = 0 and 0 <= t0 <= 31 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and b2 = 0 and 0 <= t0 <= 8 and 0 <= t2 <= 3 and 0 <= b1 <= 1 and 0 <= b0 <= 35 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 256 = 0 and 0 <= t0 <= 255 }
+[B, C, T, b0] -> { S_2[centered_s0_t, centered_s0_b, centered_s0_c] : b0 = 0 }
+[B, C, T, t1, t0, t2] -> { S_3[var_s0_t, var_s0_b] : t1 = 0 and t2 = 0 and (-t0 + var_s0_b) mod 4 = 0 and 0 <= t0 <= 3 }
+[B, C, T, b0, b1] -> { S_6[O_s0_t, O_s0_b, O_s0_c] : b0 = 0 and b1 = 0 }
+[B, C, T] -> { S_4[var_s1_t, var_s1_b, var_s1_c] : B = 32 and C = 64 and T = 7 and 0 <= var_s1_t <= 6 and 0 <= var_s1_b <= 31 and 0 <= var_s1_c <= 63 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : K = 500 and M = 100 and N = 400 and t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 249 and 0 <= b0 <= 14 }
+[B, C, T, t0] -> { S_5[var_s2_t, var_s2_b] : t0 = 0 }
+[K, M, N, t0] -> { S_0[output_s0_m, output_s0_k] : (-t0 + output_s0_k) mod 13 = 0 and 0 <= t0 <= 12 }
+[K, M, N, b0, b1] -> { S_1[output_s1_m, output_s1_k, output_s1_r_n] : b0 = 0 and b1 = 0 }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t1 = 0 and t2 = 0 and b2 = 0 and b1 = 0 and 0 <= t0 <= 71 and 0 <= b0 <= 25 }
+[K, M, N, b0] -> { S_0[output_s0_m, output_s0_k] : -71 - 72b0 + output_s0_m <= 936*floor((output_s0_m)/936) <= -72b0 + output_s0_m }
+[K, M, N, t0, t1] -> { S_0[output_s0_m, output_s0_k] : (output_s0_m - floor((output_s0_m)/256)) mod 3 = t1 and (-t0 + output_s0_k) mod 13 = 0 and 0 <= t0 <= 12 and -255 - 256t1 + output_s0_m <= 256*floor((output_s0_m)/256) <= 512 - 256t1 + output_s0_m }
+[K, M, N, t1, t0, t2, b2, b1, b0] -> { [] : t2 = 0 and b2 = 0 and 0 <= t1 <= 7 and 0 <= t0 <= 12 and 0 <= b1 <= 31 and 0 <= b0 <= 35 }
+[B, C, T, t1, t0, t2] -> { S_0[mean_s0_t, mean_s0_b] : t1 = 0 and t2 = 0 and (-t0 + mean_s0_b) mod 7 = 0 and 0 <= t0 <= 6 }
