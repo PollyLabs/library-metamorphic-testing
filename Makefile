@@ -1,7 +1,7 @@
 CC = g++
 IPATH = -I./include
 LPATH = -L./libs
-LIB = -lisl -lyaml-cpp
+LIB = -lisl -lyaml-cpp -lfmt
 CFLAGS = $(IPATH) $(LPATH) $(LIB) -g
 OUTDIR = ./bin
 MKDIR = mkdir -p
@@ -12,6 +12,7 @@ OBJ = \
 	set_fuzzer.o \
 	set_tester.o \
 	set_meta_tester.o \
+	api_fuzzer.o \
 	isl_tester.o
 
 all: dirs isl_tester

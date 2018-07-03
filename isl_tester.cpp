@@ -19,6 +19,8 @@ parse_args(int argc, char **argv)
                 args.mode = Modes::SET_TEST;
             else if (!mode_arg.compare("SET_META"))
                 args.mode = Modes::SET_META;
+            else if (!mode_arg.compare("API_FUZZ"))
+                args.mode = Modes::API_FUZZ;
             else {
                 std::cout << "Found unknown mode: " << mode_arg << std::endl;
                 exit(1);
@@ -77,6 +79,12 @@ main(int argc, char **argv)
         isl::set fuzzed_set = set_fuzzer::fuzz_set(ctx, args.max_dims,
                             args.max_params, args.max_set_count);
         std::cout << fuzzed_set.to_str() << std::endl;
+    }
+    else if (args.mode == isl_tester::Modes::API_FUZZ) {
+        ApiFuzzer *api_fuzzer = new ApiFuzzerISL();
+        api_fuzzer->generateSet();
+        for (std::string s : api_fuzzer->getInstrs())
+            std::cout << s << std::endl;
     }
     else if (args.mode == isl_tester::Modes::SET_TEST) {
         isl::set set1, set2;

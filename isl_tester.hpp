@@ -8,11 +8,13 @@
 #include <random>
 
 #include "isl-noexceptions.h"
+#include "api_fuzzer.hpp"
 
 namespace isl_tester {
 
 enum Modes {
     SET_FUZZ,
+    API_FUZZ,
     SET_TEST,
     SET_META,
 };
