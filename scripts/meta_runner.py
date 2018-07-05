@@ -15,7 +15,7 @@ import time
 working_dir = "/home/sentenced/Documents/Internships/2018_ETH/work/sets"
 os.chdir(working_dir)
 
-isl_tester_path = "./bin/isl_tester"
+isl_tester_path = "./build/isl_tester"
 test_compile_dir = "./out"
 test_compile_path = "./compile.sh"
 test_source_path = "./out/test.cpp"
