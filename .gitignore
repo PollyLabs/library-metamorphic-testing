@@ -1,5 +1,4 @@
-bin/
+build/
 out/
 third_party/
-*.o
 *.swp

@@ -2,7 +2,6 @@
 
 namespace set_fuzzer {
 
-
 std::vector<isl::pw_aff>
 generate_dims(isl::local_space ls, isl::dim type)
 {
@@ -178,11 +177,6 @@ fuzz_set(isl::ctx ctx, const unsigned int max_dims,
     const unsigned int max_params,
     const unsigned int max_set_count)
 {
-    //Arguments args = parse_args(argc, argv);
-    //std::cout << "--Max_Dims: " << max_dims << std::endl;
-    //std::cout << "--Max_Params: " << max_params << std::endl;
-    //std::cout << "--Max_Set_Count: " << max_set_count << std::endl;
-
     unsigned int dims = std::rand() % (max_dims + 1);
     if (!dims)
         dims++;

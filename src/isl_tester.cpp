@@ -81,7 +81,7 @@ main(int argc, char **argv)
         std::cout << fuzzed_set.to_str() << std::endl;
     }
     else if (args.mode == isl_tester::Modes::API_FUZZ) {
-        ApiFuzzer *api_fuzzer = new ApiFuzzerISL();
+        ApiFuzzer *api_fuzzer = new ApiFuzzerISL(5, 5, 20);
         api_fuzzer->generateSet();
         for (std::string s : api_fuzzer->getInstrs())
             std::cout << s << std::endl;

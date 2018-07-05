@@ -21,8 +21,9 @@ class ApiObject {
     public:
         ApiObject(std::string _name, unsigned int _id, std::string _type) :
             id(_id), name(_name), type(_type) {};
-        std::string to_str();
-        std::string to_str_with_type();
+        std::string toStr();
+        std::string toStrWithType();
+        std::string getType();
 };
 
 class ApiFuzzer {
@@ -31,9 +32,17 @@ class ApiFuzzer {
             objs(std::vector<ApiObject>()) {};
         std::vector<std::string> getInstrs();
         void addInstr(std::string);
+        std::vector<ApiObject> getObjList();
+        std::vector<ApiObject> getObjByType(std::string);
         void addObj(ApiObject);
         unsigned int getNextID();
         virtual void generateSet() = 0;
+
+    protected:
+        ApiObject generateApiObjectAndDecl(std::string, std::string,
+            std::string, std::initializer_list<std::string>);
+        void applyFunc(ApiObject&, std::string, bool,
+            std::initializer_list<std::string>);
 
     private:
         std::vector<std::string> instrs;
@@ -43,28 +52,33 @@ class ApiFuzzer {
 
 class ApiFuzzerISL : public ApiFuzzer {
     public:
-        ApiFuzzerISL();
+        const unsigned int dims;
+        const unsigned int params;
+        const unsigned int constraints;
+
+        ApiFuzzerISL(const unsigned int, const unsigned int, const unsigned int);
 
         virtual void generateSet();
 
     private:
-        std::vector<ApiObject> inputs;
+
+        std::vector<ApiObject> dim_var_list;
 
         std::vector<ApiObject> getDimVarList();
+        void addDimVar(ApiObject);
 
-        ApiObject generateApiObjectAndDecl(std::string, std::string, std::string, std::initializer_list<std::string>);
-
-        ApiObject generateConstraintExpr();
+        ApiObject getCtx();
         ApiObject generateContext();
-        ApiObject generateLocalSpace(ApiObject);
         ApiObject generateDimVar(ApiObject, std::string, const unsigned int);
         ApiObject getRandomDimVar();
-        ApiObject generateSpace(ApiObject, const unsigned int, const unsigned int);
-        ApiObject generateVal(ApiObject);
-        ApiObject getVal(ApiObject);
-        ApiObject generateSetDecl(ApiObject);
-        ApiObject generateConstraint(ApiObject);
-        void addConstraintToSet(ApiObject, ApiObject);
+        ApiObject getExistingVal();
+        ApiObject generateVal(ApiObject&, bool);
+        void augmentVal(ApiObject&);
+        void augmentConstraint(ApiObject&);
+        void addConstraintFromSet(ApiObject&, ApiObject&);
+        ApiObject generatePWAff(ApiObject&);
+        void applyPWAFunc(ApiObject&, std::string, std::initializer_list<std::string>);
+        ApiObject generateSetFromConstraints(ApiObject&, ApiObject&);
         //ApiObject generateSet(ApiObject);
 };
 
