@@ -1,5 +1,9 @@
 #include "api_fuzzer.hpp"
 
+/*******************************************************************************
+ * Helper functions
+ ******************************************************************************/
+
 template<typename T>
 const unsigned int
 getRandomFuncID(T &func_struct)
@@ -22,6 +26,40 @@ getStringWithDelims(std::initializer_list<std::string> string_list, char delim)
     return string_with_delim;
 }
 
+std::vector<ApiFunc>
+filterFuncs(std::vector<ApiFunc> func_list, std::string member_check,
+    std::initializer_list<std::string> params_check)
+{
+    std::vector<ApiFunc> filtered_funcs;
+    for (ApiFunc fn : func_list) {
+        if (fn.isMemberOf(member_check) && fn.hasParamTypes(params_check))
+            filtered_funcs.push_back(fn);
+    }
+    return filtered_funcs;
+}
+
+std::vector<ApiFunc>
+filterFuncsByMember(std::vector<ApiFunc> func_list, std::string member_check)
+{
+    std::vector<ApiFunc> filtered_funcs;
+    for (ApiFunc fn : func_list) {
+        if (fn.isMemberOf(member_check))
+            filtered_funcs.push_back(fn);
+    }
+    return filtered_funcs;
+}
+
+template<typename T>
+T
+getRandomVectorElem(std::vector<T>& vector_in)
+{
+    return vector_in.at(std::rand() % vector_in.size());
+}
+
+/*******************************************************************************
+ * ApiObject functions
+ ******************************************************************************/
+
 std::string
 ApiObject::toStr()
 {
@@ -39,6 +77,51 @@ ApiObject::getType()
 {
     return this->type;
 }
+
+/*******************************************************************************
+ * ApiFunc functions
+ ******************************************************************************/
+
+bool
+ApiFunc::isMemberOf(std::string member)
+{
+    return !this->member_of.compare(member);
+}
+
+bool
+ApiFunc::hasParamTypes(std::initializer_list<std::string> params_to_check)
+{
+    std::initializer_list<std::string>::iterator to_check =
+        params_to_check.begin();
+    for (std::string func_param : this->param_types) {
+        if (func_param.compare(*to_check))
+            return false;
+        to_check++;
+    }
+    return true;
+}
+
+unsigned int
+ApiFunc::getParamCount()
+{
+    return this->param_types.size();
+}
+
+std::string
+ApiFunc::getName()
+{
+    return this->name;
+}
+
+std::vector<std::string>
+ApiFunc::getParamTypes()
+{
+    return this->param_types;
+}
+
+/*******************************************************************************
+ * ApiFuzzer functions
+ ******************************************************************************/
 
 std::vector<std::string>
 ApiFuzzer::getInstrs()
@@ -106,6 +189,40 @@ ApiFuzzer::applyFunc(ApiObject& obj, std::string fn_name, bool store_result,
     this->addInstr(apply_func_ss.str());
 }
 
+/*******************************************************************************
+ * ApiFuzzerISL functions
+ ******************************************************************************/
+
+std::vector<ApiFunc> isl_funcs = {
+    // isl::val unary funcs
+    ApiFunc("two_exp", "isl::val", {}, {}),
+    ApiFunc("abs", "isl::val", {}, {}),
+    ApiFunc("ceil", "isl::val", {}, {}),
+    ApiFunc("floor", "isl::val", {}, {}),
+    ApiFunc("inv", "isl::val", {}, {}),
+    ApiFunc("neg", "isl::val", {}, {}),
+    ApiFunc("trunc", "isl::val", {}, {}),
+    // isl::val binary funcs
+    ApiFunc("add", "isl::val", {"isl::val"}, {}),
+    ApiFunc("div", "isl::val", {"isl::val"}, {}),
+    //ApiFunc("gcd", "isl::val", {"isl::val"}, {}),
+    ApiFunc("max", "isl::val", {"isl::val"}, {}),
+    ApiFunc("min", "isl::val", {"isl::val"}, {}),
+    //ApiFunc("mod", "isl::val", {"isl::val"}, {}),
+    ApiFunc("mul", "isl::val", {"isl::val"}, {}),
+    ApiFunc("sub", "isl::val", {"isl::val"}, {}),
+    // isl::pw_aff unary funcs
+    ApiFunc("ceil", "isl::pw_aff", {}, {}),
+    ApiFunc("floor", "isl::pw_aff", {}, {}),
+    // isl::pw_aff binary funcs
+    //ApiFunc("mod", "isl::pw_aff", {"isl::val"}, {}},
+    //ApiFunc("scale", "isl::pw_aff", {"isl::val"}, {}},
+    ApiFunc("add", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("sub", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("max", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("min", "isl::pw_aff", {"isl::pw_aff"}, {}),
+};
+
 ApiFuzzerISL::ApiFuzzerISL(const unsigned int _max_dims,
     const unsigned int _max_params, const unsigned int _max_constraints)
     : ApiFuzzer(), dims(std::rand() % _max_dims + 1),
@@ -127,10 +244,9 @@ ApiFuzzerISL::getDimVarList()
     return this->dim_var_list;
 }
 
-void
+ApiObject
 ApiFuzzerISL::generateSet()
 {
-    this->addInstr("isl_ctx *ctx_ptr = isl_ctx_alloc();");
     ApiObject ctx = this->generateApiObjectAndDecl(
         "ctx", "isl::ctx", "isl::ctx", { "ctx_ptr" });
     ApiObject space = this->generateApiObjectAndDecl(
@@ -158,7 +274,8 @@ ApiFuzzerISL::generateSet()
         ApiObject cons_set = this->generateSetFromConstraints(cons1, cons2);
         this->addConstraintFromSet(set, cons_set);
     }
-    this->applyFunc(set, "to_str", false, {});
+    this->applyFunc(set, "dump", false, {});
+    return set;
 }
 
 ApiObject
@@ -187,50 +304,21 @@ ApiFuzzerISL::generateVal(ApiObject& ctx, bool simple = false)
     return val;
 }
 
-
-
-struct {
-    std::string fn_name;
-} val_unary_funcs[] = {
-    { "two_exp" },
-    { "abs" },
-    { "ceil" },
-    { "floor" },
-    { "inv" },
-    { "neg" },
-    { "sgn" },
-    { "trunc" },
-};
-
-struct {
-    std::string fn_name;
-} val_binary_funcs[] = {
-    { "add" },
-    { "div" },
-    { "gcd" },
-    { "max" },
-    { "min" },
-    { "mod" },
-    { "mul" },
-    { "sub" },
-};
-
 void
 ApiFuzzerISL::augmentVal(ApiObject& val)
 {
     const unsigned int val_augment_count = std::rand() % 5 + 1;
     for (int i = 0; i < val_augment_count; i++) {
-        switch (std::rand() % 2) {
+        std::vector<ApiFunc> valid_func_list = filterFuncsByMember(isl_funcs, "isl::val");
+        ApiFunc augment_func = getRandomVectorElem(valid_func_list);
+        switch (augment_func.getParamCount()) {
             case 0: {
-                std::string fn_name =
-                    val_unary_funcs[getRandomFuncID(val_unary_funcs)].fn_name;
-                this->applyFunc(val, fn_name, true, {});
+                this->applyFunc(val, augment_func.getName(), true, {});
                 break;
             }
             case 1: {
-                std::string fn_name =
-                    val_binary_funcs[getRandomFuncID(val_binary_funcs)].fn_name;
-                this->applyFunc(val, fn_name, true, { this->getExistingVal().toStr() });
+                this->applyFunc(val, augment_func.getName(), true,
+                    { this->getExistingVal().toStr() });
                 break;
             }
         }
@@ -248,29 +336,6 @@ ApiFuzzerISL::getExistingVal()
     return this->getObjByType("isl::val")[std::rand() % all_vals.size()];
 }
 
-struct {
-    std::string fn_name;
-} unary_pw_aff_ops[] = {
-    { "ceil" },
-    { "floor" },
-};
-
-struct {
-    std::string fn_name;
-} binary_val_pw_aff_ops[] = {
-    { "mod" },
-    { "scale" },
-};
-
-struct {
-    std::string fn_name;
-} binary_pw_aff_ops[] = {
-    { "add" },
-    { "sub" },
-    { "max" },
-    { "min" },
-};
-
 ApiObject
 ApiFuzzerISL::generatePWAff(ApiObject& ctx)
 {
@@ -279,32 +344,19 @@ ApiFuzzerISL::generatePWAff(ApiObject& ctx)
         "pw_aff", "isl::pw_aff", "isl::pw_aff", {pw_aff.toStr()});
     unsigned int op_count = 5;
     while (op_count-- > 0) {
-        switch (std::rand() % 3) {
-            case 0: {
-                std::string func_name =
-                    unary_pw_aff_ops[getRandomFuncID(unary_pw_aff_ops)].fn_name;
-                std::initializer_list<std::string> func_params = {};
-                this->applyFunc(cons_pwa, func_name, true, func_params);
-                break;
-            }
-            case 1: {
-                std::string func_name =
-                    binary_val_pw_aff_ops[
-                        getRandomFuncID(binary_val_pw_aff_ops)].fn_name;
-                std::initializer_list<std::string> func_params =
-                    { this->generateVal(ctx, false).toStr() };
-                this->applyFunc(cons_pwa, func_name, true, func_params);
-                break;
-            }
-            case 2: {
-                std::string func_name =
-                    binary_pw_aff_ops[getRandomFuncID(binary_pw_aff_ops)].fn_name;
-                std::initializer_list<std::string> func_params =
-                    { this->getRandomDimVar().toStr() };
-                this->applyFunc(cons_pwa, func_name, true, func_params);
-                break;
-            }
-        }
+        std::vector<ApiFunc> valid_func_list =
+            filterFuncsByMember(isl_funcs, "isl::pw_aff");
+        ApiFunc augment_func = getRandomVectorElem(valid_func_list);
+        std::vector<std::string> func_params = augment_func.getParamTypes();
+        if (func_params.empty())
+            this->applyFunc(cons_pwa, augment_func.getName(), true, {});
+        // TODO some hacks, will fix once implementing more ApiFunc stuff
+        else if (!func_params.at(0).compare("isl::val"))
+            this->applyFunc(cons_pwa, augment_func.getName(), true,
+                { this->generateVal(ctx, false).toStr() });
+        else if (!func_params.at(0).compare("isl::pw_aff"))
+            this->applyFunc(cons_pwa, augment_func.getName(), true,
+                { this->getRandomDimVar().toStr() });
     }
     return cons_pwa;
 }
