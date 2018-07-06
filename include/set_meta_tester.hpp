@@ -21,21 +21,22 @@ namespace isl_tester {
 
 namespace set_meta_tester {
 
-void write_line(std::stringstream &, std::string);
-void write_args(std::stringstream &, isl_tester::Arguments, std::string);
-void prepare_header(std::stringstream &);
-void main_pre_setup(std::stringstream &);
-void gen_var_declarations(std::stringstream &, isl::set);
-void gen_coalesce_split_test(std::stringstream &);
-void main_post_setup(std::stringstream &);
-std::queue<std::string> gen_meta_relation(unsigned int);
-std::string get_meta_relation(std::queue<std::string>);
-std::string get_relation(const YAML::Node);
-std::string get_generator(const YAML::Node, const std::string);
-void replace_meta_inputs(std::string &, const std::string, const YAML::Node);
-std::string gen_meta_func(const std::string, std::string, const YAML::Node);
-size_t gen_meta_expr(std::stringstream &, const unsigned int, std::queue<std::string>, const YAML::Node, std::set<size_t>);
-void run_simple(isl::set, isl_tester::Arguments &);
+void writeLine(std::stringstream&, std::string);
+void writeArgs(std::stringstream&, isl_tester::Arguments, std::string);
+void prepareHeader(std::stringstream&);
+void mainPreSetup(std::stringstream&);
+void genSetDeclaration(std::stringstream&, std::vector<std::string>&);
+void genCoalesceSplitTest(std::stringstream&);
+void mainPostSetup(std::stringstream&);
+std::queue<std::string> genMetaRelation(unsigned int);
+std::string getMetaRelation(std::queue<std::string>);
+std::string getRelation(const YAML::Node);
+std::string getGenerator(const YAML::Node, const std::string);
+void replaceMetaInputs(std::string&, const std::string, const YAML::Node);
+std::string genMetaFunc(const std::string, std::string, const YAML::Node);
+size_t genMetaExpr(std::stringstream&, const unsigned int,
+    std::queue<std::string>, const YAML::Node, std::set<size_t>);
+void runSimple(std::vector<std::string>, isl_tester::Arguments&);
 
 }
 

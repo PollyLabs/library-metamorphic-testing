@@ -13,6 +13,8 @@
 #include "isl-noexceptions.h"
 #include "api_fuzzer.hpp"
 
+#include "fmt/format.h"
+
 namespace isl_tester {
 
 enum Modes {
@@ -37,11 +39,12 @@ struct Arguments {
 Arguments parseArgs(int, char **);
 std::vector<std::string> gatherSets(std::string);
 isl::set retrieveSet(isl::ctx, std::vector<std::string>);
+std::vector<std::string> generateSetDeclFromObj(isl::set, std::string);
 
 }
 
 namespace set_meta_tester {
-    void run_simple(isl::set, isl_tester::Arguments &);
+    void runSimple(std::vector<std::string>, isl_tester::Arguments&);
 }
 
 namespace set_fuzzer {

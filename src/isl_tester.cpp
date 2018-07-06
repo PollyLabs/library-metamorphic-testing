@@ -68,6 +68,14 @@ retrieveSet(isl::ctx ctx, std::vector<std::string> input_sets)
     return isl::set(ctx, input_sets[std::rand() % input_sets.size()]);
 }
 
+std::vector<std::string>
+generateSetDeclFromObj(isl::set set_in, std::string set_var_name)
+{
+    std::string set_decl = fmt::format("isl::set {} (ctx, {});", set_var_name,
+        set_in.to_str());
+    return std::vector<std::string>{set_decl};
+}
+
 }
 
 int
@@ -84,7 +92,8 @@ main(int argc, char **argv)
         std::cout << fuzzed_set.to_str() << std::endl;
     }
     else if (args.mode == isl_tester::Modes::API_FUZZ) {
-        ApiFuzzer *api_fuzzer = new ApiFuzzerISL(5, 5, 20);
+        ApiFuzzer *api_fuzzer = new ApiFuzzerISL(args.max_dims,
+            args.max_params, args.max_set_count);
         api_fuzzer->generateSet();
         for (std::string s : api_fuzzer->getInstrs())
             std::cout << s << std::endl;
@@ -115,10 +124,10 @@ main(int argc, char **argv)
                                 args.max_params, args.max_set_count);
         }
         std::cout << set1.to_str() << std::endl;
-        set_meta_tester::run_simple(set1, args);
+        set_meta_tester::runSimple(
+            isl_tester::generateSetDeclFromObj(set1, "s"), args);
     }
     else if (args.mode == isl_tester::Modes::SET_META_API) {
-        std::cout << "SET_META_API" << std::endl;
     }
     else {
         std::cout << "Unknown option " << argv[1] << std::endl;

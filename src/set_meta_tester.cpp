@@ -5,7 +5,7 @@ namespace set_meta_tester {
 int indent = 0;
 
 void
-write_line(std::stringstream &ss, std::string line)
+writeLine(std::stringstream &ss, std::string line)
 {
     int indent_count = 0;
     while (indent_count++ < indent)
@@ -14,72 +14,71 @@ write_line(std::stringstream &ss, std::string line)
 }
 
 void
-write_args(std::stringstream &ss, isl_tester::Arguments args,
+writeArgs(std::stringstream &ss, isl_tester::Arguments args,
    std::string meta_rel)
 {
-    write_line(ss, "// Seed: " + std::to_string(args.seed));
-    write_line(ss, "// Max dims: " + std::to_string(args.max_dims));
-    write_line(ss, "// Max params: " + std::to_string(args.max_params));
-    write_line(ss, "// Max set count: " + std::to_string(args.max_set_count));
-    write_line(ss, "// Meta relation: " + meta_rel);
-    write_line(ss, "");
+    writeLine(ss, "// Seed: " + std::to_string(args.seed));
+    writeLine(ss, "// Max dims: " + std::to_string(args.max_dims));
+    writeLine(ss, "// Max params: " + std::to_string(args.max_params));
+    writeLine(ss, "// Max set count: " + std::to_string(args.max_set_count));
+    writeLine(ss, "// Meta relation: " + meta_rel);
+    writeLine(ss, "");
 }
 
 void
-prepare_header(std::stringstream &ss)
+prepareHeader(std::stringstream &ss)
 {
     std::vector<std::string> include_list = {
         "\"isl-noexceptions.h\"",
         "<cassert>",
     };
     for (std::string incl : include_list)
-        write_line(ss, "#include " + incl);
+        writeLine(ss, "#include " + incl);
 }
 
 void
-main_pre_setup(std::stringstream &ss)
+mainPreSetup(std::stringstream &ss)
 {
-    write_line(ss, "int main()");
-    write_line(ss, "{");
+    writeLine(ss, "int main()");
+    writeLine(ss, "{");
     indent++;
-    write_line(ss, "isl_ctx *ctx_ptr = isl_ctx_alloc();");
-    write_line(ss, "{");
+    writeLine(ss, "isl_ctx *ctx_ptr = isl_ctx_alloc();");
+    writeLine(ss, "{");
     indent++;
-    write_line(ss, "isl::ctx ctx(ctx_ptr);");
+    writeLine(ss, "isl::ctx ctx(ctx_ptr);");
 }
 
 void
-gen_var_declarations(std::stringstream &ss, isl::set set)
+genSetDeclaration(std::stringstream &ss, std::vector<std::string> &set_decl_calls)
 {
-    write_line(ss, "isl::set s = isl::set(ctx, \"" + set.to_str() + "\");");
-    write_line(ss, "isl::set u = isl::set::universe(s.get_space());");
-    write_line(ss, "isl::set e = isl::set::empty(s.get_space());");
+    for (std::string decl_call : set_decl_calls)
+        writeLine(ss, decl_call);
 }
 
 void
-gen_coalesce_split_test(std::stringstream &ss)
+genCoalesceSplitTest(std::stringstream &ss)
 {
-    write_line(ss, "s = s.convex_hull();");
-    write_line(ss, "isl::point p = s.sample_point();");
-    write_line(ss, "isl::set split1 = s.upper_bound_si(isl::dim::set, 0, p.get_coordinate_val(isl::dim::set, 0).get_num_si());");
-    write_line(ss, "isl::set split2 = s.lower_bound_si(isl::dim::set, 0, p.get_coordinate_val(isl::dim::set, 0).get_num_si());");
-    write_line(ss, "isl::union_set split_us = isl::union_set(split1);");
-    write_line(ss, "split_us.add_set(split2);");
-    write_line(ss, "s = split_us.coalesce().sample();");
+    writeLine(ss, "s = s.convex_hull();");
+    writeLine(ss, "isl::point p = s.sample_point();");
+    writeLine(ss, "isl::set split1 = s.upper_bound_si(isl::dim::set, 0, p.get_coordinate_val(isl::dim::set, 0).get_num_si());");
+    writeLine(ss, "isl::set split2 = s.lower_bound_si(isl::dim::set, 0, p.get_coordinate_val(isl::dim::set, 0).get_num_si());");
+    writeLine(ss, "isl::union_set split_us = isl::union_set(split1);");
+    writeLine(ss, "split_us.add_set(split2);");
+    writeLine(ss, "s = split_us.coalesce().sample();");
 }
 
 void
-main_post_setup(std::stringstream &ss)
+mainPostSetup(std::stringstream &ss)
 {
     indent--;
-    write_line(ss, "}");
-    write_line(ss, "isl_ctx_free(ctx_ptr);");
+    writeLine(ss, "}");
+    writeLine(ss, "isl_ctx_free(ctx_ptr);");
     indent--;
-    write_line(ss, "}");
+    writeLine(ss, "}");
 }
 
 std::string
-get_generator(const YAML::Node generator_list, std::string type)
+getGenerator(const YAML::Node generator_list, std::string type)
 {
     YAML::Node typed_generator_list;
     try {
@@ -93,7 +92,7 @@ get_generator(const YAML::Node generator_list, std::string type)
 }
 
 std::queue<std::string>
-gen_meta_relation(const YAML::Node relation_list, unsigned int count)
+genMetaRelation(const YAML::Node relation_list, unsigned int count)
 {
     std::queue<std::string> meta_relation;
     std::cout << "REL ";
@@ -110,7 +109,7 @@ gen_meta_relation(const YAML::Node relation_list, unsigned int count)
 }
 
 std::string
-get_meta_relation(std::queue<std::string> meta_rel_queue)
+getMetaRelation(std::queue<std::string> meta_rel_queue)
 {
     std::string string_rel = "";
     while (!meta_rel_queue.empty()) {
@@ -121,7 +120,7 @@ get_meta_relation(std::queue<std::string> meta_rel_queue)
 }
 
 std::string
-get_relation(const YAML::Node relation_list, std::string relation_type)
+getRelation(const YAML::Node relation_list, std::string relation_type)
 {
     const YAML::Node selected_relation_list = relation_list[relation_type];
     return selected_relation_list[std::rand() % selected_relation_list.size()]
@@ -129,7 +128,7 @@ get_relation(const YAML::Node relation_list, std::string relation_type)
 }
 
 void
-replace_meta_inputs(std::string &rel, const std::string input_var,
+replaceMetaInputs(std::string &rel, const std::string input_var,
     const YAML::Node meta_list)
 {
     while (true) {
@@ -142,9 +141,9 @@ replace_meta_inputs(std::string &rel, const std::string input_var,
         else
             switch (type) {
                 case 'e': rel.replace(pos, 2,
-                    get_generator(meta_list["generators"], "empty")); break;
+                    getGenerator(meta_list["generators"], "empty")); break;
                 case 'u': rel.replace(pos, 2,
-                    get_generator(meta_list["generators"], "universe")); break;
+                    getGenerator(meta_list["generators"], "universe")); break;
                 default:
                     std::cout << "Unknown input modifier %" << type << std::endl;
                     exit(1);
@@ -155,19 +154,19 @@ replace_meta_inputs(std::string &rel, const std::string input_var,
 }
 
 std::string
-gen_meta_func(const std::string input_var, std::string meta_relation,
+genMetaFunc(const std::string input_var, std::string meta_relation,
     const YAML::Node meta_list)
 {
-    std::string new_rel = get_relation(meta_list["relations"], meta_relation);
+    std::string new_rel = getRelation(meta_list["relations"], meta_relation);
     assert(new_rel.find("%1") != std::string::npos);
     //std::cout << new_rel << std::endl;
-    replace_meta_inputs(new_rel, input_var, meta_list);
+    replaceMetaInputs(new_rel, input_var, meta_list);
     //std::cout << new_rel << std::endl;
     return new_rel;
 }
 
 size_t
-gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<std::string> meta_rel,
+genMetaExpr(std::stringstream &ss, const unsigned int var_count, std::queue<std::string> meta_rel,
     const YAML::Node meta_list, std::set<size_t> gen_exprs)
 {
     std::hash<std::string> string_hash_func;
@@ -178,13 +177,13 @@ gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<st
     unsigned int curr_tries = 0;
     do {
         std::queue<std::string> meta_rel_copy = std::queue<std::string>(meta_rel);
-        std::string new_expr = gen_meta_func("s", meta_rel_copy.front(), meta_list);
+        std::string new_expr = genMetaFunc("s", meta_rel_copy.front(), meta_list);
         new_expr_strings = std::queue<std::string>();
         new_expr_hash = string_hash_func(new_expr);
         new_expr_strings.push("isl::set " + input_var + " = " + new_expr + ";");
         meta_rel_copy.pop();
         while (!meta_rel_copy.empty()) {
-            new_expr = gen_meta_func(input_var, meta_rel_copy.front(), meta_list);
+            new_expr = genMetaFunc(input_var, meta_rel_copy.front(), meta_list);
             new_expr_strings.push(input_var + " = " + new_expr + ";");
             new_expr_hash += string_hash_func(new_expr);
             meta_rel_copy.pop();
@@ -194,15 +193,15 @@ gen_meta_expr(std::stringstream &ss, const unsigned int var_count, std::queue<st
     if (curr_tries >= max_tries)
         return -1;
     while (!new_expr_strings.empty()) {
-        write_line(ss, new_expr_strings.front());
+        writeLine(ss, new_expr_strings.front());
         new_expr_strings.pop();
     }
-    write_line(ss, "assert(r0.is_equal(r" + std::to_string(var_count) + "));");
+    writeLine(ss, "assert(r0.is_equal(r" + std::to_string(var_count) + "));");
     return new_expr_hash;
 }
 
 void
-run_simple(isl::set set_in, isl_tester::Arguments &args)
+runSimple(std::vector<std::string> set_decl_calls, isl_tester::Arguments &args)
 {
     YAML::Node meta_list = YAML::LoadFile("./set_meta_tests.yaml");
     std::string variant = "single_distinct";
@@ -211,23 +210,23 @@ run_simple(isl::set set_in, isl_tester::Arguments &args)
 
     unsigned int meta_rel_count = std::rand() % 7 + 1;
     std::string r1_expr, r2_expr;
-    std::queue<std::string> meta_rel = gen_meta_relation(
+    std::queue<std::string> meta_rel = genMetaRelation(
                                         meta_list["relations"], meta_rel_count);
 
     std::stringstream ss;
-    write_args(ss, args, get_meta_relation(meta_rel));
-    prepare_header(ss);
+    writeArgs(ss, args, getMetaRelation(meta_rel));
+    prepareHeader(ss);
     ss << std::endl;
-    main_pre_setup(ss);
-    gen_var_declarations(ss, set_in);
-    //gen_coalesce_split_test(ss);
+    mainPreSetup(ss);
+    genSetDeclaration(ss, set_decl_calls);
+    //genCoalesceSplitTest(ss);
     for (int i = 0; i < variant_count; i++) {
-        size_t result = gen_meta_expr(ss, i, meta_rel, meta_list, generated_exprs);
+        size_t result = genMetaExpr(ss, i, meta_rel, meta_list, generated_exprs);
         if (result == -1)
             break;
         generated_exprs.insert(result);
     }
-    main_post_setup(ss);
+    mainPostSetup(ss);
 
     std::ofstream ofs;
     ofs.open("out/test.cpp");
