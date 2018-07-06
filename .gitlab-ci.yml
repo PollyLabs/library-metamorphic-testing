@@ -1,5 +1,6 @@
-script:
-  - mkdir build
-  - cd build
-  - cmake ..
-  - make
+job:
+  script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
