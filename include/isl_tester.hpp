@@ -1,7 +1,10 @@
 #ifndef ISL_TESTER_HPP
 #define ISL_TESTER_HPP
 
+#pragma once
+
 #include <iostream>
+#include <map>
 #include <fstream>
 #include <cstring>
 #include <cassert>
@@ -16,7 +19,8 @@ enum Modes {
     SET_FUZZ,
     API_FUZZ,
     SET_TEST,
-    SET_META,
+    SET_META_STR,
+    SET_META_API,
 };
 
 struct Arguments {
@@ -30,9 +34,9 @@ struct Arguments {
     Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3), input_sets("") {}
 };
 
-Arguments parse_args(int, char **);
-std::vector<std::string> gather_sets(std::string);
-isl::set retrieve_set(isl::ctx, std::vector<std::string>);
+Arguments parseArgs(int, char **);
+std::vector<std::string> gatherSets(std::string);
+isl::set retrieveSet(isl::ctx, std::vector<std::string>);
 
 }
 

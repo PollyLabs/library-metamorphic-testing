@@ -2,8 +2,16 @@
 
 namespace isl_tester {
 
+std::map<std::string, Modes> string_to_mode {
+    {"SET_FUZZ", SET_FUZZ},
+    {"API_FUZZ", API_FUZZ},
+    {"SET_TEST", SET_TEST},
+    {"SET_META_STR", SET_META_STR},
+    {"SET_META_API", SET_META_API},
+};
+
 Arguments
-parse_args(int argc, char **argv)
+parseArgs(int argc, char **argv)
 {
     Arguments args;
     int i = 1;
@@ -13,18 +21,13 @@ parse_args(int argc, char **argv)
         }
         else if (!strcmp(argv[i], "--mode") || !strcmp(argv[i], "-m")) {
             std::string mode_arg = argv[++i];
-            if (!mode_arg.compare("SET_FUZZ"))
-                args.mode = Modes::SET_FUZZ;
-            else if (!mode_arg.compare("SET_TEST"))
-                args.mode = Modes::SET_TEST;
-            else if (!mode_arg.compare("SET_META"))
-                args.mode = Modes::SET_META;
-            else if (!mode_arg.compare("API_FUZZ"))
-                args.mode = Modes::API_FUZZ;
-            else {
+            std::map<std::string, Modes>::iterator mode_find =
+                string_to_mode.find(mode_arg);
+            if (mode_find == string_to_mode.end()) {
                 std::cout << "Found unknown mode: " << mode_arg << std::endl;
                 exit(1);
             }
+            args.mode = mode_find->second;
         }
         else if (!strcmp(argv[i], "--dims")) {
             args.max_dims = atoi(argv[++i]);
@@ -48,7 +51,7 @@ parse_args(int argc, char **argv)
 }
 
 std::vector<std::string>
-gather_sets(std::string file_path)
+gatherSets(std::string file_path)
 {
     std::vector<std::string> input_sets = std::vector<std::string>();
     std::string line_buffer;
@@ -60,7 +63,7 @@ gather_sets(std::string file_path)
 }
 
 isl::set
-retrieve_set(isl::ctx ctx, std::vector<std::string> input_sets)
+retrieveSet(isl::ctx ctx, std::vector<std::string> input_sets)
 {
     return isl::set(ctx, input_sets[std::rand() % input_sets.size()]);
 }
@@ -70,7 +73,7 @@ retrieve_set(isl::ctx ctx, std::vector<std::string> input_sets)
 int
 main(int argc, char **argv)
 {
-    isl_tester::Arguments args = isl_tester::parse_args(argc, argv);
+    isl_tester::Arguments args = isl_tester::parseArgs(argc, argv);
     std::srand(args.seed);
     isl_ctx *ctx_pointer = isl_ctx_alloc();
     isl::ctx ctx(ctx_pointer);
@@ -89,9 +92,9 @@ main(int argc, char **argv)
     else if (args.mode == isl_tester::Modes::SET_TEST) {
         isl::set set1, set2;
         if (args.input_sets != "") {
-            std::vector<std::string> input_sets = isl_tester::gather_sets(args.input_sets);
-            set1 = isl_tester::retrieve_set(ctx, input_sets);
-            set2 = isl_tester::retrieve_set(ctx, input_sets);
+            std::vector<std::string> input_sets = isl_tester::gatherSets(args.input_sets);
+            set1 = isl_tester::retrieveSet(ctx, input_sets);
+            set2 = isl_tester::retrieveSet(ctx, input_sets);
         } else {
             set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
                                 args.max_params, args.max_set_count);
@@ -102,17 +105,20 @@ main(int argc, char **argv)
         std::cout << set2.to_str() << std::endl;
         set_tester::run_tests(set1, set2);
     }
-    else if (args.mode == isl_tester::Modes::SET_META) {
+    else if (args.mode == isl_tester::Modes::SET_META_STR) {
         isl::set set1;
         if (args.input_sets != "") {
-            std::vector<std::string> input_sets = isl_tester::gather_sets(args.input_sets);
-            set1 = isl_tester::retrieve_set(ctx, input_sets);
+            std::vector<std::string> input_sets = isl_tester::gatherSets(args.input_sets);
+            set1 = isl_tester::retrieveSet(ctx, input_sets);
         } else {
             set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
                                 args.max_params, args.max_set_count);
         }
         std::cout << set1.to_str() << std::endl;
         set_meta_tester::run_simple(set1, args);
+    }
+    else if (args.mode == isl_tester::Modes::SET_META_API) {
+        std::cout << "SET_META_API" << std::endl;
     }
     else {
         std::cout << "Unknown option " << argv[1] << std::endl;
