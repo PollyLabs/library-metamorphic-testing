@@ -128,6 +128,12 @@ main(int argc, char **argv)
             isl_tester::generateSetDeclFromObj(set1, "s"), args);
     }
     else if (args.mode == isl_tester::Modes::SET_META_API) {
+        std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerISL(args.max_dims,
+            args.max_params, args.max_set_count));
+        ApiObject fuzzed_set = api_fuzzer->generateSet();
+        std::vector<std::string> set_decl_calls = api_fuzzer->getInstrs();
+        set_decl_calls.push_back("isl::set s = isl::set(" + fuzzed_set.toStr() + ");");
+        set_meta_tester::runSimple(set_decl_calls, args);
     }
     else {
         std::cout << "Unknown option " << argv[1] << std::endl;

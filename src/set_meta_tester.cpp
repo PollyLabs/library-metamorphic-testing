@@ -31,6 +31,7 @@ prepareHeader(std::stringstream &ss)
     std::vector<std::string> include_list = {
         "\"isl-noexceptions.h\"",
         "<cassert>",
+        "<iostream>",
     };
     for (std::string incl : include_list)
         writeLine(ss, "#include " + incl);
@@ -51,8 +52,11 @@ mainPreSetup(std::stringstream &ss)
 void
 genSetDeclaration(std::stringstream &ss, std::vector<std::string> &set_decl_calls)
 {
-    for (std::string decl_call : set_decl_calls)
+    unsigned int i = 0;
+    for (std::string decl_call : set_decl_calls) {
+        //writeLine(ss, "std::cout << " + std::to_string(i++) + " << std::endl;");
         writeLine(ss, decl_call);
+    }
 }
 
 void
@@ -204,6 +208,8 @@ void
 runSimple(std::vector<std::string> set_decl_calls, isl_tester::Arguments &args)
 {
     YAML::Node meta_list = YAML::LoadFile("./set_meta_tests.yaml");
+    const std::string output_path =
+        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/out/test.cpp";
     std::string variant = "single_distinct";
     const unsigned int variant_count = 20;
     std::set<size_t> generated_exprs = std::set<size_t>();
@@ -229,7 +235,7 @@ runSimple(std::vector<std::string> set_decl_calls, isl_tester::Arguments &args)
     mainPostSetup(ss);
 
     std::ofstream ofs;
-    ofs.open("out/test.cpp");
+    ofs.open(output_path);
     ofs << ss.rdbuf();
     ofs.close();
 }
