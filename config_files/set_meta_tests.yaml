@@ -1,0 +1,49 @@
+# %n, where n is an integer = input set
+# %e = empty set
+# %u = universe
+
+generators:
+    universe:
+        - "%1.unite(%1.complement())"
+        - "%e.complement()"
+
+    empty:
+        - "%1.intersect(%1.complement())"
+        - "%1.subtract(%1)"
+        - "%1.subtract(%u)"
+        - "%1.intersect(%e)"
+        - "%u.complement()"
+
+    invertible_functions:
+        - [ "%1.complement()" , "%1.complement()" ]
+
+relations:
+    identity:
+        - "%1.unite(%1)"
+        - "%1.unite(%e)"
+        - "%1.intersect(%1)"
+        - "%1.intersect(%u)"
+        - "%1.subtract(%e)"
+        - "%u.subtract(%1.complement())"
+        - "%1.intersect(%1.unite(%2))"
+        - "%1.unite(%1.intersect(%2))"
+        - "%1.complement().complement()"
+        - "%1.coalesce()"
+        - "%1.detect_equalities()"
+
+    complement:
+        - "%1.complement()"
+        - "%u.subtract(%1)"
+
+    subtract:
+        - "%1.subtract(%2)"
+        - "%1.intersect(%2.complement())"
+
+    union:
+        - "%1.unite(%2)"
+        - "%1.complement().intersect(%2.complement()).complement()" # DeMorgan
+
+    intersect:
+        - "%1.intersect(%2)"
+        - "%1.complement().unite(%2.complement()).complement()" # DeMorgan
+

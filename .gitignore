@@ -1,4 +1,5 @@
 build/
+env
 out/
 third_party/
 *.swp
