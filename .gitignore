@@ -2,4 +2,5 @@ build/
 env
 out/
 third_party/
+config_files/config.yaml
 *.swp

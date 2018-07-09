@@ -4,6 +4,7 @@
 #include "isl-noexceptions.h"
 #include "yaml-cpp/yaml.h"
 #include "isl_tester.hpp"
+#include "fmt/format.h"
 
 #include <cassert>
 #include <cstring>

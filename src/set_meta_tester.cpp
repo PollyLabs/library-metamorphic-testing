@@ -22,6 +22,7 @@ writeArgs(std::stringstream &ss, isl_tester::Arguments args,
     writeLine(ss, "// Max params: " + std::to_string(args.max_params));
     writeLine(ss, "// Max set count: " + std::to_string(args.max_set_count));
     writeLine(ss, "// Meta relation: " + meta_rel);
+    //writeLine(ss, "// Generation date: " +
     writeLine(ss, "");
 }
 
@@ -207,9 +208,23 @@ genMetaExpr(std::stringstream &ss, const unsigned int var_count, std::queue<std:
 void
 runSimple(std::vector<std::string> set_decl_calls, isl_tester::Arguments &args)
 {
-    YAML::Node meta_list = YAML::LoadFile("./set_meta_tests.yaml");
-    const std::string output_path =
-        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/out/test.cpp";
+    const std::string this_file_path = __FILE__;
+    size_t curr_pos = -1, next_pos = 0;
+    while (next_pos != std::string::npos) {
+        curr_pos = next_pos;
+        next_pos = this_file_path.find("/", curr_pos + 1);
+    }
+    const std::string this_file_dir = this_file_path.substr(0, curr_pos + 1);
+    const std::string config_file_path = fmt::format("{}{}", this_file_dir,
+        "../config_files/config.yaml");
+    YAML::Node config_file = YAML::LoadFile(config_file_path);
+    const std::string output_path = fmt::format("{}/{}",
+        config_file["working_dir"].as<std::string>(),
+        config_file["set_meta_tester"]["output_file"].as<std::string>());
+    YAML::Node meta_list = YAML::LoadFile(fmt::format("{}/{}",
+        config_file["working_dir"].as<std::string>(),
+        config_file["set_meta_tester"]["meta_tests_file"].as<std::string>()));
+
     std::string variant = "single_distinct";
     const unsigned int variant_count = 20;
     std::set<size_t> generated_exprs = std::set<size_t>();

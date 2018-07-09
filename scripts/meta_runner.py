@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import argparse
 import datetime
 import subprocess
@@ -7,25 +7,31 @@ import os
 import random
 import sys
 import time
+import yaml
 
 ###############################################################################
-# Set working paths and constants (move these to config file?)
+# Set working paths and constants
 ###############################################################################
 
-working_dir = "/home/sentenced/Documents/Internships/2018_ETH/work/sets"
-os.chdir(working_dir)
+config_file_path = os.path.dirname(os.path.abspath(__file__))
+config_file_path += "/../config_files/config.yaml"
+with open(config_file_path, 'r') as config_file_fd:
+    config_file = yaml.load(config_file_fd)
+os.chdir(config_file["working_dir"])
 
-isl_tester_path = "./build/isl_tester"
-test_compile_dir = "./out"
-test_compile_path = "./compile.sh"
-test_source_path = "./out/test.cpp"
-test_run_path = "./out/test"
+runner_config_file = config_file["meta_runner"]
+isl_tester_path = runner_config_file["isl_tester_path"]
+test_compile_dir = runner_config_file["test_compile_dir"]
+test_compile_path = runner_config_file["test_compile_path"]
+test_source_path = runner_config_file["test_source_path"]
+test_run_path = runner_config_file["test_run_path"]
+log_file = runner_config_file["log_file_path"]
+output_tests_folder = runner_config_file["output_tests_folder"]
+default_timeout = runner_config_file["default_timeout"]
+
 coverage_output_dir = "./out/coverage/"
-log_file = "./out/meta_test.log"
 input_sets_file = "./input_tests/input_sets_autotuner"
 input_sets_temp = os.path.abspath("./input_tests/input_sets_temp")
-output_tests_folder = "./out/out_tests"
-timeout = 30
 coverage_source_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/isl_coalesce.c"
 coverage_notes_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcno"
 coverage_data_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcda"
@@ -40,8 +46,12 @@ log_writer = open(log_file, 'w')
 parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
 parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
     help = "Define the mode in which to run the testing.")
+parser.add_argument("tester_mode", choices=["SET_META_STR", "SET_META_API"],
+    help = "Define the mode used to generate inputs, in case of random inputs.")
 parser.add_argument("--seed-max", type=int, default=1000,
     help = "[bounded] Set the max number of tests to run (seed starts at 0)")
+parser.add_argument("--timeout", type=int, default=default_timeout,
+    help = "The amount of time (in seconds) to run each test before giving up.")
 args = parser.parse_args()
 
 ###############################################################################
@@ -51,7 +61,7 @@ args = parser.parse_args()
 def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
     seed = str(seed)
     timeout = str(timeout)
-    generator_cmd = [isl_tester_path, "-m", "SET_META", "-s", seed]
+    generator_cmd = [isl_tester_path, "-m", args.tester_mode, "-s", seed]
     # generator_cmd = [isl_tester_path, "-m", "SET_META", "-s", seed]
     if input_file_path:
         generator_cmd.extend(["--input-sets-file", input_file_path])
@@ -115,12 +125,12 @@ def bounded_testing(seed_max):
         log_writer.write(80 * "=" + "\n")
         log_writer.write("SEED: " + str(seed))
         print(date_time + " Running seed " + str(seed), end='\r')
-        if not generate_test(seed, timeout, isl_tester_path):
+        if not generate_test(seed, args.timeout, isl_tester_path):
             continue
         if not compile_test(test_compile_path, test_compile_dir):
             shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(input_cnt) + ".cpp")
             continue
-        if not execute_test(timeout, test_run_path):
+        if not execute_test(args.timeout, test_run_path):
             shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(input_cnt) + ".cpp")
 
 def coverage_testing(coverage_target):
@@ -134,9 +144,9 @@ def coverage_testing(coverage_target):
     gather_coverage_files()
     while (curr_coverage < coverage_target and seed < 50):
         print("=== Running seed " + str(seed), end='\r')
-        generate_test(seed, timeout, isl_tester_path)
+        generate_test(seed, args.timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
-        execute_test(timeout, test_run_path)
+        execute_test(args.timeout, test_run_path)
         new_coverage = get_coverage()
         if new_coverage > curr_coverage:
             shutil.move(test_run_path + ".cpp", coverage_output_dir + "test_" + str(seed) + ".cpp")
@@ -153,9 +163,9 @@ def continuous_testing():
         log_writer.write(80 * "=" + "\n")
         log_writer.write("SEED: " + str(seed))
         print(date_time + " Running seed " + str(seed), end='\r')
-        generate_test(seed, timeout, isl_tester_path)
+        generate_test(seed, args.timeout, isl_tester_path)
         compile_test(test_compile_path, test_compile_dir)
-        execute_test(timeout, test_run_path)
+        execute_test(args.timeout, test_run_path)
         seed += 1
 
 def targeted_testing():
@@ -174,19 +184,19 @@ def targeted_testing():
         print("%s Running set %d of %d\n"
             % (date_time, input_cnt + 1, len(input_sets)),
                 end='\r')
-        if not generate_test(seed, timeout, isl_tester_path, input_sets_temp):
+        if not generate_test(seed, args.timeout, isl_tester_path, input_sets_temp):
             continue
         if not compile_test(test_compile_path, test_compile_dir):
             shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(input_cnt) + ".cpp")
             continue
-        if not execute_test(timeout, test_run_path):
+        if not execute_test(args.timeout, test_run_path):
             shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(input_cnt) + ".cpp")
 
 ###############################################################################
 # Main entry point
 ###############################################################################
 
-log_writer.write("TIMEOUT: " + str(timeout) + "\n")
+log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
 log_writer.write("MODE: " + args.mode + "\n")
 log_writer.write("\n")
 
