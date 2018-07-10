@@ -12,18 +12,27 @@ getRandomFuncID(T &func_struct)
 }
 
 std::string
-getStringWithDelims(std::initializer_list<std::string> string_list, char delim)
+getStringWithDelims(std::vector<std::string> string_list, char delim)
 {
     if (string_list.begin() == string_list.end())
         return "";
     std::string string_with_delim = "";
-    std::initializer_list<std::string>::iterator it = string_list.begin();
+    std::vector<std::string>::iterator it = string_list.begin();
     for (int i = 1; i < string_list.size(); i++) {
         string_with_delim += *it + delim + " ";
         it++;
     }
     string_with_delim += *it;
     return string_with_delim;
+}
+
+std::string
+makeArgString(std::vector<ApiObject> func_args)
+{
+    std::vector<std::string> args_to_string;
+    for (ApiObject& obj : func_args)
+        args_to_string.push_back(obj.toStr());
+    return getStringWithDelims(args_to_string, ',');
 }
 
 std::vector<ApiFunc>
@@ -42,11 +51,27 @@ std::vector<ApiFunc>
 filterFuncsByMember(std::vector<ApiFunc> func_list, std::string member_check)
 {
     std::vector<ApiFunc> filtered_funcs;
-    for (ApiFunc fn : func_list) {
+    for (ApiFunc fn : func_list)
         if (fn.isMemberOf(member_check))
             filtered_funcs.push_back(fn);
-    }
     return filtered_funcs;
+}
+
+std::vector<ApiFunc>
+filterFuncsByName(std::vector<ApiFunc> func_list, std::string name_check)
+{
+    std::vector<ApiFunc> filtered_funcs;
+    for (ApiFunc fn : func_list)
+        if (!fn.getName().compare(name_check))
+            filtered_funcs.push_back(fn);
+    return filtered_funcs;
+}
+
+ApiFunc
+getFuncByName(std::vector<ApiFunc> func_list, std::string name)
+{
+    std::vector<ApiFunc> filtered_funcs = filterFuncsByName(func_list, name);
+    return getRandomVectorElem(filtered_funcs);
 }
 
 template<typename T>
@@ -177,16 +202,67 @@ ApiFuzzer::generateApiObjectAndDecl(std::string name, std::string type,
     return new_obj;
 }
 
+//void
+//ApiFuzzer::applyFunc(ApiObject& obj, std::string fn_name, bool store_result,
+    //std::initializer_list<std::string> fn_args)
+//{
+    //std::stringstream apply_func_ss;
+    //if (store_result)
+        //apply_func_ss << obj.toStr() << " = ";
+    //apply_func_ss << obj.toStr() << "." << fn_name;
+    //apply_func_ss << "(" << getStringWithDelims(fn_args, ',') << ");";
+    //this->addInstr(apply_func_ss.str());
+//}
+
 void
-ApiFuzzer::applyFunc(ApiObject& obj, std::string fn_name, bool store_result,
-    std::initializer_list<std::string> fn_args)
+ApiFuzzer::applyFunc(ApiFunc& func, ApiObject& target_obj, bool store_result)
 {
     std::stringstream apply_func_ss;
     if (store_result)
-        apply_func_ss << obj.toStr() << " = ";
-    apply_func_ss << obj.toStr() << "." << fn_name;
-    apply_func_ss << "(" << getStringWithDelims(fn_args, ',') << ");";
+        apply_func_ss << target_obj.toStr() << " = ";
+    apply_func_ss << target_obj.toStr() << "." << func.getName();
+    std::vector<ApiObject> func_args = getFuncArgs(func);
+    apply_func_ss << "(" << makeArgString(func_args) << ");";
     this->addInstr(apply_func_ss.str());
+}
+
+void
+ApiFuzzer::applyFunc(ApiFunc& func, ApiObject& target_obj, bool store_result,
+    std::vector<ApiObject> func_args)
+{
+    std::stringstream apply_func_ss;
+    if (store_result)
+        apply_func_ss << target_obj.toStr() << " = ";
+    apply_func_ss << target_obj.toStr() << "." << func.getName();
+    apply_func_ss << "(" << makeArgString(func_args) << ");";
+    this->addInstr(apply_func_ss.str());
+}
+
+void
+ApiFuzzer::applyFuncAndStore(ApiFunc& func, ApiObject& target_obj,
+    ApiObject& store_obj, std::vector<ApiObject> func_args)
+{
+    std::stringstream apply_func_ss;
+    apply_func_ss << store_obj.toStr() << " = ";
+    apply_func_ss << target_obj.toStr() << "." << func.getName();
+    apply_func_ss << "(" << makeArgString(func_args) << ");";
+    this->addInstr(apply_func_ss.str());
+}
+
+std::vector<ApiObject>
+ApiFuzzer::getFuncArgs(ApiFunc func/*, ApiObject (*fallbackFunc)(void)*/)
+{
+    std::vector<std::string> param_types = func.getParamTypes();
+    std::vector<ApiObject> params;
+    for (std::string param_type : param_types) {
+        std::vector<ApiObject> candidate_params =
+            this->getObjByType(param_type);
+        if (candidate_params.empty())
+            params.push_back(this->generateObject(param_type));
+        else
+            params.push_back(getRandomVectorElem(candidate_params));
+    }
+    return params;
 }
 
 /*******************************************************************************
@@ -221,6 +297,19 @@ std::vector<ApiFunc> isl_funcs = {
     ApiFunc("sub", "isl::pw_aff", {"isl::pw_aff"}, {}),
     ApiFunc("max", "isl::pw_aff", {"isl::pw_aff"}, {}),
     ApiFunc("min", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    // isl::set generation funcs from isl::pw_aff
+    // Other useful funcs
+    ApiFunc("dump", "isl::set", {}, {}),
+    ApiFunc("intersect", "isl::set", {}, {}),
+};
+
+std::vector<ApiFunc> set_gen_funcs = {
+    ApiFunc("le_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("ge_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("lt_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("gt_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("eq_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
+    ApiFunc("ne_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
 };
 
 ApiFuzzerISL::ApiFuzzerISL(const unsigned int _max_dims,
@@ -274,9 +363,20 @@ ApiFuzzerISL::generateSet()
         ApiObject cons_set = this->generateSetFromConstraints(cons1, cons2);
         this->addConstraintFromSet(set, cons_set);
     }
-    this->applyFunc(set, "dump", false, {});
+    ApiFunc dump_func = getFuncByName(isl_funcs, "dump");
+    this->applyFunc(dump_func, set, false, std::vector<ApiObject>());
     return set;
 }
+
+ApiObject
+ApiFuzzerISL::generateObject(std::string obj_type)
+{
+    if (!obj_type.compare("isl::val"))
+        return generateSimpleVal();
+    std::cout << "Missing object generation for type " << obj_type;
+    assert(false);
+}
+
 
 ApiObject
 ApiFuzzerISL::getRandomDimVar()
@@ -294,13 +394,20 @@ ApiFuzzerISL::getCtx()
 }
 
 ApiObject
-ApiFuzzerISL::generateVal(ApiObject& ctx, bool simple = false)
+ApiFuzzerISL::generateVal()
+{
+    ApiObject val = this->generateSimpleVal();
+    this->augmentVal(val);
+    return val;
+}
+
+ApiObject
+ApiFuzzerISL::generateSimpleVal()
 {
     ApiObject val("val", this->getNextID(), "isl::val");
+    ApiObject ctx = this->getCtx();
     this->addInstr(fmt::format("{} = isl::val({}, {});",
         val.toStrWithType(), ctx.toStr(), (long) std::rand() % 10));
-    if (!simple)
-        this->augmentVal(val);
     return val;
 }
 
@@ -311,17 +418,18 @@ ApiFuzzerISL::augmentVal(ApiObject& val)
     for (int i = 0; i < val_augment_count; i++) {
         std::vector<ApiFunc> valid_func_list = filterFuncsByMember(isl_funcs, "isl::val");
         ApiFunc augment_func = getRandomVectorElem(valid_func_list);
-        switch (augment_func.getParamCount()) {
-            case 0: {
-                this->applyFunc(val, augment_func.getName(), true, {});
-                break;
-            }
-            case 1: {
-                this->applyFunc(val, augment_func.getName(), true,
-                    { this->getExistingVal().toStr() });
-                break;
-            }
-        }
+        this->applyFunc(augment_func, val, true);
+        //switch (augment_func.getParamCount()) {
+            //case 0: {
+                //this->applyFunc(val, augment_func.getName(), true, {});
+                //break;
+            //}
+            //case 1: {
+                //this->applyFunc(val, augment_func.getName(), true,
+                    //{ this->getExistingVal().toStr() });
+                //break;
+            //}
+        //}
     }
 }
 
@@ -331,7 +439,7 @@ ApiFuzzerISL::getExistingVal()
     std::vector<ApiObject> all_vals = this->getObjByType("isl::val");
     if (all_vals.size() == 0) {
         ApiObject ctx = this->getCtx();
-        return this->generateVal(ctx, true);
+        return this->generateSimpleVal();
     }
     return this->getObjByType("isl::val")[std::rand() % all_vals.size()];
 }
@@ -349,41 +457,30 @@ ApiFuzzerISL::generatePWAff(ApiObject& ctx)
         ApiFunc augment_func = getRandomVectorElem(valid_func_list);
         std::vector<std::string> func_params = augment_func.getParamTypes();
         if (func_params.empty())
-            this->applyFunc(cons_pwa, augment_func.getName(), true, {});
+            this->applyFunc(augment_func, cons_pwa, true);
         // TODO some hacks, will fix once implementing more ApiFunc stuff
         else if (!func_params.at(0).compare("isl::val"))
-            this->applyFunc(cons_pwa, augment_func.getName(), true,
-                { this->generateVal(ctx, false).toStr() });
+            this->applyFunc(augment_func, cons_pwa, true,
+                std::vector<ApiObject>({ this->generateVal() }));
         else if (!func_params.at(0).compare("isl::pw_aff"))
-            this->applyFunc(cons_pwa, augment_func.getName(), true,
-                { this->getRandomDimVar().toStr() });
+            this->applyFunc(augment_func, cons_pwa, true,
+                std::vector<ApiObject>({ this->getRandomDimVar() }));
     }
     return cons_pwa;
 }
 
-struct {
-    std::string fn_name;
-} set_gen_fns[] = {
-    { "isl::pw_aff::le_set" },
-    { "isl::pw_aff::ge_set" },
-    { "isl::pw_aff::lt_set" },
-    { "isl::pw_aff::gt_set" },
-    { "isl::pw_aff::eq_set" },
-    { "isl::pw_aff::ne_set" },
-};
-
 ApiObject
 ApiFuzzerISL::generateSetFromConstraints(ApiObject& cons1, ApiObject& cons2)
 {
-    std::string set_decl_fn_name =
-        set_gen_fns[getRandomFuncID(set_gen_fns)].fn_name;
+    ApiFunc set_decl_func = getRandomVectorElem(set_gen_funcs);
     return this->generateApiObjectAndDecl("set", "isl::set",
-        fmt::format("{}.{}", cons1.toStr(), set_decl_fn_name),
+        fmt::format("{}.{}", cons1.toStr(), set_decl_func.getName()),
         { cons2.toStr() });
 }
 
 void
 ApiFuzzerISL::addConstraintFromSet(ApiObject& set, ApiObject& constraint)
 {
-    this->applyFunc(set, "intersect", true, { constraint.toStr() });
+    ApiFunc intersect_func = getFuncByName(isl_funcs, "intersect");
+    this->applyFunc(intersect_func, set, true, std::vector<ApiObject>({ constraint }));
 }
