@@ -95,7 +95,7 @@ main(int argc, char **argv)
         ApiFuzzer *api_fuzzer = new ApiFuzzerISL(args.max_dims,
             args.max_params, args.max_set_count);
         api_fuzzer->generateSet();
-        for (std::string s : api_fuzzer->getInstrs())
+        for (std::string s : api_fuzzer->getInstrList())
             std::cout << s << std::endl;
     }
     else if (args.mode == isl_tester::Modes::SET_TEST) {
@@ -131,7 +131,7 @@ main(int argc, char **argv)
         std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerISL(args.max_dims,
             args.max_params, args.max_set_count));
         ApiObject fuzzed_set = api_fuzzer->generateSet();
-        std::vector<std::string> set_decl_calls = api_fuzzer->getInstrs();
+        std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
         set_decl_calls.push_back("isl::set s = isl::set(" + fuzzed_set.toStr() + ");");
         set_meta_tester::runSimple(set_decl_calls, args);
     }
