@@ -25,7 +25,7 @@ makeArgString(std::vector<T> func_args)
 {
     std::vector<std::string> args_to_string;
     for (T& obj : func_args)
-        args_to_string.push_back(obj.toStr());
+        args_to_string.push_back(obj->toStr());
     return getStringWithDelims(args_to_string, ',');
 }
 
@@ -56,13 +56,13 @@ ApiType::getTypeStr() const
 }
 
 bool
-ApiType::isType(ApiType other)
+ApiType::isType(ApiType* other) const
 {
-    return !other.getTypeStr().compare(this->getTypeStr());
+    return !other->getTypeStr().compare(this->getTypeStr());
 }
 
 bool
-ApiType::hasName(std::string name_check)
+ApiType::hasName(std::string name_check) const
 {
     return !this->getTypeStr().compare(name_check);
 }
@@ -84,27 +84,27 @@ ApiType::toStr()
  ******************************************************************************/
 
 std::string
-ApiObject::toStr()
+ApiObject::toStr() const
 {
     return fmt::format("{}_{}", this->name, std::to_string(this->id));
 }
 
 std::string
-ApiObject::toStrWithType()
+ApiObject::toStrWithType() const
 {
-    return fmt::format("{} {}", this->getType().getTypeStr(), this->toStr());
+    return fmt::format("{} {}", this->getType()->getTypeStr(), this->toStr());
 }
 
-ApiType
-ApiObject::getType()
+const ApiType*
+ApiObject::getType() const
 {
     return this->type;
 }
 
 bool
-ApiObject::hasType(ApiType type_check)
+ApiObject::hasType(ApiType* type_check)
 {
-    return this->getType().isType(type_check);
+    return this->getType()->isType(type_check);
 }
 
 /*******************************************************************************
@@ -117,7 +117,7 @@ ApiFunc::getName() const
     return this->name;
 }
 
-std::vector<ApiType>
+std::vector<ApiType*>
 ApiFunc::getParamTypes() const
 {
     return this->param_types;
@@ -129,28 +129,28 @@ ApiFunc::getParamCount() const
     return this->param_types.size();
 }
 
-ApiType
+const ApiType*
 ApiFunc::getMemberType() const
 {
     return this->member_type;
 }
 
-ApiType
+const ApiType*
 ApiFunc::getReturnType() const
 {
     return this->return_type;
 }
 
 bool
-ApiFunc::hasMemberType(ApiType type_check) const
+ApiFunc::hasMemberType(ApiType* type_check) const
 {
-    return this->getMemberType().isType(type_check);
+    return this->getMemberType()->isType(type_check);
 }
 
 bool
-ApiFunc::hasReturnType(ApiType return_check) const
+ApiFunc::hasReturnType(ApiType* return_check) const
 {
-    return this->getReturnType().isType(return_check);
+    return this->getReturnType()->isType(return_check);
 }
 
 bool
@@ -160,14 +160,14 @@ ApiFunc::hasName(std::string name_check) const
 }
 
 bool
-ApiFunc::hasParamTypes(std::vector<ApiType> param_types_check) const
+ApiFunc::hasParamTypes(std::vector<ApiType*> param_types_check) const
 {
     if (param_types_check.size() != this->param_types.size())
         return false;
-    std::vector<ApiType>::iterator to_check =
+    std::vector<ApiType*>::iterator to_check =
         param_types_check.begin();
-    for (ApiType param_type : this->param_types) {
-        if (!param_type.isType(*to_check))
+    for (ApiType* param_type : this->param_types) {
+        if (!param_type->isType(*to_check))
             return false;
         to_check++;
     }
@@ -178,8 +178,8 @@ std::string
 ApiFunc::print() const
 {
     std::stringstream print_ss;
-    if (this->getMemberType().getTypeStr() != "")
-        print_ss << this->getMemberType().getTypeStr() << ".";
+    if (this->getMemberType()->getTypeStr() != "")
+        print_ss << this->getMemberType()->getTypeStr() << ".";
     print_ss << this->getName() << "(";
     print_ss << makeArgString(this->getParamTypes()) << ")";
     return print_ss.str();
@@ -195,19 +195,19 @@ ApiFuzzer::getInstrList()
     return this->instrs;
 }
 
-std::vector<ApiObject>
+std::vector<ApiObject*>
 ApiFuzzer::getObjList()
 {
     return this->objs;
 }
 
-std::set<ApiType>
+std::set<ApiType*>
 ApiFuzzer::getTypeList()
 {
     return this->types;
 }
 
-std::set<ApiFunc>
+std::set<ApiFunc*>
 ApiFuzzer::getFuncList()
 {
     return this->funcs;
@@ -220,77 +220,77 @@ ApiFuzzer::addInstr(std::string instr)
 }
 
 void
-ApiFuzzer::addObj(ApiObject obj)
+ApiFuzzer::addObj(ApiObject* obj)
 {
     this->objs.push_back(obj);
 }
 
 void
-ApiFuzzer::addType(ApiType type)
+ApiFuzzer::addType(ApiType* type)
 {
     this->types.insert(type);
 }
 
 void
-ApiFuzzer::addFunc(ApiFunc func)
+ApiFuzzer::addFunc(ApiFunc* func)
 {
     this->funcs.insert(func);
 }
 
-std::vector<ApiObject>
-ApiFuzzer::filterObjByType(ApiType obj_type)
+std::vector<ApiObject*>
+ApiFuzzer::filterObjByType(ApiType* obj_type)
 {
-    std::vector<ApiObject> objs_by_type;
-    for (ApiObject obj : this->getObjList())
-        if (obj.getType().isType(obj_type))
+    std::vector<ApiObject*> objs_by_type;
+    for (ApiObject* obj : this->getObjList())
+        if (obj->getType()->isType(obj_type))
             objs_by_type.push_back(obj);
     return objs_by_type;
 }
 
-std::vector<ApiObject>
+std::vector<ApiObject*>
 ApiFuzzer::filterObjByType(std::string type_name)
 {
-    ApiType type = this->getTypeByName(type_name);
+    ApiType* type = this->getTypeByName(type_name);
     return filterObjByType(type);
 }
 
-ApiType
+ApiType*
 ApiFuzzer::getTypeByName(std::string type_check)
 {
-    for (ApiType type : this->getTypeList())
-        if (type.isType(type_check))
+    for (ApiType* type : this->getTypeList())
+        if (type->hasName(type_check))
             return type;
     std::cout << "Could not find type " << type_check << std::endl;
     std::cout << "List of types:" << std::endl;
-    for (ApiType type : this->getTypeList())
-        std::cout << "\t" << type.getTypeStr() << std::endl;
+    for (ApiType* type : this->getTypeList())
+        std::cout << "\t" << type->getTypeStr() << std::endl;
     assert(false);
 }
 
 template<typename T>
-std::set<ApiFunc>
+std::set<ApiFunc*>
 ApiFuzzer::filterFuncs(bool (ApiFunc::*filter_func)(T) const, T filter_check)
 {
     return filterFuncs(this->getFuncList(), filter_func, filter_check);
 }
 
 template<typename T>
-std::set<ApiFunc>
-ApiFuzzer::filterFuncs(std::set<ApiFunc> func_list,
+std::set<ApiFunc*>
+ApiFuzzer::filterFuncs(std::set<ApiFunc*> func_list,
     bool (ApiFunc::*filter_func)(T) const, T filter_check)
 {
-    std::set<ApiFunc> filtered_funcs;
-    for (ApiFunc fn : func_list)
-        if ((fn.*filter_func)(filter_check))
+    std::set<ApiFunc*> filtered_funcs;
+    for (ApiFunc* fn : func_list)
+        if ((fn->*filter_func)(filter_check))
             filtered_funcs.insert(fn);
     return filtered_funcs;
 }
 
 
-ApiFunc
+ApiFunc*
 ApiFuzzer::getFuncByName(std::string name)
 {
-    std::set<ApiFunc> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
+    std::set<ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
     return getRandomSetElem(filtered_funcs);
 }
 
@@ -302,14 +302,14 @@ ApiFuzzer::getNextID()
     return this->next_obj_id - 1;
 }
 
-ApiObject
+ApiObject*
 ApiFuzzer::generateApiObjectAndDecl(std::string name, std::string type,
     std::string init_func, std::initializer_list<std::string> init_func_args)
 {
-    ApiObject new_obj (name, this->getNextID(), type);
+    ApiObject* new_obj = new ApiObject(name, this->getNextID(), this->getTypeByName(type));
     this->addObj(new_obj);
     std::stringstream obj_init_ss;
-    obj_init_ss << new_obj.toStrWithType() << " = " << init_func;
+    obj_init_ss << new_obj->toStrWithType() << " = " << init_func;
     obj_init_ss << "(" << getStringWithDelims(init_func_args, ',') << ");";
     this->addInstr(obj_init_ss.str());
     return new_obj;
@@ -324,50 +324,51 @@ ApiFuzzer::generateApiObjectAndDecl(std::string name, std::string type,
 //Apifuzzer::generateApiObject(std::string name, ApiType type,
     //ApiFunc init_func, std::vector<ApiObject> init_func_args)
 //{
+    //ApiObject new_obj(name,
 //}
 
 void
-ApiFuzzer::applyFunc(ApiFunc& func, ApiObject& target_obj, bool store_result)
+ApiFuzzer::applyFunc(ApiFunc* func, ApiObject* target_obj, bool store_result)
 {
     std::stringstream apply_func_ss;
     if (store_result)
-        apply_func_ss << target_obj.toStr() << " = ";
-    apply_func_ss << target_obj.toStr() << "." << func.getName();
-    std::vector<ApiObject> func_args = getFuncArgs(func);
+        apply_func_ss << target_obj->toStr() << " = ";
+    apply_func_ss << target_obj->toStr() << "." << func->getName();
+    std::vector<ApiObject*> func_args = getFuncArgs(func);
     apply_func_ss << "(" << makeArgString(func_args) << ");";
     this->addInstr(apply_func_ss.str());
 }
 
 void
-ApiFuzzer::applyFunc(ApiFunc& func, ApiObject& target_obj, bool store_result,
-    std::vector<ApiObject> func_args)
+ApiFuzzer::applyFunc(ApiFunc* func, ApiObject* target_obj, bool store_result,
+    std::vector<ApiObject*> func_args)
 {
     std::stringstream apply_func_ss;
     if (store_result)
-        apply_func_ss << target_obj.toStr() << " = ";
-    apply_func_ss << target_obj.toStr() << "." << func.getName();
+        apply_func_ss << target_obj->toStr() << " = ";
+    apply_func_ss << target_obj->toStr() << "." << func->getName();
     apply_func_ss << "(" << makeArgString(func_args) << ");";
     this->addInstr(apply_func_ss.str());
 }
 
 void
-ApiFuzzer::applyFuncAndStore(ApiFunc& func, ApiObject& target_obj,
-    ApiObject& store_obj, std::vector<ApiObject> func_args)
+ApiFuzzer::applyFuncAndStore(ApiFunc* func, ApiObject* target_obj,
+    ApiObject* store_obj, std::vector<ApiObject*> func_args)
 {
     std::stringstream apply_func_ss;
-    apply_func_ss << store_obj.toStr() << " = ";
-    apply_func_ss << target_obj.toStr() << "." << func.getName();
+    apply_func_ss << store_obj->toStr() << " = ";
+    apply_func_ss << target_obj->toStr() << "." << func->getName();
     apply_func_ss << "(" << makeArgString(func_args) << ");";
     this->addInstr(apply_func_ss.str());
 }
 
-std::vector<ApiObject>
-ApiFuzzer::getFuncArgs(ApiFunc func/*, ApiObject (*fallbackFunc)(void)*/)
+std::vector<ApiObject*>
+ApiFuzzer::getFuncArgs(ApiFunc* func)
 {
-    std::vector<ApiType> param_types = func.getParamTypes();
-    std::vector<ApiObject> params;
-    for (ApiType param_type : param_types) {
-        std::vector<ApiObject> candidate_params =
+    std::vector<ApiType*> param_types = func->getParamTypes();
+    std::vector<ApiObject*> params;
+    for (ApiType* param_type : param_types) {
+        std::vector<ApiObject*> candidate_params =
             this->filterObjByType(param_type);
         if (candidate_params.empty())
             params.push_back(this->generateObject(param_type));
@@ -381,13 +382,14 @@ ApiFuzzer::getFuncArgs(ApiFunc func/*, ApiObject (*fallbackFunc)(void)*/)
  * ApiFuzzerISL functions
  ******************************************************************************/
 
-std::vector<ApiType> isl_types = {
-    ApiType("isl::val"),
-    ApiType("isl::pw_aff"),
-    ApiType("isl::set"),
-    ApiType("isl::space"),
-    ApiType("isl::local_space"),
-    ApiType("isl::ctx"),
+std::vector<ApiType*> isl_types = {
+    new ApiType("isl::val"),
+    new ApiType("isl::pw_aff"),
+    new ApiType("isl::set"),
+    new ApiType("isl::space"),
+    new ApiType("isl::local_space"),
+    new ApiType("isl::ctx"),
+    new ApiType("void"),
 };
 
 struct {
@@ -453,7 +455,7 @@ ApiFuzzerISL::ApiFuzzerISL(const unsigned int _max_dims,
     params(std::rand() % _max_params + 1),
     constraints(std::rand() % _max_constraints + 1)
 {
-    this->dim_var_list = std::vector<ApiObject>();
+    this->dim_var_list = std::vector<ApiObject*>();
     this->initTypes();
     this->initFuncs();
 }
@@ -463,19 +465,18 @@ ApiFuzzerISL::initFuncs()
 {
     const unsigned int func_arr_size = sizeof(isl_funcs) / sizeof(isl_funcs[0]);
     for (int i = 0; i < func_arr_size; i++) {
-        ApiType member_type =
+        ApiType* member_type =
             isl_funcs[i].member_type_name == "" ?
-            (ApiType) NULL :
+            nullptr :
             this->getTypeByName(isl_funcs[i].member_type_name);
-        ApiType return_type =
-            isl_funcs[i].return_type_name == "void" ?
-            ApiType::getVoid() :
+        ApiType* return_type =
             this->getTypeByName(isl_funcs[i].return_type_name);
-        std::vector<ApiType> param_types;
+        std::vector<ApiType*> param_types;
         for (std::string type_str : isl_funcs[i].param_type_name)
             param_types.push_back(this->getTypeByName(type_str));
-        ApiFunc new_func(isl_funcs[i].func_name, member_type, return_type,
-            param_types, std::vector<std::string>(isl_funcs[i].conditions));
+        ApiFunc* new_func = new ApiFunc(isl_funcs[i].func_name, member_type,
+            return_type, param_types,
+            std::vector<std::string>(isl_funcs[i].conditions));
         this->addFunc(new_func);
     }
 }
@@ -483,173 +484,201 @@ ApiFuzzerISL::initFuncs()
 void
 ApiFuzzerISL::initTypes()
 {
-    for (ApiType type : isl_types)
+    for (ApiType* type : isl_types)
         this->addType(type);
 }
 
+ApiFuzzerISL::~ApiFuzzerISL()
+{
+    this->clearObjs();
+    this->clearFuncs();
+    this->clearTypes();
+}
+
 void
-ApiFuzzerISL::addDimVar(ApiObject dim_var)
+ApiFuzzerISL::clearObjs()
+{
+    for (ApiObject* obj : this->getObjList())
+        delete(obj);
+}
+
+void
+ApiFuzzerISL::clearFuncs()
+{
+    for (ApiFunc* func : this->getFuncList())
+        delete(func);
+}
+
+void
+ApiFuzzerISL::clearTypes()
+{
+    for (ApiType* type : this->getTypeList())
+        delete(type);
+}
+
+void
+ApiFuzzerISL::addDimVar(ApiObject* dim_var)
 {
     this->dim_var_list.push_back(dim_var);
 }
 
-std::vector<ApiObject>
+std::vector<ApiObject*>
 ApiFuzzerISL::getDimVarList()
 {
     return this->dim_var_list;
 }
 
-ApiObject
+ApiObject*
 ApiFuzzerISL::generateSet()
 {
-    ApiObject ctx = this->generateApiObjectAndDecl(
+    ApiObject* ctx = this->generateApiObjectAndDecl(
         "ctx", "isl::ctx", "isl::ctx", { "ctx_ptr" });
-    ApiObject space = this->generateApiObjectAndDecl(
+    ApiObject* space = this->generateApiObjectAndDecl(
         "space", "isl::space", "isl::space",
-        {ctx.toStr(), std::to_string(params), std::to_string(dims)});
-    ApiObject l_space = this->generateApiObjectAndDecl(
-        "local_space", "isl::local_space", "isl::local_space", {space.toStr()});
+        {ctx->toStr(), std::to_string(params), std::to_string(dims)});
+    ApiObject* l_space = this->generateApiObjectAndDecl(
+        "local_space", "isl::local_space", "isl::local_space", {space->toStr()});
     for (unsigned int i = 0; i < this->dims; i++) {
-        ApiObject dim_var = this->generateApiObjectAndDecl(
+        ApiObject* dim_var = this->generateApiObjectAndDecl(
             "v", "isl::pw_aff", "isl::pw_aff::var_on_domain",
-            {l_space.toStr(), "isl::dim::set", std::to_string(i)});
+            {l_space->toStr(), "isl::dim::set", std::to_string(i)});
         this->addDimVar(dim_var);
     }
     for (unsigned int i = 0; i < this->params; i++) {
-        ApiObject dim_var = this->generateApiObjectAndDecl(
+        ApiObject* dim_var = this->generateApiObjectAndDecl(
             "v", "isl::pw_aff", "isl::pw_aff::var_on_domain",
-            {l_space.toStr(), "isl::dim::param", std::to_string(i)});
+            {l_space->toStr(), "isl::dim::param", std::to_string(i)});
         this->addDimVar(dim_var);
     }
-    ApiObject set = this->generateApiObjectAndDecl(
-        "set", "isl::set", "isl::set::universe", {space.toStr()});
+    ApiObject* set = this->generateApiObjectAndDecl(
+        "set", "isl::set", "isl::set::universe", {space->toStr()});
     for (int i = 0; i < constraints; i++) {
-        ApiObject cons1 = this->generatePWAff(ctx);
-        ApiObject cons2 = this->generatePWAff(ctx);
-        ApiObject cons_set = this->generateSetFromConstraints(cons1, cons2);
+        ApiObject* cons1 = this->generatePWAff(ctx);
+        ApiObject* cons2 = this->generatePWAff(ctx);
+        ApiObject* cons_set = this->generateSetFromConstraints(cons1, cons2);
         this->addConstraintFromSet(set, cons_set);
     }
-    ApiFunc dump_func = getFuncByName("dump");
-    this->applyFunc(dump_func, set, false, std::vector<ApiObject>());
+    ApiFunc* dump_func = getFuncByName("dump");
+    this->applyFunc(dump_func, set, false, std::vector<ApiObject*>());
     return set;
 }
 
-ApiObject
-ApiFuzzerISL::generateObject(ApiType obj_type)
+ApiObject*
+ApiFuzzerISL::generateObject(ApiType* obj_type)
 {
-    if (obj_type.hasName("isl::val"))
+    if (obj_type->hasName("isl::val"))
         return generateSimpleVal();
-    std::cout << "Missing object generation for type " << obj_type.getTypeStr();
+    std::cout << "Missing object generation for type " << obj_type->getTypeStr();
     assert(false);
 }
 
-ApiObject
+ApiObject*
 ApiFuzzerISL::generateObject(std::string obj_name, std::string obj_type)
 {
-    ApiObject new_obj(obj_name, this->getNextID(), this->getTypeByName(obj_type));
+    ApiObject* new_obj = new ApiObject(obj_name, this->getNextID(), this->getTypeByName(obj_type));
     return new_obj;
 }
 
 
-ApiObject
+ApiObject*
 ApiFuzzerISL::getRandomDimVar()
 {
-    std::vector<ApiObject> dim_var_list = this->getDimVarList();
+    std::vector<ApiObject*> dim_var_list = this->getDimVarList();
     return dim_var_list.at(std::rand() % dim_var_list.size());
 }
 
-ApiObject
+ApiObject*
 ApiFuzzerISL::getCtx()
 {
-    std::vector<ApiObject> ctx_list = this->filterObjByType("isl::ctx");
+    std::vector<ApiObject*> ctx_list = this->filterObjByType("isl::ctx");
     assert (ctx_list.size() == 1);
     return ctx_list.at(0);
 }
 
-ApiObject
+ApiObject*
 ApiFuzzerISL::generateVal()
 {
-    ApiObject val = this->generateSimpleVal();
+    ApiObject* val = this->generateSimpleVal();
     this->augmentVal(val);
     return val;
 }
 
-ApiObject
+ApiObject*
 ApiFuzzerISL::generateSimpleVal()
 {
-    ApiObject val = this->generateObject("val", "isl::val");
-    //ApiObject val("val", this->getNextID(), "isl::val");
-    ApiObject ctx = this->getCtx();
+    ApiObject* val = this->generateObject("val", "isl::val");
+    ApiObject* ctx = this->getCtx();
     this->addInstr(fmt::format("{} = isl::val({}, {});",
-        val.toStrWithType(), ctx.toStr(), (long) std::rand() % 10));
+        val->toStrWithType(), ctx->toStr(), (long) std::rand() % 10));
     return val;
 }
 
 void
-ApiFuzzerISL::augmentVal(ApiObject& val)
+ApiFuzzerISL::augmentVal(ApiObject* val)
 {
     const unsigned int val_augment_count = std::rand() % 5 + 1;
     for (int i = 0; i < val_augment_count; i++) {
-        std::set<ApiFunc> valid_func_list = filterFuncs(&ApiFunc::hasMemberType, this->getTypeByName("isl::val"));
-        ApiFunc augment_func = getRandomSetElem(valid_func_list);
+        std::set<ApiFunc*> valid_func_list = filterFuncs(&ApiFunc::hasMemberType,
+            this->getTypeByName("isl::val"));
+        ApiFunc* augment_func = getRandomSetElem(valid_func_list);
         this->applyFunc(augment_func, val, true);
     }
 }
 
-ApiObject
+ApiObject*
 ApiFuzzerISL::getExistingVal()
 {
-    std::vector<ApiObject> all_vals = this->filterObjByType("isl::val");
+    std::vector<ApiObject*> all_vals = this->filterObjByType("isl::val");
     if (all_vals.size() == 0) {
-        ApiObject ctx = this->getCtx();
+        ApiObject* ctx = this->getCtx();
         return this->generateSimpleVal();
     }
     return this->filterObjByType("isl::val")[std::rand() % all_vals.size()];
 }
 
-ApiObject
-ApiFuzzerISL::generatePWAff(ApiObject& ctx)
+ApiObject*
+ApiFuzzerISL::generatePWAff(ApiObject* ctx)
 {
-    ApiObject pw_aff = this->getRandomDimVar();
-    ApiObject cons_pwa = this->generateApiObjectAndDecl(
-        "pw_aff", "isl::pw_aff", "isl::pw_aff", {pw_aff.toStr()});
+    ApiObject* pw_aff = this->getRandomDimVar();
+    ApiObject* cons_pwa = this->generateApiObjectAndDecl(
+        "pw_aff", "isl::pw_aff", "isl::pw_aff", {pw_aff->toStr()});
     unsigned int op_count = 5;
     while (op_count-- > 0) {
-        std::set<ApiFunc> valid_func_list = filterFuncs(
+        std::set<ApiFunc*> valid_func_list = filterFuncs(
             &ApiFunc::hasMemberType, this->getTypeByName("isl::pw_aff"));
         valid_func_list = filterFuncs(valid_func_list,
             &ApiFunc::hasReturnType, this->getTypeByName("isl::pw_aff"));
-        ApiFunc augment_func = getRandomSetElem(valid_func_list);
-        std::vector<ApiType> func_params = augment_func.getParamTypes();
+        ApiFunc* augment_func = getRandomSetElem(valid_func_list);
+        std::vector<ApiType*> func_params = augment_func->getParamTypes();
         // TODO still a hack actually
         if (func_params.empty())
             this->applyFunc(augment_func, cons_pwa, true);
-        else if (func_params.at(0).hasName("isl::val"))
+        else if (func_params.at(0)->hasName("isl::val"))
             this->applyFunc(augment_func, cons_pwa, true,
-                std::vector<ApiObject>({ this->generateVal() }));
-        else if (func_params.at(0).hasName("isl::pw_aff"))
+                std::vector<ApiObject*>({ this->generateVal() }));
+        else if (func_params.at(0)->hasName("isl::pw_aff"))
             this->applyFunc(augment_func, cons_pwa, true,
-                std::vector<ApiObject>({ this->getRandomDimVar() }));
+                std::vector<ApiObject*>({ this->getRandomDimVar() }));
     }
     return cons_pwa;
 }
 
-ApiObject
-ApiFuzzerISL::generateSetFromConstraints(ApiObject& cons1, ApiObject& cons2)
+ApiObject*
+ApiFuzzerISL::generateSetFromConstraints(ApiObject* cons1, ApiObject* cons2)
 {
-    std::set<ApiFunc> set_gen_funcs = this->filterFuncs(
+    std::set<ApiFunc*> set_gen_funcs = this->filterFuncs(
         &ApiFunc::hasReturnType, getTypeByName("isl::set"));
     set_gen_funcs = this->filterFuncs(set_gen_funcs,
         &ApiFunc::hasMemberType, getTypeByName("isl::pw_aff"));
-    ApiFunc set_decl_func = getRandomSetElem(set_gen_funcs);
+    ApiFunc* set_decl_func = getRandomSetElem(set_gen_funcs);
     return this->generateApiObjectAndDecl("set", "isl::set",
-        fmt::format("{}.{}", cons1.toStr(), set_decl_func.getName()),
-        { cons2.toStr() });
+        fmt::format("{}.{}", cons1->toStr(), set_decl_func->getName()),
+        { cons2->toStr() });
 }
 
 void
-ApiFuzzerISL::addConstraintFromSet(ApiObject& set, ApiObject& constraint)
+ApiFuzzerISL::addConstraintFromSet(ApiObject* set, ApiObject* constraint)
 {
-    ApiFunc intersect_func = getFuncByName("intersect");
-    this->applyFunc(intersect_func, set, true, std::vector<ApiObject>({ constraint }));
+    ApiFunc* intersect_func = getFuncByName("intersect");
+    this->applyFunc(intersect_func, set, true, std::vector<ApiObject*>({ constraint }));
 }
