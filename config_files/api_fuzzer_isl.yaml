@@ -1,0 +1,67 @@
+---
+inputs:
+    - params: 'const unsigned int'
+    - dims: 'const unsigned int'
+    - constraints: 'const unsigned int'
+
+types:
+    - 'void'
+    - 'isl::val'
+    - 'isl::pw_aff'
+    - 'isl::set'
+
+singleton_types:
+    - 'isl::space'
+    - 'isl::local_space'
+    - 'isl::ctx'
+
+funcs:
+    - ['two_exp', 'isl::val', 'isl::val', [], []]
+    - ['abs', 'isl::val', 'isl::val', [], []]
+    - ['ceil', 'isl::val', 'isl::val', [], []]
+    - ['floor', 'isl::val', 'isl::val', [], []]
+    - ['inv', 'isl::val', 'isl::val', [], []]
+    - ['neg', 'isl::val', 'isl::val', [], []]
+    - ['trunc', 'isl::val', 'isl::val', [], []]
+    - ['add', 'isl::val', 'isl::val', ['isl::val'], []]
+    - ['div', 'isl::val', 'isl::val', ['isl::val'], []]
+    - ['max', 'isl::val', 'isl::val', ['isl::val'], []]
+    - ['min', 'isl::val', 'isl::val', ['isl::val'], []]
+    - ['mul', 'isl::val', 'isl::val', ['isl::val'], []]
+    - ['sub', 'isl::val', 'isl::val', ['isl::val'], []]
+    - ['mod', 'isl::pw_aff', 'isl::pw_aff', ['isl::val'], ['false']]
+    - ['scale', 'isl::pw_aff', 'isl::pw_aff', ['isl::val'], ['false']]
+    - ['add', 'isl::pw_aff', 'isl::pw_aff', ['isl::pw_aff'], []]
+    - ['sub', 'isl::pw_aff', 'isl::pw_aff', ['isl::pw_aff'], []]
+    - ['max', 'isl::pw_aff', 'isl::pw_aff', ['isl::pw_aff'], []]
+    - ['min', 'isl::pw_aff', 'isl::pw_aff', ['isl::pw_aff'], []]
+    - ['le_set', 'isl::pw_aff', 'isl::set', ['isl::pw_aff'], []]
+    - ['ge_set', 'isl::pw_aff', 'isl::set', ['isl::pw_aff'], []]
+    - ['lt_set', 'isl::pw_aff', 'isl::set', ['isl::pw_aff'], []]
+    - ['gt_set', 'isl::pw_aff', 'isl::set', ['isl::pw_aff'], []]
+    - ['eq_set', 'isl::pw_aff', 'isl::set', ['isl::pw_aff'], []]
+    - ['ne_set', 'isl::pw_aff', 'isl::set', ['isl::pw_aff'], []]
+    - ['dump', 'isl::set', 'void', [], []]
+    - ['intersect', 'isl::set', 'isl::set', ['isl::pw_aff'], []]
+
+constructors:
+    - ['isl::space', ['isl::ctx', 'params', 'dims']]
+    - ['isl::local_space', ['isl::space']]
+    - ['isl::val', ['const unsigned int']]
+    - ['isl::pw_aff', ['isl::val']]
+    - ['isl::ctx', ['ctx_ptr']]
+
+special_funcs:
+    - ['var_on_domain', 'isl::pw_aff', 'isl::pw_aff', ['isl::local_space', 'isl:
+       :dim::set', 'const unsigned int'], "dim_var"]
+    - ['var_on_domain', 'isl::pw_aff', 'isl::pw_aff', ['isl::local_space', 'isl:
+       :dim::param', 'const unsigned int'], "param_var"]
+    - ['universe', 'isl::set', 'isl::set', ['isl::space']
+
+set_gen:
+    - ['isl::ctx', 'ctx', ['ctx(ctx_ptr)']]
+    - ["for", '[0, dims)', 'dim_var']
+    - ["for", '[0, params)', 'param_var']
+    - ['universe', 's', ['isl::space']]
+    - ["for", '[0, constraints)', 'intersect']
+    - ['dump', '', ['s']]

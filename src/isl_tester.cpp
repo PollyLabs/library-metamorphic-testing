@@ -130,8 +130,8 @@ main(int argc, char **argv)
     else if (args.mode == isl_tester::Modes::SET_META_API) {
         std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerISL(args.max_dims,
             args.max_params, args.max_set_count));
-        std::unique_ptr<ApiObject> fuzzed_set =
-            std::unique_ptr<ApiObject>(api_fuzzer->generateSet());
+        std::unique_ptr<const ApiObject> fuzzed_set =
+            std::unique_ptr<const ApiObject>(api_fuzzer->generateSet());
         std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
         set_decl_calls.push_back("isl::set s = isl::set(" + fuzzed_set->toStr() + ");");
         set_meta_tester::runSimple(set_decl_calls, args);
