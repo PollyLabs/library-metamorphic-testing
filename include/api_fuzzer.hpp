@@ -1,6 +1,7 @@
 #ifndef API_FUZZER_HPP
 #define API_FUZZER_HPP
 
+#include <experimental/random>
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -18,6 +19,13 @@ enum ApiTarget {
     ISL,
 };
 
+enum PrimitiveTypeEnum {
+    STRING,
+    UINT,
+};
+
+extern std::map<std::string, PrimitiveTypeEnum> primitives_map;
+
 class ApiType;
 class ApiFunc;
 class ApiObject;
@@ -25,8 +33,11 @@ class ApiObject;
 std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
 template<typename T> T getRandomVectorElem(std::vector<T>&);
+template<typename T> T getRandomSetElem(std::set<T>&);
 template<typename T> std::vector<const ApiObject*> filterObjList
     (std::vector<const ApiObject*>, bool (ApiObject::*)(T) const, T);
+template<typename T> std::set<const ApiFunc*> filterFuncList(
+    std::set<const ApiFunc*>, bool (ApiFunc::*)(T) const, T);
 
 class ApiType {
     const std::string name;
@@ -39,6 +50,7 @@ class ApiType {
         std::string getTypeStr() const;
         bool isType(const ApiType*) const;
         bool isSingleton() const;
+        bool isPrimitive() const;
         bool hasName(std::string) const;
         static ApiType getVoid();
 
@@ -49,6 +61,18 @@ class ApiType {
         }
 };
 
+class PrimitiveType : public ApiType {
+    const PrimitiveTypeEnum type_enum;
+    std::string range;
+
+    public:
+        PrimitiveType(std::string _name) : ApiType(_name, false),
+            type_enum(primitives_map[_name]), range("") {};
+
+        bool isPrimitive() const;
+        const PrimitiveTypeEnum getTypeEnum() const;
+};
+
 class ApiObject {
     const unsigned int id;
     const std::string name;
@@ -57,10 +81,23 @@ class ApiObject {
     public:
         ApiObject(std::string _name, unsigned int _id, const ApiType* _type) :
             id(_id), name(_name), type(_type) {};
+        bool isPrimitive() const;
         std::string toStr() const;
         std::string toStrWithType() const;
         const ApiType* getType() const;
+
         bool hasType(const ApiType*) const;
+};
+
+template<class T>
+class PrimitiveObject : public ApiObject {
+    T data;
+
+    public:
+        PrimitiveObject(const PrimitiveType* _type, T _data) : ApiObject(_type->toStr(),
+            -1, _type), data(_data) {};
+
+        T getData() const;
 };
 
 class ApiFunc {
@@ -69,13 +106,14 @@ class ApiFunc {
     const ApiType* return_type;
     const std::vector<const ApiType*> param_types;
     const std::vector<std::string> conditions;
+    const std::string hint;
 
     public:
         ApiFunc(std::string _name, const ApiType* _member_type, const ApiType* _return_type,
             std::vector<const ApiType*> _param_types,
-            std::vector<std::string> _conditions) :
+            std::vector<std::string> _conditions, std::string _hint = "") :
             name(_name), member_type(_member_type), return_type(_return_type),
-            param_types(_param_types), conditions(_conditions) {};
+            param_types(_param_types), conditions(_conditions), hint(_hint) {};
 
         std::string getName() const;
         std::vector<const ApiType*> getParamTypes() const;
@@ -88,6 +126,7 @@ class ApiFunc {
         bool hasReturnType(const ApiType*) const;
         bool hasName(std::string) const;
         bool hasParamTypes(std::vector<const ApiType*>) const;
+        bool hasHint(std::string) const;
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
@@ -122,15 +161,11 @@ class ApiFuzzer {
         bool hasTypeName(std::string);
         bool hasFuncName(std::string);
 
-        std::vector<const ApiObject*> filterObjByType(const ApiType*);
-        std::vector<const ApiObject*> filterObjByType(std::string);
         const ApiType* getTypeByName(std::string);
         template<typename T> std::vector<const ApiObject*> filterObjs(
             bool (ApiObject::*)(T) const, T);
         template<typename T> std::set<const ApiFunc*> filterFuncs(
             bool (ApiFunc::*)(T) const, T);
-        template<typename T> std::set<const ApiFunc*> filterFuncs(
-            std::set<const ApiFunc*>, bool (ApiFunc::*)(T) const, T);
         const ApiFunc* getFuncByName(std::string);
 
         void addInstr(std::string);
@@ -154,19 +189,34 @@ class ApiFuzzer {
 };
 
 class ApiFuzzerNew : public ApiFuzzer {
+    std::map<std::string, const ApiObject*> fuzzer_input;
+    std::vector<YAML::Node> set_gen_instrs;
+
     public:
-        ApiFuzzerNew(std::string config_file_path);
+        ApiFuzzerNew(std::string& config_file_path);
         //~ApiFuzzerNew();
 
     private:
-        std::vector<unsigned int> inputs;
 
-        void initTypes(YAML::Node, YAML::Node);
+        void initPrimitiveTypes();
+        void initInputs(YAML::Node);
+        void initTypes(YAML::Node);
         void initFuncs(YAML::Node);
+        ApiFunc* genNewApiFunc(YAML::Node);
+        void initConstructors(YAML::Node);
+        void initGenConfig(YAML::Node);
         void runGeneration(YAML::Node);
         void generateForLoop(YAML::Node);
         void generateConstructor(YAML::Node);
         void generateFunc(YAML::Node);
+        const ApiObject* getSingletonObject(const ApiType*);
+
+        virtual const ApiObject* generateObject(const ApiType*);
+        const ApiObject* generateNewObject(const ApiType*);
+        const ApiObject* generatePrimitiveObject(const PrimitiveType*);
+        const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
+        virtual const ApiObject* generateSet();
+        const ApiType* parseTypeStr(std::string);
 };
 
 class ApiFuzzerISL : public ApiFuzzer {

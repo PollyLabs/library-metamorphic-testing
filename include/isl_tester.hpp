@@ -1,8 +1,6 @@
 #ifndef ISL_TESTER_HPP
 #define ISL_TESTER_HPP
 
-#pragma once
-
 #include <iostream>
 #include <map>
 #include <fstream>
@@ -23,6 +21,7 @@ enum Modes {
     SET_TEST,
     SET_META_STR,
     SET_META_API,
+    SET_META_NEW,
 };
 
 struct Arguments {

@@ -8,6 +8,7 @@ std::map<std::string, Modes> string_to_mode {
     {"SET_TEST", SET_TEST},
     {"SET_META_STR", SET_META_STR},
     {"SET_META_API", SET_META_API},
+    {"SET_META_NEW", SET_META_NEW},
 };
 
 Arguments
@@ -135,6 +136,10 @@ main(int argc, char **argv)
         std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
         set_decl_calls.push_back("isl::set s = isl::set(" + fuzzed_set->toStr() + ");");
         set_meta_tester::runSimple(set_decl_calls, args);
+    }
+    else if (args.mode == isl_tester::Modes::SET_META_NEW) {
+        std::string config_path = "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
+        std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerNew(config_path));
     }
     else {
         std::cout << "Unknown option " << argv[1] << std::endl;
