@@ -157,19 +157,19 @@ funcs:
       return_type: 'isl::set'
       param_types: ['isl::pw_aff']
       conditions: []
-    - name: 'var_on_domain'
-      member_type: 'isl::pw_aff'
-      return_type: 'isl::pw_aff'
-      param_types: ['isl::local_space', 'string', 'unsigned int']
-      conditions: []
-
-special_funcs:
+    # Start special funcs
     - name: 'universe'
       member_type: 'isl::set'
       return_type: 'isl::set'
       param_types: ['isl::space']
       conditions: []
-      hint: "universe"
+      special: true
+    - name: 'var_on_domain'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::local_space', 'string', 'unsigned int']
+      conditions: []
+      special: true
 
 constructors:
     - name: 'isl::space'
@@ -181,7 +181,7 @@ constructors:
     - name: 'isl::pw_aff'
       param_types: ['isl::val']
     - name: 'isl::ctx'
-      param_types: ['string']
+      param_types: ['<string:isl_ctx>']
 
 set_gen:
     - - 'isl::ctx'

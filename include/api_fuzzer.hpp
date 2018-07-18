@@ -41,24 +41,32 @@ template<typename T> std::set<const ApiFunc*> filterFuncList(
 
 class ApiType {
     const std::string name;
-    const bool singleton;
 
     public:
-        ApiType(std::string _name, bool _singleton = false) : name(_name),
-            singleton(_singleton) {};
+        ApiType(std::string _name) : name(_name) {};
 
-        std::string getTypeStr() const;
-        bool isType(const ApiType*) const;
-        bool isSingleton() const;
-        bool isPrimitive() const;
-        bool hasName(std::string) const;
-        static ApiType getVoid();
+        std::string toStr() const { return this->name; };
 
-        std::string toStr() const;
+        bool hasName(std::string name_check) const {
+            return !this->toStr().compare(name_check);
+        };
+        bool isType(const ApiType* other) const  {
+            return !this->toStr().compare(other->toStr());
+        };
+
+        virtual bool isSingleton() const { return false; };
+        virtual bool isPrimitive() const { return false; };
 
         inline bool operator<(const ApiType* other) const {
-            return this->getTypeStr() < other->getTypeStr();
-        }
+            return this->toStr() < other->toStr();
+        };
+};
+
+class SingletonType : public ApiType {
+    public:
+        SingletonType(std::string _name) : ApiType(_name) {};
+
+        bool isSingleton() const { return true; };
 };
 
 class PrimitiveType : public ApiType {
@@ -66,11 +74,24 @@ class PrimitiveType : public ApiType {
     std::string range;
 
     public:
-        PrimitiveType(std::string _name) : ApiType(_name, false),
+        PrimitiveType(std::string _name) : ApiType(_name),
             type_enum(primitives_map[_name]), range("") {};
 
-        bool isPrimitive() const;
-        const PrimitiveTypeEnum getTypeEnum() const;
+        bool isPrimitive() const { return true; };
+        const PrimitiveTypeEnum getTypeEnum() const { return this->type_enum; };
+};
+
+class ExplicitType : public ApiType {
+    const ApiType* underlying_type;
+    const std::string definition;
+
+    public:
+        ExplicitType(std::string _definition, const ApiType* _underlying_type) :
+            ApiType(_definition), definition(_definition),
+            underlying_type(_underlying_type) {};
+
+        const ApiType* getUnderlyingType() { return this->underlying_type; };
+        const ApiObject* retrieveObj();
 };
 
 class ApiObject {
@@ -81,12 +102,20 @@ class ApiObject {
     public:
         ApiObject(std::string _name, unsigned int _id, const ApiType* _type) :
             id(_id), name(_name), type(_type) {};
-        bool isPrimitive() const;
-        std::string toStr() const;
-        std::string toStrWithType() const;
-        const ApiType* getType() const;
 
-        bool hasType(const ApiType*) const;
+        const ApiType* getType() const { return this->type; };
+
+        bool isPrimitive() const { return this->getType()->isPrimitive(); };
+        bool hasType(const ApiType* type_check) const {
+            return this->getType()->isType(type_check);
+        };
+
+        virtual std::string toStr() const {
+            return fmt::format("{}_{}", this->name, std::to_string(this->id));
+        };
+        virtual std::string toStrWithType() const {
+            return fmt::format("{} {}", this->getType()->toStr(), this->toStr());
+        };
 };
 
 template<class T>
@@ -97,7 +126,11 @@ class PrimitiveObject : public ApiObject {
         PrimitiveObject(const PrimitiveType* _type, T _data) : ApiObject(_type->toStr(),
             -1, _type), data(_data) {};
 
-        T getData() const;
+        T getData() const { return this->data; };
+
+        std::string toStr() const { return fmt::format("{}", this->data); };
+
+        std::string toStrWithType() const { assert(false); };
 };
 
 class ApiFunc {
@@ -106,31 +139,42 @@ class ApiFunc {
     const ApiType* return_type;
     const std::vector<const ApiType*> param_types;
     const std::vector<std::string> conditions;
-    const std::string hint;
+    const bool special;
 
     public:
         ApiFunc(std::string _name, const ApiType* _member_type, const ApiType* _return_type,
             std::vector<const ApiType*> _param_types,
-            std::vector<std::string> _conditions, std::string _hint = "") :
+            std::vector<std::string> _conditions, bool _special = false) :
             name(_name), member_type(_member_type), return_type(_return_type),
-            param_types(_param_types), conditions(_conditions), hint(_hint) {};
+            param_types(_param_types), conditions(_conditions),
+            special(_special) {};
 
-        std::string getName() const;
-        std::vector<const ApiType*> getParamTypes() const;
+        std::string getName() const { return this->name; };
+        std::vector<const ApiType*> getParamTypes() const {
+            return this->param_types;
+        };
         const ApiType* getParamType(const unsigned int) const;
-        unsigned int getParamCount() const;
-        const ApiType* getMemberType() const;
-        const ApiType* getReturnType() const;
+        unsigned int getParamCount() const { return this->param_types.size(); };
+        const ApiType* getMemberType() const { return this->member_type; };
+        const ApiType* getReturnType() const { return this->return_type; };
 
-        bool hasMemberType(const ApiType*) const;
-        bool hasReturnType(const ApiType*) const;
-        bool hasName(std::string) const;
+        bool hasMemberType(const ApiType* member_check) const {
+            return this->getMemberType()->isType(member_check);
+        };
+        bool hasReturnType(const ApiType* return_check) const {
+            return this->getReturnType()->isType(return_check);
+        };
+        bool hasName(std::string name_check) const {
+            return !this->getName().compare(name_check);
+        };
         bool hasParamTypes(std::vector<const ApiType*>) const;
-        bool hasHint(std::string) const;
+        bool isSpecial() const { return this->special; };
+        bool notIsSpecial() const { return !this->special; };
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
-        std::string printInvocation(std::vector<const ApiObject*>) const;
+        std::string printInvocation(std::vector<const ApiObject*>,
+            const ApiObject*) const;
 
         inline bool operator<(const ApiFunc& other) const {
             return this->printSignature() < other.printSignature();
@@ -178,10 +222,10 @@ class ApiFuzzer {
     protected:
         ApiObject* generateApiObjectAndDecl(std::string, std::string,
             std::string, std::initializer_list<std::string>);
+        //const ApiObject* generateApiObject(std::string, const ApiType*,
+            //std::vector<const ApiObject*>);
         const ApiObject* generateApiObject(std::string, const ApiType*,
-            std::vector<const ApiObject*>);
-        const ApiObject* generateApiObject(std::string, const ApiType*,
-            const ApiFunc*, std::vector<const ApiObject*>);
+            const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
             std::vector<const ApiObject*>);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*);
@@ -211,11 +255,11 @@ class ApiFuzzerNew : public ApiFuzzer {
         void generateFunc(YAML::Node);
         const ApiObject* getSingletonObject(const ApiType*);
 
-        virtual const ApiObject* generateObject(const ApiType*);
+        const ApiObject* generateObject(const ApiType*);
         const ApiObject* generateNewObject(const ApiType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
-        virtual const ApiObject* generateSet();
+        const ApiObject* generateSet();
         const ApiType* parseTypeStr(std::string);
 };
 
@@ -228,7 +272,7 @@ class ApiFuzzerISL : public ApiFuzzer {
         ApiFuzzerISL(const unsigned int, const unsigned int, const unsigned int);
         ~ApiFuzzerISL();
 
-        virtual const ApiObject* generateSet();
+        const ApiObject* generateSet();
 
     private:
 
@@ -243,7 +287,7 @@ class ApiFuzzerISL : public ApiFuzzer {
         void clearFuncs();
         void clearTypes();
 
-        virtual const ApiObject* generateObject(const ApiType*);
+        const ApiObject* generateObject(const ApiType*);
         const ApiObject* generateObject(std::string, std::string);
         const ApiObject* getCtx();
         const ApiObject* generateContext();
