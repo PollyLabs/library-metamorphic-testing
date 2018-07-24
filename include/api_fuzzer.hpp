@@ -25,6 +25,7 @@ enum PrimitiveTypeEnum {
 };
 
 extern std::map<std::string, PrimitiveTypeEnum> primitives_map;
+extern char delim_front, delim_back, delim_mid;
 
 class ApiType;
 class ApiFunc;
@@ -43,7 +44,7 @@ class ApiType {
     const std::string name;
 
     public:
-        ApiType(std::string _name) : name(_name) {};
+        ApiType(std::string _name) : name(_name) { assert (!_name.empty()); };
 
         std::string toStr() const { return this->name; };
 
@@ -56,6 +57,8 @@ class ApiType {
 
         virtual bool isSingleton() const { return false; };
         virtual bool isPrimitive() const { return false; };
+        virtual bool isExplicit() const { return false; };
+        virtual bool isInput() const { return false; };
 
         inline bool operator<(const ApiType* other) const {
             return this->toStr() < other->toStr();
@@ -90,8 +93,19 @@ class ExplicitType : public ApiType {
             ApiType(_definition), definition(_definition),
             underlying_type(_underlying_type) {};
 
-        const ApiType* getUnderlyingType() { return this->underlying_type; };
-        const ApiObject* retrieveObj();
+        bool isExplicit() const { return true; };
+        bool isInput() const {
+            return this->definition.find(fmt::format("input{}", delim_mid))
+                != std::string::npos;
+        };
+
+        std::string getDefinition() const { return this->definition; };
+        const ApiType* getUnderlyingType() const {
+            return this->underlying_type;
+        };
+
+        static std::string extractExplicitTypeDecl(std::string);
+        const ApiObject* retrieveObj() const;
 };
 
 class ApiObject {
@@ -106,6 +120,9 @@ class ApiObject {
         const ApiType* getType() const { return this->type; };
 
         bool isPrimitive() const { return this->getType()->isPrimitive(); };
+        bool hasName(std::string name_check) const {
+            return !this->name.compare(name_check);
+        };
         bool hasType(const ApiType* type_check) const {
             return this->getType()->isType(type_check);
         };
@@ -129,7 +146,6 @@ class PrimitiveObject : public ApiObject {
         T getData() const { return this->data; };
 
         std::string toStr() const { return fmt::format("{}", this->data); };
-
         std::string toStrWithType() const { assert(false); };
 };
 
@@ -140,14 +156,16 @@ class ApiFunc {
     const std::vector<const ApiType*> param_types;
     const std::vector<std::string> conditions;
     const bool special;
+    const bool statik;
 
     public:
         ApiFunc(std::string _name, const ApiType* _member_type, const ApiType* _return_type,
             std::vector<const ApiType*> _param_types,
-            std::vector<std::string> _conditions, bool _special = false) :
+            std::vector<std::string> _conditions, bool _special = false,
+            bool _statik = false) :
             name(_name), member_type(_member_type), return_type(_return_type),
             param_types(_param_types), conditions(_conditions),
-            special(_special) {};
+            special(_special), statik(_statik) {};
 
         std::string getName() const { return this->name; };
         std::vector<const ApiType*> getParamTypes() const {
@@ -170,6 +188,7 @@ class ApiFunc {
         bool hasParamTypes(std::vector<const ApiType*>) const;
         bool isSpecial() const { return this->special; };
         bool notIsSpecial() const { return !this->special; };
+        bool isStatic() const { return this->statik; };
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
@@ -222,8 +241,6 @@ class ApiFuzzer {
     protected:
         ApiObject* generateApiObjectAndDecl(std::string, std::string,
             std::string, std::initializer_list<std::string>);
-        //const ApiObject* generateApiObject(std::string, const ApiType*,
-            //std::vector<const ApiObject*>);
         const ApiObject* generateApiObject(std::string, const ApiType*,
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
@@ -260,6 +277,10 @@ class ApiFuzzerNew : public ApiFuzzer {
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
         const ApiObject* generateSet();
+        const ApiObject* getInputObject(std::string);
+
+        std::pair<int, int> parseRange(std::string);
+        int parseRangeSubstr(std::string);
         const ApiType* parseTypeStr(std::string);
 };
 

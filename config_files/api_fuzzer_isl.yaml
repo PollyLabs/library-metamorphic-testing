@@ -2,24 +2,27 @@
 inputs:
     - name: 'params'
       type: 'unsigned int'
-      range: '(0, 5]'
+      range: '(0,5]'
     - name: 'dims'
       type: 'unsigned int'
-      range: '(0, 5]'
+      range: '(0,5]'
     - name: 'constraints'
       type: 'unsigned int'
-      range: '[5, 20]'
+      range: '[5,20]'
 
 types:
-    - ['void']
-    - ['isl::val']
-    - ['isl::pw_aff']
-    - ['isl::set']
+    - name: 'void'
+    - name: 'isl::val'
+    - name: 'isl::pw_aff'
+    - name: 'isl::set'
 
 singleton_types:
-    - ['isl::space', singleton: true]
-    - ['isl::local_space', singleton: true]
-    - ['isl::ctx', singleton: true]
+    - name: 'isl::space'
+      singleton: true
+    - name: 'isl::local_space'
+      singleton: true
+    - name: 'isl::ctx'
+      singleton: true
 
 funcs:
     - name: 'two_exp'
@@ -158,47 +161,59 @@ funcs:
       param_types: ['isl::pw_aff']
       conditions: []
     # Start special funcs
-    - name: 'universe'
-      member_type: 'isl::set'
+    - name: 'isl::set::universe'
+      member_type: 'void'
       return_type: 'isl::set'
       param_types: ['isl::space']
       conditions: []
       special: true
+      static: true
     - name: 'var_on_domain'
       member_type: 'isl::pw_aff'
       return_type: 'isl::pw_aff'
       param_types: ['isl::local_space', 'string', 'unsigned int']
       conditions: []
       special: true
+      static: true
 
 constructors:
     - name: 'isl::space'
-      param_types: ['isl::ctx', '<input:params>', '<input:dims>']
+      param_types: ['isl::ctx', '<input=params>', '<input=dims>']
     - name: 'isl::local_space'
       param_types: ['isl::space']
     - name: 'isl::val'
-      param_types: ['unsigned int']
+      param_types: ['isl::ctx', 'unsigned int']
     - name: 'isl::pw_aff'
       param_types: ['isl::val']
     - name: 'isl::ctx'
-      param_types: ['<string:isl_ctx>']
+      param_types: ['<string=ctx_ptr>']
 
 set_gen:
-    - - 'isl::ctx'
-      - 'ctx'
-      - ['ctx(ctx_ptr)']
-    - - 'for'
-      - '[0, <input:dims>)'
-      - 'var_on_domain'
-      - - 'isl::local_space'
-        - 'isl::dim::set'
-        - '<loop_counter>'
-    - - 'for'
-      - '[0, <input:params>)'
-      - 'var_on_domain'
-      - - 'isl::local_space'
-        - 'isl::dim::param'
-        - '<loop_counter>'
-    - ['universe', 's', ['isl::space']]
-    - ["for", '[0, <input:constraints>)', 'intersect', ['<new>isl::set']]
-    - ['dump', '', ['s']]
+    - type: 'for'
+      counter: '[0,<input=dims>)'
+      func: 'var_on_domain'
+      return: '<new=isl::pw_aff>'
+      func_params:
+          - 'isl::local_space'
+          - '<string=isl::dim::set>'
+          - '<loop_counter>'
+    - type: 'for'
+      counter: '[0,<input=params>)'
+      func: 'var_on_domain'
+      return: '<new=isl::pw_aff>'
+      func_params:
+          - 'isl::local_space'
+          - '<string=isl::dim::param>'
+          - '<loop_counter>'
+#    - type: 'func'
+#      func: 'universe'
+#      return: 's'
+#    - type: 'for'
+#      counter: '[0,<input:constraints>)'
+#      func: 'intersect'
+#      target: 's'
+#      func_params:
+#          - '<new>isl::set'
+#    - type: 'func'
+#      func: 'dump'
+#      target: 's'
