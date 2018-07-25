@@ -11,7 +11,6 @@ inputs:
       range: '[5,20]'
 
 types:
-    - name: 'void'
     - name: 'isl::val'
     - name: 'isl::pw_aff'
     - name: 'isl::set'
@@ -152,17 +151,17 @@ funcs:
       conditions: []
     - name: 'dump'
       member_type: 'isl::set'
-      return_type: 'void'
+      return_type: ''
       param_types: []
       conditions: []
     - name: 'intersect'
       member_type: 'isl::set'
       return_type: 'isl::set'
-      param_types: ['isl::pw_aff']
+      param_types: ['isl::set']
       conditions: []
     # Start special funcs
-    - name: 'isl::set::universe'
-      member_type: 'void'
+    - name: 'universe'
+      member_type: 'isl::set'
       return_type: 'isl::set'
       param_types: ['isl::space']
       conditions: []
@@ -184,11 +183,14 @@ constructors:
     - name: 'isl::val'
       param_types: ['isl::ctx', 'unsigned int']
     - name: 'isl::pw_aff'
-      param_types: ['isl::val']
+      param_types: ['<var=u>','isl::val']
     - name: 'isl::ctx'
       param_types: ['<string=ctx_ptr>']
 
 set_gen:
+    - type: 'func'
+      func: 'universe'
+      return: '<var=u>'
     - type: 'for'
       counter: '[0,<input=dims>)'
       func: 'var_on_domain'
@@ -205,15 +207,16 @@ set_gen:
           - 'isl::local_space'
           - '<string=isl::dim::param>'
           - '<loop_counter>'
-#    - type: 'func'
-#      func: 'universe'
-#      return: 's'
-#    - type: 'for'
-#      counter: '[0,<input:constraints>)'
-#      func: 'intersect'
-#      target: 's'
-#      func_params:
-#          - '<new>isl::set'
-#    - type: 'func'
-#      func: 'dump'
-#      target: 's'
+    - type: 'func'
+      func: 'universe'
+      return: '<var=s>'
+    - type: 'for'
+      counter: '[0,<input=constraints>)'
+      func: 'intersect'
+      target: '<var=s>'
+      return: '<var=s>'
+      func_params:
+          - '<new=isl::set>'
+    - type: 'func'
+      func: 'dump'
+      target: '<var=s>'

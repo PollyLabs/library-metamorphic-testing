@@ -93,11 +93,11 @@ main(int argc, char **argv)
         std::cout << fuzzed_set.to_str() << std::endl;
     }
     else if (args.mode == isl_tester::Modes::API_FUZZ) {
-        ApiFuzzer *api_fuzzer = new ApiFuzzerISL(args.max_dims,
-            args.max_params, args.max_set_count);
-        api_fuzzer->generateSet();
-        for (std::string s : api_fuzzer->getInstrList())
-            std::cout << s << std::endl;
+        //ApiFuzzer *api_fuzzer = new ApiFuzzerISL(args.max_dims,
+            //args.max_params, args.max_set_count);
+        //api_fuzzer->generateSet();
+        //for (std::string s : api_fuzzer->getInstrList())
+            //std::cout << s << std::endl;
     }
     else if (args.mode == isl_tester::Modes::SET_TEST) {
         isl::set set1, set2;
@@ -129,13 +129,13 @@ main(int argc, char **argv)
             isl_tester::generateSetDeclFromObj(set1, "s"), args);
     }
     else if (args.mode == isl_tester::Modes::SET_META_API) {
-        std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerISL(args.max_dims,
-            args.max_params, args.max_set_count));
-        std::unique_ptr<const ApiObject> fuzzed_set =
-            std::unique_ptr<const ApiObject>(api_fuzzer->generateSet());
-        std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
-        set_decl_calls.push_back("isl::set s = isl::set(" + fuzzed_set->toStr() + ");");
-        set_meta_tester::runSimple(set_decl_calls, args);
+        //std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerISL(args.max_dims,
+            //args.max_params, args.max_set_count));
+        //std::unique_ptr<const ApiObject> fuzzed_set =
+            //std::unique_ptr<const ApiObject>(api_fuzzer->generateSet());
+        //std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
+        //set_decl_calls.push_back("isl::set s = isl::set(" + fuzzed_set->toStr() + ");");
+        //set_meta_tester::runSimple(set_decl_calls, args);
     }
     else if (args.mode == isl_tester::Modes::SET_META_NEW) {
         std::string config_path = "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";

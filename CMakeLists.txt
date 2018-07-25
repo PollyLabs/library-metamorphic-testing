@@ -4,6 +4,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(LIB_DIR ${CMAKE_SOURCE_DIR}/libs)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories("${INCLUDE_DIR}")
 link_directories("${LIB_DIR}")
