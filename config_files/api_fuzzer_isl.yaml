@@ -8,7 +8,10 @@ inputs:
       range: '(0,5]'
     - name: 'constraints'
       type: 'unsigned int'
-      range: '[5,20]'
+      range: '[1,3]'
+    - name: 'depth_max'
+      type: 'unsigned int'
+      range: '[10,10]'
 
 types:
     - name: 'isl::val'
@@ -28,7 +31,7 @@ funcs:
       member_type: 'isl::val'
       return_type: 'isl::val'
       param_types: []
-      conditions: []
+      conditions: ['<member>.is_int()']
     - name: 'abs'
       member_type: 'isl::val'
       return_type: 'isl::val'
@@ -48,7 +51,7 @@ funcs:
       member_type: 'isl::val'
       return_type: 'isl::val'
       param_types: []
-      conditions: []
+      conditions: ['false']
     - name: 'neg'
       member_type: 'isl::val'
       return_type: 'isl::val'
@@ -68,7 +71,7 @@ funcs:
       member_type: 'isl::val'
       return_type: 'isl::val'
       param_types: ['isl::val']
-      conditions: []
+      conditions: ['!<param=1>.is_zero()']
     - name: 'max'
       member_type: 'isl::val'
       return_type: 'isl::val'
@@ -183,7 +186,7 @@ constructors:
     - name: 'isl::val'
       param_types: ['isl::ctx', 'unsigned int']
     - name: 'isl::pw_aff'
-      param_types: ['<var=u>','isl::val']
+      param_types: ['<string=u>','isl::val']
     - name: 'isl::ctx'
       param_types: ['<string=ctx_ptr>']
 

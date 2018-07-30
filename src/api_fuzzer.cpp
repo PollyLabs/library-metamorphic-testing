@@ -13,7 +13,7 @@ char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
 
-static const unsigned int DEBUG = 1;
+static const bool DEBUG = false;
 
 /*******************************************************************************
  * Helper functions
@@ -22,7 +22,10 @@ static const unsigned int DEBUG = 1;
 void
 logDebug(std::string message)
 {
-    std::cout << "DEBUG: " << message << std::endl;
+    if (DEBUG)
+    {
+        std::cerr << "DEBUG: " << message << std::endl;
+    }
 }
 
 std::string
@@ -297,7 +300,9 @@ ApiFuzzer::hasFuncName(std::string func_check)
 void
 ApiFuzzer::addInstr(std::string instr)
 {
+    //static int counter = 0;
     this->instrs.push_back(instr);
+    //this->instrs.push_back(fmt::format("fprintf(stderr, \"{}\n\");\n", ++counter));
 }
 
 void
@@ -456,6 +461,10 @@ ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
     {
         assert(!is_ctor);
     }
+    if (!func->getConditions().empty())
+    {
+        apply_func_ss << this->emitFuncCond(func, target_obj, func_args);
+    }
     if (!func->isStatic() && target_obj != nullptr)
     {
         apply_func_ss << target_obj->toStr() << ".";
@@ -465,8 +474,48 @@ ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
         assert(target_obj == nullptr);
         apply_func_ss << func->getMemberType()->toStr() << "::";
     }
-    apply_func_ss << func->printInvocation(func_args) << ";";
+    apply_func_ss << func->printInvocation(func_args);
+    if (!func->getConditions().empty())
+    {
+        apply_func_ss << " : " << this->generateObject(func->getReturnType())->toStr();
+    }
+    apply_func_ss << ";";
     this->addInstr(apply_func_ss.str());
+}
+
+std::string
+ApiFuzzer::emitFuncCond(const ApiFunc* func, const ApiObject* target_obj,
+    std::vector<const ApiObject*> func_args)
+{
+    std::string cond_str = "";
+    for (std::string cond : func->getConditions())
+    {
+        cond_str += this->parseCondition(cond, target_obj, func_args);
+        cond_str += " && ";
+    }
+    cond_str = cond_str.substr(0, cond_str.length() - strlen(" && "));
+    cond_str += " ? ";
+    return cond_str;
+}
+
+std::string
+ApiFuzzer::parseCondition(std::string condition, const ApiObject* target_obj,
+    std::vector<const ApiObject*> func_args)
+{
+    while (condition.find(delim_front) != std::string::npos)
+    {
+        assert(condition.find(delim_back) != std::string::npos);
+        assert(condition.find(delim_front) != std::string::npos);
+        if (condition.find("<member>") != std::string::npos)
+        {
+            condition = condition.replace(condition.find("<member>"),
+                strlen("<member>"), target_obj->toStr());
+            continue;
+        }
+        // TODO finish
+        assert(false);
+    }
+    return condition;
 }
 
 void
@@ -480,11 +529,12 @@ ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
 std::vector<const ApiObject*>
 ApiFuzzer::getFuncArgs(const ApiFunc* func)
 {
+    logDebug(fmt::format("Curr depth is {}", this->depth));
     std::vector<const ApiType*> param_types = func->getParamTypes();
     std::vector<const ApiObject*> params;
     for (const ApiType* param_type : param_types)
     {
-        if (std::rand() % 10 < 4)
+        if (std::rand() % 10 < this->depth || this->depth > this->max_depth)
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
@@ -494,7 +544,9 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
                 continue;
             }
         }
+        this->depth++;
         params.push_back(this->generateObject(param_type));
+        this->depth--;
     }
     return params;
 }
@@ -505,7 +557,6 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
 
 ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path) : ApiFuzzer()
 {
-    std::experimental::reseed(42);
     YAML::Node config_file = YAML::LoadFile(config_file_path);
     this->initPrimitiveTypes();
     this->initInputs(config_file["inputs"]);
@@ -517,10 +568,10 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path) : ApiFuzzer()
     this->initGenConfig(config_file["set_gen"]);
     //this->generateObject(this->getTypeByName("isl::set"));
     this->generateSet();
-    for (std::string inst : this->getInstrList())
-    {
-        std::cout << inst << std::endl;
-    }
+    //for (std::string inst : this->getInstrList())
+    //{
+        //std::cout << inst << std::endl;
+    //}
 }
 
 void
@@ -577,6 +628,12 @@ void
 ApiFuzzerNew::initFuncs(YAML::Node funcs_config)
 {
     for (YAML::Node func_yaml : funcs_config) {
+        if (func_yaml["conditions"].size() != 0)
+        {
+            logDebug(fmt::format("Skipping adding func {} due to constraints "
+                "declared.", func_yaml["name"].as<std::string>()));
+            continue;
+        }
         this->addFunc(this->genNewApiFunc(func_yaml));
     }
 }
@@ -686,10 +743,11 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         {
             std::string input_name =
                 dynamic_cast<const ExplicitType*>(obj_type)->getDefinition();
-            std::cout << "DEF " << dynamic_cast<const ExplicitType*>(obj_type)->getDefinition() << std::endl;
+            logDebug(fmt::format("DEF {}",
+                dynamic_cast<const ExplicitType*>(obj_type)->getDefinition()));
             input_name = input_name.substr(input_name.find(delim_mid) + 1,
                 input_name.find(delim_back) - input_name.find(delim_mid) - 1);
-            std::cout << "INPUT_NAME " << input_name << std::endl << std::flush;
+            logDebug(fmt::format("INPUT_NAME {}", input_name));
             return this->getInputObject(input_name);
         }
         else
@@ -734,7 +792,7 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
             this->filterObjs(&ApiObject::hasType, target_type);
         if (target_obj_candidates.empty())
         {
-            target_obj = generateObject(target_type);
+            target_obj = this->generateObject(target_type);
         }
         else
         {
@@ -809,15 +867,15 @@ ApiFuzzerNew::generateSet()
     for (YAML::Node gen_instr_yaml : this->set_gen_instrs)
     {
         std::string gen_instr_type = gen_instr_yaml["type"].as<std::string>();
-        std::cout << "Instr type " << gen_instr_type << std::endl;
+        logDebug(fmt::format("Instr type {}", gen_instr_type));
         if (!gen_instr_type.compare("for"))
         {
-            std::cout << "Make for" << std::endl;
+            logDebug("Make for");
             this->generateForLoop(gen_instr_yaml);
         }
         else if (!gen_instr_type.compare("func"))
         {
-            std::cout << "Make func" << std::endl;
+            logDebug("Make func");
             this->generateFunc(gen_instr_yaml);
         }
         else
@@ -838,8 +896,9 @@ ApiFuzzerNew::generateForLoop(YAML::Node instr_config)
         iteration_count.second));
     for (std::pair<std::string, const ApiObject*> pair_in : this->fuzzer_input)
     {
-        const PrimitiveObject<unsigned int>* po = dynamic_cast<const PrimitiveObject<unsigned int>*>(pair_in.second);
-        std::cout << pair_in.first << " = " << po->toStr() << std::endl;
+        const PrimitiveObject<unsigned int>* po =
+            dynamic_cast<const PrimitiveObject<unsigned int>*>(pair_in.second);
+        logDebug(fmt::format("{} = {}", pair_in.first, po->toStr()));
     }
     for (unsigned int i = iteration_count.first; i <= iteration_count.second; ++i)
     {

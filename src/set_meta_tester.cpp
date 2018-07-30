@@ -100,7 +100,7 @@ std::queue<std::string>
 genMetaRelation(const YAML::Node relation_list, unsigned int count)
 {
     std::queue<std::string> meta_relation;
-    std::cout << "REL ";
+    //std::cout << "REL ";
     while (count-- > 0) {
         int relation_id = std::rand() % relation_list.size();
         YAML::const_iterator it = relation_list.begin();

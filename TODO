@@ -3,3 +3,11 @@ meta_runner.py
 
 set_meta_tester.cpp
 * add flag for coalescing test generation
+
+api_fuzzer.cpp
+* rewrite object construction
+* merge ApiFuzzerNew with ApiFuzzer
+
+api_fuzzer_xxx.yaml
+* try for other libraries to see how well design choices translate
+

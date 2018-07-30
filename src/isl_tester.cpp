@@ -84,6 +84,7 @@ main(int argc, char **argv)
 {
     isl_tester::Arguments args = isl_tester::parseArgs(argc, argv);
     std::srand(args.seed);
+    std::experimental::reseed(args.seed);
     isl_ctx *ctx_pointer = isl_ctx_alloc();
     isl::ctx ctx(ctx_pointer);
 
@@ -140,6 +141,8 @@ main(int argc, char **argv)
     else if (args.mode == isl_tester::Modes::SET_META_NEW) {
         std::string config_path = "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
         std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerNew(config_path));
+        std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
+        set_meta_tester::runSimple(set_decl_calls, args);
     }
     else {
         std::cout << "Unknown option " << argv[1] << std::endl;

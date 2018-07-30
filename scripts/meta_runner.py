@@ -22,7 +22,7 @@ os.chdir(config_file["working_dir"])
 runner_config_file = config_file["meta_runner"]
 isl_tester_path = runner_config_file["isl_tester_path"]
 test_compile_dir = runner_config_file["test_compile_dir"]
-test_compile_path = runner_config_file["test_compile_path"]
+test_compile_bin = runner_config_file["test_compile_bin"]
 test_source_path = runner_config_file["test_source_path"]
 test_run_path = runner_config_file["test_run_path"]
 log_file = runner_config_file["log_file_path"]
@@ -46,7 +46,7 @@ log_writer = open(log_file, 'w')
 parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
 parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
     help = "Define the mode in which to run the testing.")
-parser.add_argument("tester_mode", choices=["SET_META_STR", "SET_META_API"],
+parser.add_argument("tester_mode", choices=["SET_META_STR", "SET_META_API", "SET_META_NEW"],
     help = "Define the mode used to generate inputs, in case of random inputs.")
 parser.add_argument("--seed-max", type=int, default=1000,
     help = "[bounded] Set the max number of tests to run (seed starts at 0)")
@@ -79,10 +79,10 @@ def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
         log_writer.write("STDERR:\n" + err + "\n")
     return generator_proc.returncode == 0
 
-def compile_test(test_compile_path, test_compile_dir):
+def compile_test(test_compile_bin, test_compile_dir):
     try:
-        compile_cmd = [test_compile_path]
-        compile_proc = subprocess.run(compile_cmd, shell=True, check=True, cwd=test_compile_dir)
+        compile_cmd = [test_compile_bin]
+        compile_proc = subprocess.run(compile_cmd, check=True, cwd=test_compile_dir)
         return True
     except subprocess.CalledProcessError:
         log_writer.write("!!! Compilation Failure\n")
@@ -123,15 +123,16 @@ def bounded_testing(seed_max):
     for seed in range(0, seed_max):
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         log_writer.write(80 * "=" + "\n")
-        log_writer.write("SEED: " + str(seed))
+        log_writer.write("SEED: " + str(seed) + "\n")
         print(date_time + " Running seed " + str(seed), end='\r')
         if not generate_test(seed, args.timeout, isl_tester_path):
             continue
-        if not compile_test(test_compile_path, test_compile_dir):
-            shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(input_cnt) + ".cpp")
+        if not compile_test(test_compile_bin, test_compile_dir):
+            shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(seed) + ".cpp")
             continue
         if not execute_test(args.timeout, test_run_path):
-            shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(input_cnt) + ".cpp")
+            shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(seed) + ".cpp")
+        log_writer.flush()
 
 def coverage_testing(coverage_target):
     curr_coverage = 0
@@ -145,7 +146,7 @@ def coverage_testing(coverage_target):
     while (curr_coverage < coverage_target and seed < 50):
         print("=== Running seed " + str(seed), end='\r')
         generate_test(seed, args.timeout, isl_tester_path)
-        compile_test(test_compile_path, test_compile_dir)
+        compile_test(test_compile_bin, test_compile_dir)
         execute_test(args.timeout, test_run_path)
         new_coverage = get_coverage()
         if new_coverage > curr_coverage:
@@ -164,7 +165,7 @@ def continuous_testing():
         log_writer.write("SEED: " + str(seed))
         print(date_time + " Running seed " + str(seed), end='\r')
         generate_test(seed, args.timeout, isl_tester_path)
-        compile_test(test_compile_path, test_compile_dir)
+        compile_test(test_compile_bin, test_compile_dir)
         execute_test(args.timeout, test_run_path)
         seed += 1
 
@@ -186,7 +187,7 @@ def targeted_testing():
                 end='\r')
         if not generate_test(seed, args.timeout, isl_tester_path, input_sets_temp):
             continue
-        if not compile_test(test_compile_path, test_compile_dir):
+        if not compile_test(test_compile_bin, test_compile_dir):
             shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(input_cnt) + ".cpp")
             continue
         if not execute_test(args.timeout, test_run_path):
@@ -198,6 +199,7 @@ def targeted_testing():
 
 log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
 log_writer.write("MODE: " + args.mode + "\n")
+log_writer.write("FUZZER_MODE: " + args.tester_mode + "\n")
 log_writer.write("\n")
 
 if (os.path.exists(output_tests_folder)):

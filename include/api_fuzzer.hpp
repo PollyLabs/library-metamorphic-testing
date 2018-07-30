@@ -196,6 +196,10 @@ class ApiFunc {
         unsigned int getParamCount() const { return this->param_types.size(); };
         const ApiType* getMemberType() const { return this->member_type; };
         const ApiType* getReturnType() const { return this->return_type; };
+        std::vector<std::string> getConditions() const
+        {
+            return this->conditions;
+        };
 
         bool hasMemberType(const ApiType* member_check) const {
             return this->getMemberType() != nullptr &&
@@ -229,6 +233,9 @@ class ApiFuzzer {
         std::vector<const ApiObject*> objs;
         std::vector<std::string> instrs;
         unsigned int next_obj_id;
+        unsigned int depth;
+        const unsigned int max_depth = 10;
+
 
         virtual const ApiObject* generateObject(const ApiType*) = 0;
 
@@ -276,6 +283,12 @@ class ApiFuzzer {
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
             bool = false);
         std::vector<const ApiObject*> getFuncArgs(const ApiFunc*);
+
+    private:
+        std::string emitFuncCond(const ApiFunc*, const ApiObject*,
+            std::vector<const ApiObject*>);
+        std::string parseCondition(std::string, const ApiObject*,
+            std::vector<const ApiObject*>);
 };
 
 class ApiFuzzerNew : public ApiFuzzer {
