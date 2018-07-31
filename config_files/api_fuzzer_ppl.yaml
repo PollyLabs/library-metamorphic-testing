@@ -1,0 +1,45 @@
+---
+inputs:
+    - name: 'dims'
+      type: 'unsigned int'
+      range: '(0,5]'
+    - name: 'constraints'
+      type: 'unsigned int'
+      range: '[1,3]'
+
+types:
+    - name: 'Parma_Polyhedra_Library::Variable'
+    - name: 'Parma_Polyhedra_Library::C_Polyhedron'
+    - name: 'Parma_Polyhedra_Library::Constraint'
+
+funcs:
+    - name: 'add_constraint'
+      member_type: 'Parma_Polyhedra_Library::C_Polyhedron'
+      return_type: ''
+      param_types: ['Parma_Polyhedra_Library::Constraint']
+      condition: []
+
+constructors:
+    - name: 'Parma_Polyhedra_Library::Variable'
+      param_types: ['unsigned int']
+    - name: 'Parma_Polyhedra_Library::C_Polyhedron'
+      param_types: ['<input=dims>']
+    - name: 'Parma_Polyhedra_Library::Constraint'
+      param_types: ['<expr=Parma_Polyhedra_Library::Variable>']
+
+set_gen:
+    - type: 'for'
+      counter: '[0,<input=dims>)'
+      func: 'Parma_Polyhedra_Library::Variable'
+      return: '<new=Parma_Polyhedra_Library::Variable>'
+      func_params:
+          - '<loop_counter>'
+    - type: 'func'
+      func: 'Parma_Polyhedra_Library::C_Polyhedron'
+      return: '<var=s>'
+    - type: 'for'
+      counter: '[0,<input=constraints>)'
+      func: 'add_constraint'
+      target: '<var=s>'
+      func_params:
+          - '<new=Parma_Polyhedra_Library::Constraint>'

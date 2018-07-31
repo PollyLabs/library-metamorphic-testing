@@ -1,10 +1,11 @@
 #ifndef API_FUZZER_HPP
 #define API_FUZZER_HPP
 
-#include <experimental/random>
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
+#include <random>
 #include <string>
 #include <sstream>
 #include <set>
@@ -31,6 +32,7 @@ class ApiType;
 class ExplicitType;
 class ApiFunc;
 class ApiObject;
+class ApiInstruction;
 
 std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
@@ -57,7 +59,6 @@ class ApiType {
         virtual bool isSingleton() const { return false; };
         virtual bool isPrimitive() const { return false; };
         virtual bool isExplicit() const { return false; };
-        virtual bool isInput() const { return false; };
 
         inline bool operator<(const ApiType* other) const {
             return this->toStr() < other->toStr();
@@ -98,6 +99,10 @@ class ExplicitType : public ApiType {
         bool isExplicit() const { return true; };
         bool isInput() const {
             return this->definition.find(fmt::format("input{}", delim_mid))
+                != std::string::npos;
+        };
+        bool isExpr() const {
+            return this->definition.find(fmt::format("expr{}", delim_mid))
                 != std::string::npos;
         };
 
@@ -169,6 +174,14 @@ class NamedObject : public ApiObject {
         }
 };
 
+class ExprObject : public ApiObject {
+    public:
+        ExprObject(std::string _expr, const PrimitiveType* _type) :
+            ApiObject(_expr, -1, _type) {};
+
+        std::string toStr() const { return this->name; };
+        std::string toStrWithType() const { assert(false); };
+};
 
 class ApiFunc {
     const std::string name;
@@ -226,6 +239,21 @@ class ApiFunc {
         }
 };
 
+class ApiInstruction
+{
+    const ApiFunc* func;
+    const ApiObject* target_obj;
+    const ApiObject* result_obj;
+    std::vector<const ApiObject*> func_params;
+
+    public:
+        ApiInstruction(const ApiFunc* _func, const ApiObject* _result = nullptr,
+            const ApiObject* _target = nullptr,
+            std::vector<const ApiObject*> _params =
+            std::vector<const ApiObject*>()) : func(_func),
+            target_obj(_target), result_obj(_result), func_params(_params) {};
+};
+
 class ApiFuzzer {
     private:
         std::set<const ApiType*> types;
@@ -235,19 +263,21 @@ class ApiFuzzer {
         unsigned int next_obj_id;
         unsigned int depth;
         const unsigned int max_depth = 10;
+        std::mt19937 rng;
 
 
         virtual const ApiObject* generateObject(const ApiType*) = 0;
 
     public:
-        ApiFuzzer(): next_obj_id(0), instrs(std::vector<std::string>()),
+        ApiFuzzer(std::mt19937 _rng): next_obj_id(0), instrs(std::vector<std::string>()),
             objs(std::vector<const ApiObject*>()), types(std::set<const ApiType*>()),
-            funcs(std::set<const ApiFunc*>()) {};
+            funcs(std::set<const ApiFunc*>()), rng(_rng) {};
 
         std::vector<std::string> getInstrList();
         std::vector<const ApiObject*> getObjList();
         std::set<const ApiFunc*> getFuncList();
         std::set<const ApiType*> getTypeList();
+        int getRandInt(int = 0, int = std::numeric_limits<int>::max());
         unsigned int getNextID();
 
         bool hasTypeName(std::string);
@@ -296,11 +326,10 @@ class ApiFuzzerNew : public ApiFuzzer {
     std::vector<YAML::Node> set_gen_instrs;
 
     public:
-        ApiFuzzerNew(std::string& config_file_path);
+        ApiFuzzerNew(std::string&, std::mt19937);
         //~ApiFuzzerNew();
 
     private:
-
         void initPrimitiveTypes();
         void initInputs(YAML::Node);
         void initTypes(YAML::Node);
@@ -325,6 +354,7 @@ class ApiFuzzerNew : public ApiFuzzer {
         int parseRangeSubstr(std::string);
         const ApiType* parseTypeStr(std::string);
         std::string getGeneratorData(std::string) const;
+        std::string makeLinearExpr(std::vector<const ApiObject*>);
 };
 
 class ApiFuzzerISL : public ApiFuzzer {

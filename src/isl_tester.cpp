@@ -66,7 +66,7 @@ gatherSets(std::string file_path)
 isl::set
 retrieveSet(isl::ctx ctx, std::vector<std::string> input_sets)
 {
-    return isl::set(ctx, input_sets[std::rand() % input_sets.size()]);
+    //return isl::set(ctx, input_sets[std::rand() % input_sets.size()]);
 }
 
 std::vector<std::string>
@@ -83,8 +83,7 @@ int
 main(int argc, char **argv)
 {
     isl_tester::Arguments args = isl_tester::parseArgs(argc, argv);
-    std::srand(args.seed);
-    std::experimental::reseed(args.seed);
+    std::mt19937 rng(args.seed);
     isl_ctx *ctx_pointer = isl_ctx_alloc();
     isl::ctx ctx(ctx_pointer);
 
@@ -101,33 +100,33 @@ main(int argc, char **argv)
             //std::cout << s << std::endl;
     }
     else if (args.mode == isl_tester::Modes::SET_TEST) {
-        isl::set set1, set2;
-        if (args.input_sets != "") {
-            std::vector<std::string> input_sets = isl_tester::gatherSets(args.input_sets);
-            set1 = isl_tester::retrieveSet(ctx, input_sets);
-            set2 = isl_tester::retrieveSet(ctx, input_sets);
-        } else {
-            set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
-                                args.max_params, args.max_set_count);
-            set2 = set_fuzzer::fuzz_set(ctx, args.max_dims,
-                                args.max_params, args.max_set_count);
-        }
-        std::cout << set1.to_str() << std::endl;
-        std::cout << set2.to_str() << std::endl;
-        set_tester::run_tests(set1, set2);
+        //isl::set set1, set2;
+        //if (args.input_sets != "") {
+            //std::vector<std::string> input_sets = isl_tester::gatherSets(args.input_sets);
+            //set1 = isl_tester::retrieveSet(ctx, input_sets);
+            //set2 = isl_tester::retrieveSet(ctx, input_sets);
+        //} else {
+            //set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
+                                //args.max_params, args.max_set_count);
+            //set2 = set_fuzzer::fuzz_set(ctx, args.max_dims,
+                                //args.max_params, args.max_set_count);
+        //}
+        //std::cout << set1.to_str() << std::endl;
+        //std::cout << set2.to_str() << std::endl;
+        //set_tester::run_tests(set1, set2);
     }
     else if (args.mode == isl_tester::Modes::SET_META_STR) {
-        isl::set set1;
-        if (args.input_sets != "") {
-            std::vector<std::string> input_sets = isl_tester::gatherSets(args.input_sets);
-            set1 = isl_tester::retrieveSet(ctx, input_sets);
-        } else {
-            set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
-                                args.max_params, args.max_set_count);
-        }
-        std::cout << set1.to_str() << std::endl;
-        set_meta_tester::runSimple(
-            isl_tester::generateSetDeclFromObj(set1, "s"), args);
+        //isl::set set1;
+        //if (args.input_sets != "") {
+            //std::vector<std::string> input_sets = isl_tester::gatherSets(args.input_sets);
+            //set1 = isl_tester::retrieveSet(ctx, input_sets);
+        //} else {
+            //set1 = set_fuzzer::fuzz_set(ctx, args.max_dims,
+                                //args.max_params, args.max_set_count);
+        //}
+        //std::cout << set1.to_str() << std::endl;
+        //set_meta_tester::runSimple(
+            //isl_tester::generateSetDeclFromObj(set1, "s"), args);
     }
     else if (args.mode == isl_tester::Modes::SET_META_API) {
         //std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerISL(args.max_dims,
@@ -139,8 +138,8 @@ main(int argc, char **argv)
         //set_meta_tester::runSimple(set_decl_calls, args);
     }
     else if (args.mode == isl_tester::Modes::SET_META_NEW) {
-        std::string config_path = "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
-        std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerNew(config_path));
+        std::string config_path = "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_ppl.yaml";
+        std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerNew(config_path, rng));
         std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
         set_meta_tester::runSimple(set_decl_calls, args);
     }

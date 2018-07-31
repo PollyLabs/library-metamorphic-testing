@@ -13,7 +13,8 @@ char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
 
-static const bool DEBUG = false;
+//static const bool DEBUG = false;
+static const bool DEBUG = true;
 
 /*******************************************************************************
  * Helper functions
@@ -269,6 +270,13 @@ std::set<const ApiFunc*>
 ApiFuzzer::getFuncList()
 {
     return this->funcs;
+}
+
+int
+ApiFuzzer::getRandInt(int min, int max)
+{
+    std::uniform_int_distribution<int> uid(min, max);
+    return uid(this->rng);
 }
 
 bool
@@ -534,7 +542,7 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     std::vector<const ApiObject*> params;
     for (const ApiType* param_type : param_types)
     {
-        if (std::rand() % 10 < this->depth || this->depth > this->max_depth)
+        if (this->getRandInt(0, 10) < this->depth || this->depth > this->max_depth)
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
@@ -555,23 +563,28 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
  * ApiFuzzerNew functions
  ******************************************************************************/
 
-ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path) : ApiFuzzer()
+ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937 _rng) : ApiFuzzer(_rng)
 {
     YAML::Node config_file = YAML::LoadFile(config_file_path);
     this->initPrimitiveTypes();
     this->initInputs(config_file["inputs"]);
+    for (std::pair<std::string, const ApiObject*> pair_in : this->fuzzer_input)
+    {
+        const PrimitiveObject<unsigned int>* po =
+            dynamic_cast<const PrimitiveObject<unsigned int>*>(pair_in.second);
+        logDebug(fmt::format("{} = {}", pair_in.first, po->toStr()));
+    }
     this->initTypes(config_file["types"]);
     this->initTypes(config_file["singleton_types"]);
     this->initFuncs(config_file["funcs"]);
     this->initFuncs(config_file["special_funcs"]);
     this->initConstructors(config_file["constructors"]);
     this->initGenConfig(config_file["set_gen"]);
-    //this->generateObject(this->getTypeByName("isl::set"));
     this->generateSet();
-    //for (std::string inst : this->getInstrList())
-    //{
-        //std::cout << inst << std::endl;
-    //}
+    for (std::string inst : this->getInstrList())
+    {
+        std::cout << inst << std::endl;
+    }
 }
 
 void
@@ -597,6 +610,9 @@ ApiFuzzerNew::initInputs(YAML::Node inputs_config)
         {
             obj = this->generatePrimitiveObject( (PrimitiveType*) obj_type,
                 input_yaml["range"].as<std::string>());
+            logDebug(fmt::format("Generated object with data {} for range {}.",
+                dynamic_cast<const PrimitiveObject<unsigned int>*>(obj)->getData(),
+                input_yaml["range"].as<std::string>()));
         }
         else
         {
@@ -677,6 +693,8 @@ void
 ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
 {
     for (YAML::Node ctor_yaml : ctors_yaml) {
+        assert(ctor_yaml["name"].IsDefined());
+        assert(ctor_yaml["param_types"].IsDefined());
         std::string func_name = ctor_yaml["name"].as<std::string>();
         const ApiType* ctor_type = this->parseTypeStr(func_name);
         const ApiType* member_type = nullptr;
@@ -712,6 +730,11 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
             std::string type_substr = this->getGeneratorData(type_str);
             return this->getTypeByName(type_substr);
         }
+        else if (type_str.find(fmt::format("expr{}", delim_mid)) != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("string"));
+        }
+        assert(false);
     }
     return this->getTypeByName(type_str);
 }
@@ -739,20 +762,31 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     }
     else if (obj_type->isExplicit())
     {
-        if (obj_type->isInput())
+        const ExplicitType* expl_type = dynamic_cast<const ExplicitType*>(obj_type);
+        if (expl_type->isInput())
         {
             std::string input_name =
-                dynamic_cast<const ExplicitType*>(obj_type)->getDefinition();
+                expl_type->getDefinition();
             logDebug(fmt::format("DEF {}",
-                dynamic_cast<const ExplicitType*>(obj_type)->getDefinition()));
+                expl_type->getDefinition()));
             input_name = input_name.substr(input_name.find(delim_mid) + 1,
                 input_name.find(delim_back) - input_name.find(delim_mid) - 1);
             logDebug(fmt::format("INPUT_NAME {}", input_name));
             return this->getInputObject(input_name);
         }
+        else if (expl_type->isExpr())
+        {
+            const ApiType* expr_param_type = this->getTypeByName(
+                this->getGeneratorData(expl_type->getDefinition()));
+            std::vector<const ApiObject*> expr_params = this->filterObjs(
+                &ApiObject::hasType, expr_param_type);
+            const ExprObject* new_expr_obj = new ExprObject(this->makeLinearExpr(expr_params),
+                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()));
+            return new_expr_obj;
+        }
         else
         {
-            return dynamic_cast<const ExplicitType*>(obj_type)->retrieveObj();
+            return expl_type->retrieveObj();
         }
     }
     else
@@ -814,12 +848,6 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
     return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
 }
 
-//const ApiObject*
-//ApiFuzzerNew::generateNewNamedObject(const ApiType* obj_type, std::string name)
-//{
-//}
-
-
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
 {
@@ -828,7 +856,7 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
     switch(obj_type->getTypeEnum()) {
         case UINT:
             // HACKS
-            return new PrimitiveObject<unsigned int>(obj_type, std::rand() % 10);
+            return new PrimitiveObject<unsigned int>(obj_type, this->getRandInt(0, 10));
     }
     assert(false);
 }
@@ -844,7 +872,7 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
         case UINT: {
             std::pair<int, int> int_range = this->parseRange(range);
             return new PrimitiveObject<unsigned int>(obj_type,
-                std::experimental::randint(int_range.first, int_range.second));
+                this->getRandInt(int_range.first, int_range.second));
         }
     }
     assert(false);
@@ -894,12 +922,6 @@ ApiFuzzerNew::generateForLoop(YAML::Node instr_config)
 
     logDebug(fmt::format("Range is {} - {}", iteration_count.first,
         iteration_count.second));
-    for (std::pair<std::string, const ApiObject*> pair_in : this->fuzzer_input)
-    {
-        const PrimitiveObject<unsigned int>* po =
-            dynamic_cast<const PrimitiveObject<unsigned int>*>(pair_in.second);
-        logDebug(fmt::format("{} = {}", pair_in.first, po->toStr()));
-    }
     for (unsigned int i = iteration_count.first; i <= iteration_count.second; ++i)
     {
         this->generateFunc(instr_config, i);
@@ -1089,6 +1111,24 @@ ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
     assert(gen_desc.find(delim_mid) != std::string::npos);
     return gen_desc.substr(gen_desc.find(delim_mid) + 1,
         gen_desc.find(delim_back) - gen_desc.find(delim_mid) - 1);
+}
+
+std::string expr_ops[5] = {"==", "<=", "=>", "<", ">"};
+
+std::string
+ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
+{
+    std::stringstream expr_ss;
+    std::vector<const ApiObject*>::iterator it;
+    for (it = expr_objs.begin(); it != std::prev(expr_objs.end(), 1); ++it)
+    {
+        expr_ss << this->getRandInt(0, 10) << '*' << (*it)->toStr();
+        expr_ss << (this->getRandInt(0, 1) ? '+' : '-');
+    }
+    expr_ss << this->getRandInt(0, 10) << '*' << (*it)->toStr();
+    expr_ss << expr_ops[this->getRandInt(0, (sizeof(expr_ops) / sizeof(expr_ops[0])))]
+        << "0";
+    return expr_ss.str();
 }
 
 /*******************************************************************************
