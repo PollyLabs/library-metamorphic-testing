@@ -1082,11 +1082,6 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
                 func_params.push_back(new PrimitiveObject<unsigned int>(
                     dynamic_cast<const PrimitiveType*>(
                     this->getTypeByName("unsigned int")), loop_counter));
-                //func_params.push_back(
-                    //std::unique_ptr<const PrimitiveObject<unsigned int>>(
-                        //new PrimitiveObject<unsigned int>(
-                        //dynamic_cast<const PrimitiveType*>(
-                        //this->getTypeByName("unsigned int")), i)));
             }
             else
             {
@@ -1113,6 +1108,7 @@ ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
         gen_desc.find(delim_back) - gen_desc.find(delim_mid) - 1);
 }
 
+// TODO make this prettier and better
 std::string expr_ops[5] = {"==", "<=", "=>", "<", ">"};
 
 std::string
