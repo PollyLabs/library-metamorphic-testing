@@ -138,7 +138,7 @@ main(int argc, char **argv)
         //set_meta_tester::runSimple(set_decl_calls, args);
     }
     else if (args.mode == isl_tester::Modes::SET_META_NEW) {
-        std::string config_path = "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_ppl.yaml";
+        std::string config_path = "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl_point.yaml";
         std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerNew(config_path, rng));
         std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
         set_meta_tester::runSimple(set_decl_calls, args);

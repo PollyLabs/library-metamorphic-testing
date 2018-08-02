@@ -105,6 +105,10 @@ class ExplicitType : public ApiType {
             return this->definition.find(fmt::format("expr{}", delim_mid))
                 != std::string::npos;
         };
+        bool isRange() const {
+            return this->definition.find(fmt::format("range{}", delim_mid))
+                != std::string::npos;
+        };
 
         std::string getDefinition() const { return this->definition; };
         const ApiType* getUnderlyingType() const {

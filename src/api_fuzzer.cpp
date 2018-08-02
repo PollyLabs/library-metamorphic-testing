@@ -542,7 +542,8 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     std::vector<const ApiObject*> params;
     for (const ApiType* param_type : param_types)
     {
-        if (this->getRandInt(0, 10) < this->depth || this->depth > this->max_depth)
+        if (!param_type->isExplicit() &&
+                this->getRandInt(0, 10) < this->depth || this->depth > this->max_depth)
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
@@ -734,6 +735,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         {
             return new ExplicitType(type_str, this->getTypeByName("string"));
         }
+        else if (type_str.find(fmt::format("range{}", delim_mid)) != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+        }
         assert(false);
     }
     return this->getTypeByName(type_str);
@@ -763,7 +768,15 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     else if (obj_type->isExplicit())
     {
         const ExplicitType* expl_type = dynamic_cast<const ExplicitType*>(obj_type);
-        if (expl_type->isInput())
+        if (expl_type->isRange())
+        {
+            const ApiType* obj_type = this->getTypeByName("unsigned int");
+            assert(obj_type->isPrimitive());
+            const PrimitiveType* prim_type = dynamic_cast<const PrimitiveType*>(obj_type);
+            return this->generatePrimitiveObject(prim_type,
+                this->getGeneratorData(expl_type->getDefinition()));
+        }
+        else if (expl_type->isInput())
         {
             std::string input_name =
                 expl_type->getDefinition();
@@ -1110,7 +1123,7 @@ ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
     assert(gen_desc.back() == delim_back);
     assert(gen_desc.find(delim_mid) != std::string::npos);
     return gen_desc.substr(gen_desc.find(delim_mid) + 1,
-        gen_desc.find(delim_back) - gen_desc.find(delim_mid) - 1);
+        gen_desc.rfind(delim_back) - gen_desc.find(delim_mid) - 1);
 }
 
 std::string expr_ops[5] = {"==", "<=", "=>", "<", ">"};
