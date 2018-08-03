@@ -1029,11 +1029,6 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
 }
 
 void
-ApiFuzzerNew::generateConstructor(YAML::Node instr_config)
-{
-}
-
-void
 ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
 {
     std::string func_name = instr_config["func"].as<std::string>();

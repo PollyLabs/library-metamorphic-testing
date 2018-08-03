@@ -353,7 +353,6 @@ class ApiFuzzerNew : public ApiFuzzer {
         void initGenConfig(YAML::Node);
         void runGeneration(YAML::Node);
         void generateForLoop(YAML::Node);
-        void generateConstructor(YAML::Node);
         void generateFunc(YAML::Node, int = -1);
         const ApiObject* getSingletonObject(const ApiType*);
 
