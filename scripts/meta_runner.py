@@ -61,6 +61,8 @@ args = parser.parse_args()
 def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
     seed = str(seed)
     timeout = str(timeout)
+    global test_count
+    test_count += 1
     generator_cmd = [isl_tester_path, "-m", args.tester_mode, "-s", seed]
     # generator_cmd = [isl_tester_path, "-m", "SET_META", "-s", seed]
     if input_file_path:
@@ -68,7 +70,6 @@ def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
     # print("CMD is " + " ".join(generator_cmd))
     generator_proc = subprocess.Popen(generator_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = generator_proc.communicate()
-    print(out)
     log_writer.write("CMD:\n" + " ".join(generator_cmd) + "\n")
     if generator_proc.returncode != 0:
         print("Return code: %s\n" % (generator_proc.returncode))
@@ -94,6 +95,9 @@ def execute_test(timeout, test_run_path):
     start_time = time.time()
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = test_proc.communicate()
+    if "true" in out:
+        global false_count
+        false_count += 1
     if test_proc.returncode != 0:
         log_writer.write("!!! Execution fail\n")
         log_writer.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
@@ -206,6 +210,9 @@ if (os.path.exists(output_tests_folder)):
     shutil.rmtree(output_tests_folder)
 os.mkdir(output_tests_folder)
 
+test_count = 0
+empty_count = 0
+
 random.seed(42)
 
 if args.mode == "bounded":
@@ -216,4 +223,9 @@ elif args.mode == "continuous":
     continuous_testing()
 elif args.mode == "targeted":
     targeted_testing()
+
+log_writer.write("\n" + 80 * "=" + "\n")
+log_writer.write("Statistics:\n")
+log_writer.write("\t* False sets: {} of {} ({}%)\n".format(
+    empty_count, test_count, empty_count * 100 / test_count))
 exit(0)
