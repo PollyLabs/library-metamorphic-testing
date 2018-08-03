@@ -243,31 +243,106 @@ ApiFunc::printInvocation(std::vector<const ApiObject*> params) const
     print_inv_ss << makeArgString(params) << ")";
     return print_inv_ss.str();
 }
+/*******************************************************************************
+ * ApiInstruction functions
+ ******************************************************************************/
+
+std::string
+ApiInstruction::toStr() const
+{
+    std::stringstream instr_ss;
+    if (!this->getFunc()->checkArgs(this->getFuncParams()))
+    {
+        const ApiFunc* func = this->getFunc();
+        std::cout << "Invalid arguments given for func " << func->getName();
+        std::cout << std::endl << "\tExpected types: " << makeArgString(
+            func->getParamTypes());
+        std::vector<std::string> arg_strings;
+        for (const ApiObject* func_param : this->getFuncParams())
+        {
+            arg_strings.push_back(func_param->toStrWithType());
+        }
+        std::cout << std::endl << "\tGiven types: ";
+        std::cout << getStringWithDelims(arg_strings, ',') << std::endl;
+        exit(1);
+    }
+    if (this->getResultObj() != nullptr)
+    {
+        if (this->isNewObjDecl() || this->getFunc()->isCtor())
+        {
+            instr_ss << result_obj->toStrWithType();
+        }
+        else
+        {
+            instr_ss << result_obj->toStr();
+        }
+        instr_ss << " = ";
+    }
+    else
+    {
+        assert(!this->getFunc()->isCtor());
+    }
+    if (!this->getFunc()->getConditions().empty())
+    {
+        assert(false);
+        //instr_ss << this->emitFuncCond(this->getFunc, this->getTargetObj,
+            //this->getFuncParams());
+    }
+    if (!this->getFunc()->isStatic() && target_obj != nullptr)
+    {
+        instr_ss << this->getTargetObj()->toStr() << ".";
+    }
+    else if (this->getFunc()->isStatic())
+    {
+        assert(this->getTargetObj() == nullptr);
+        instr_ss << this->getFunc()->getMemberType()->toStr() << "::";
+    }
+    instr_ss << this->getFunc()->printInvocation(this->getFuncParams());
+    //if (!this->getFunc()->getConditions().empty())
+    //{
+        //apply_func_ss << " : " << this->generateObject(func->getReturnType())->toStr();
+    //}
+    instr_ss << ";";
+    return instr_ss.str();
+}
+
+
 
 /*******************************************************************************
  * ApiFuzzer functions
  ******************************************************************************/
 
-std::vector<std::string>
-ApiFuzzer::getInstrList()
+std::vector<const ApiInstruction*>
+ApiFuzzer::getInstrList() const
 {
     return this->instrs;
 }
 
+std::vector<std::string>
+ApiFuzzer::getInstrStrs() const
+{
+    std::vector<std::string> instr_strs;
+    for (const ApiInstruction* api_instr : this->getInstrList())
+    {
+        instr_strs.push_back(api_instr->toStr());
+    }
+    return instr_strs;
+}
+
 std::vector<const ApiObject*>
-ApiFuzzer::getObjList()
+ApiFuzzer::getObjList() const
 {
     return this->objs;
 }
 
 std::set<const ApiType*>
-ApiFuzzer::getTypeList()
+ApiFuzzer::getTypeList() const
 {
     return this->types;
 }
 
 std::set<const ApiFunc*>
-ApiFuzzer::getFuncList()
+ApiFuzzer::getFuncList() const
 {
     return this->funcs;
 }
@@ -277,6 +352,13 @@ ApiFuzzer::getRandInt(int min, int max)
 {
     std::uniform_int_distribution<int> uid(min, max);
     return uid(this->rng);
+}
+
+unsigned int
+ApiFuzzer::getNextID()
+{
+    this->next_obj_id++;
+    return this->next_obj_id - 1;
 }
 
 bool
@@ -306,7 +388,7 @@ ApiFuzzer::hasFuncName(std::string func_check)
 }
 
 void
-ApiFuzzer::addInstr(std::string instr)
+ApiFuzzer::addInstr(const ApiInstruction* instr)
 {
     //static int counter = 0;
     this->instrs.push_back(instr);
@@ -372,123 +454,79 @@ ApiFuzzer::getFuncByName(std::string name)
     return getRandomSetElem(filtered_funcs);
 }
 
-unsigned int
-ApiFuzzer::getNextID()
-{
-    this->next_obj_id++;
-    return this->next_obj_id - 1;
-}
 
-const ApiObject*
-ApiFuzzer::generateNamedObjectWithoutDecl(std::string name,
-    const ApiType* type)
-{
-    const NamedObject* new_obj = new NamedObject(name, type);
-    std::stringstream obj_init_ss;
-    obj_init_ss << new_obj->toStrWithType() << ";";
-    this->addObj(new_obj);
-    this->addInstr(obj_init_ss.str());
-    return new_obj;
-}
+//const ApiObject*
+//ApiFuzzer::generateNamedObjectWithoutDecl(std::string name,
+    //const ApiType* type)
+//{
+    //const NamedObject* new_obj = new NamedObject(name, type);
+    //std::stringstream obj_init_ss;
+    //obj_init_ss << new_obj->toStrWithType() << ";";
+    //this->addObj(new_obj);
+    //this->addInstr(obj_init_ss.str());
+    //return new_obj;
+//}
 
 const ApiObject*
 ApiFuzzer::generateNamedObject(std::string name, const ApiType* type,
     const ApiFunc* init_func, const ApiObject* target_obj,
     std::vector<const ApiObject*> init_func_args)
 {
+    bool new_obj_decl = true;
     const NamedObject* new_obj = new NamedObject(name, type);
-    this->applyFunc(init_func, target_obj, new_obj, init_func_args, true);
+    const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
+        target_obj, init_func_args, new_obj_decl);
+    //this->applyFunc(init_func, target_obj, new_obj, init_func_args, true);
     this->addObj(new_obj);
-    //std::stringstream obj_init_ss;
-    //obj_init_ss << new_obj->toStrWithType() << " = ";
-    //obj_init_ss << init_func->printInvocation(init_func_args, target_obj) << ";";
-    //this->addObj(new_obj);
-    //this->addInstr(obj_init_ss.str());
+    this->addInstr(new_instr);
     return new_obj;
 }
 
-const ApiObject*
-ApiFuzzer::generateApiObjectWithoutDecl(std::string name,
-    const ApiType* type)
-{
-    const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
-    std::stringstream obj_init_ss;
-    obj_init_ss << new_obj->toStrWithType() << ";";
-    this->addObj(new_obj);
-    this->addInstr(obj_init_ss.str());
-    return new_obj;
-}
+//const ApiObject*
+//ApiFuzzer::generateApiObjectWithoutDecl(std::string name,
+    //const ApiType* type)
+//{
+    //const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
+    //std::stringstream obj_init_ss;
+    //obj_init_ss << new_obj->toStrWithType() << ";";
+    //this->addObj(new_obj);
+    //this->addInstr(obj_init_ss.str());
+    //return new_obj;
+//}
 
 const ApiObject*
 ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
     const ApiFunc* init_func, const ApiObject* target_obj,
     std::vector<const ApiObject*> init_func_args)
 {
+    bool new_obj_decl = true;
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
-    this->applyFunc(init_func, target_obj, new_obj, init_func_args, true);
+    const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
+        target_obj, init_func_args, new_obj_decl);
+    //this->applyFunc(init_func, target_obj, new_obj, init_func_args, true);
     //std::stringstream obj_init_ss;
     //obj_init_ss << new_obj->toStrWithType() << " = ";
     //obj_init_ss << init_func->printInvocation(init_func_args, target_obj) << ";";
     this->addObj(new_obj);
-    //this->addInstr(obj_init_ss.str());
+    this->addInstr(new_instr);
     return new_obj;
 }
 
 void
 ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
-    const ApiObject* result_obj, std::vector<const ApiObject*> func_args,
-    bool is_ctor)
+    const ApiObject* result_obj)
 {
-    std::stringstream apply_func_ss;
-    if (!func->checkArgs(func_args))
-    {
-        std::cout << "Invalid arguments given for func " << func->getName();
-        std::cout << std::endl << "\tExpected types: " << makeArgString(func->getParamTypes());
-        std::vector<std::string> arg_strings;
-        for (const ApiObject* arg : func_args)
-        {
-            arg_strings.push_back(arg->toStrWithType());
-        }
-        std::cout << std::endl << "\tGiven types: " << getStringWithDelims(arg_strings, ',');
-        std::cout << std::endl;
-        exit(1);
-    }
-    if (result_obj != nullptr)
-    {
-        if (is_ctor)
-        {
-            apply_func_ss << result_obj->toStrWithType();
-        }
-        else
-        {
-            apply_func_ss << result_obj->toStr();
-        }
-        apply_func_ss << " = ";
-    }
-    else
-    {
-        assert(!is_ctor);
-    }
-    if (!func->getConditions().empty())
-    {
-        apply_func_ss << this->emitFuncCond(func, target_obj, func_args);
-    }
-    if (!func->isStatic() && target_obj != nullptr)
-    {
-        apply_func_ss << target_obj->toStr() << ".";
-    }
-    else if (func->isStatic())
-    {
-        assert(target_obj == nullptr);
-        apply_func_ss << func->getMemberType()->toStr() << "::";
-    }
-    apply_func_ss << func->printInvocation(func_args);
-    if (!func->getConditions().empty())
-    {
-        apply_func_ss << " : " << this->generateObject(func->getReturnType())->toStr();
-    }
-    apply_func_ss << ";";
-    this->addInstr(apply_func_ss.str());
+    std::vector<const ApiObject*> func_args = getFuncArgs(func);
+    applyFunc(func, target_obj, result_obj, func_args);
+}
+
+void
+ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
+    const ApiObject* result_obj, std::vector<const ApiObject*> func_args)
+{
+    bool new_obj_decl = false;
+    this->addInstr(new ApiInstruction(func, result_obj, target_obj, func_args,
+        new_obj_decl));
 }
 
 std::string
@@ -526,13 +564,6 @@ ApiFuzzer::parseCondition(std::string condition, const ApiObject* target_obj,
     return condition;
 }
 
-void
-ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
-    const ApiObject* result_obj, bool is_ctor)
-{
-    std::vector<const ApiObject*> func_args = getFuncArgs(func);
-    applyFunc(func, target_obj, result_obj, func_args, is_ctor);
-}
 
 std::vector<const ApiObject*>
 ApiFuzzer::getFuncArgs(const ApiFunc* func)
@@ -581,7 +612,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937 _rng) : A
     this->initConstructors(config_file["constructors"]);
     this->initGenConfig(config_file["set_gen"]);
     this->generateSet();
-    for (std::string inst : this->getInstrList())
+    for (std::string inst : this->getInstrStrs())
     {
         std::cout << inst << std::endl;
     }
@@ -705,8 +736,12 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
             param_types_list.push_back(
                 this->parseTypeStr(param_types_yaml.as<std::string>()));
         std::vector<std::string> cond_list;
+        bool new_func_special = false;
+        bool new_func_statik = false;
+        bool new_func_ctor = true;
         this->addFunc(new ApiFunc(func_name, member_type, return_type,
-            param_types_list, cond_list));
+            param_types_list, cond_list, new_func_special, new_func_statik,
+            new_func_ctor));
     }
 }
 
@@ -1025,14 +1060,15 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     // Set return object, if any declared
     const ApiObject* return_obj = nullptr;
     // TODO should we automatically create a return object if not defined?
+    bool gen_new_obj = false;
+    bool gen_new_named_obj = false;
     if (instr_config["return"].IsDefined())
     {
         std::string obj_name = instr_config["return"].as<std::string>();
         if (obj_name.find(fmt::format("new{}", delim_mid)) !=
             std::string::npos)
         {
-            const ApiType* return_type = this->parseTypeStr(obj_name);
-            return_obj = this->generateApiObjectWithoutDecl("v", return_type);
+            gen_new_obj = true;
         }
         else if (obj_name.find(fmt::format("var{}", delim_mid)) !=
             std::string::npos)
@@ -1047,10 +1083,8 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
             }
             else
             {
+                gen_new_named_obj = true;
                 // TODO check for singleton object? Pipe this through generateObject
-                return_obj = this->generateNamedObjectWithoutDecl(
-                    this->getGeneratorData(instr_config["return"].as<std::string>()),
-                    func->getReturnType());
             }
         }
         else
@@ -1094,8 +1128,26 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         func_params = this->getFuncArgs(func);
     }
-    this->applyFunc(this->getFuncByName(func_name), target_obj, return_obj,
-        func_params);
+    if (gen_new_obj)
+    {
+        const ApiType* return_type = this->parseTypeStr(
+            instr_config["return"].as<std::string>());
+        std::string var_name = return_type->toStr();
+        var_name = var_name.substr(var_name.rfind(':') + 1);
+        return_obj = this->generateApiObject(var_name, return_type, func,
+            target_obj, func_params);
+    }
+    else if (gen_new_named_obj)
+    {
+        return_obj = this->generateNamedObject(
+            this->getGeneratorData(instr_config["return"].as<std::string>()),
+            func->getReturnType(), func, target_obj, func_params);
+    }
+    else
+    {
+        this->applyFunc(this->getFuncByName(func_name), target_obj, return_obj,
+            func_params);
+    }
 }
 
 std::string
@@ -1109,7 +1161,8 @@ ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
 }
 
 // TODO make this prettier and better
-std::string expr_ops[5] = {"==", "<=", "=>", "<", ">"};
+// TODO PPL doesn't like strict inequalities; why?
+std::string expr_ops[3] = {"==", "<=", ">="};
 
 std::string
 ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)

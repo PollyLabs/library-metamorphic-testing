@@ -59,8 +59,8 @@ main(int argc, char** argv)
     mainPreSetup(test_ss);
 
     std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerNew(config_path, rng));
-    std::vector<std::string> set_decl_calls = api_fuzzer->getInstrList();
-    for (std::string instr : api_fuzzer->getInstrList())
+    //std::vector<std::string> set_decl_calls = api_fuzzer->getInstrStrs();
+    for (std::string instr : api_fuzzer->getInstrStrs())
     {
         writeLine(test_ss, instr);
     }

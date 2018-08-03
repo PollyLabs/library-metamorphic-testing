@@ -191,15 +191,16 @@ class ApiFunc {
     const std::vector<std::string> conditions;
     const bool special;
     const bool statik;
+    const bool ctor;
 
     public:
         ApiFunc(std::string _name, const ApiType* _member_type, const ApiType* _return_type,
             std::vector<const ApiType*> _param_types,
             std::vector<std::string> _conditions, bool _special = false,
-            bool _statik = false) :
+            bool _statik = false, bool _ctor = false) :
             name(_name), member_type(_member_type), return_type(_return_type),
             param_types(_param_types), conditions(_conditions),
-            special(_special), statik(_statik) {};
+            special(_special), statik(_statik), ctor(_ctor) {};
 
         std::string getName() const { return this->name; };
         std::vector<const ApiType*> getParamTypes() const {
@@ -229,6 +230,7 @@ class ApiFunc {
         bool isSpecial() const { return this->special; };
         bool notIsSpecial() const { return !this->special; };
         bool isStatic() const { return this->statik; };
+        bool isCtor() const { return this->ctor; };
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
@@ -245,13 +247,27 @@ class ApiInstruction
     const ApiObject* target_obj;
     const ApiObject* result_obj;
     std::vector<const ApiObject*> func_params;
+    const bool new_obj_decl;
 
     public:
         ApiInstruction(const ApiFunc* _func, const ApiObject* _result = nullptr,
             const ApiObject* _target = nullptr,
             std::vector<const ApiObject*> _params =
-            std::vector<const ApiObject*>()) : func(_func),
-            target_obj(_target), result_obj(_result), func_params(_params) {};
+            std::vector<const ApiObject*>(), bool _new_obj_decl = false) :
+            func(_func), target_obj(_target), result_obj(_result),
+            func_params(_params), new_obj_decl(_new_obj_decl) {};
+
+        const ApiFunc* getFunc() const { return this->func; }
+        const ApiObject* getTargetObj() const { return this->target_obj; };
+        const ApiObject* getResultObj() const { return this->result_obj; };
+        std::vector<const ApiObject*> getFuncParams() const
+        {
+            return this->func_params;
+        };
+
+        bool isNewObjDecl() const { return this->new_obj_decl; };
+
+        std::string toStr() const;
 };
 
 class ApiFuzzer {
@@ -259,7 +275,7 @@ class ApiFuzzer {
         std::set<const ApiType*> types;
         std::set<const ApiFunc*> funcs;
         std::vector<const ApiObject*> objs;
-        std::vector<std::string> instrs;
+        std::vector<const ApiInstruction*> instrs;
         unsigned int next_obj_id;
         unsigned int depth;
         const unsigned int max_depth = 10;
@@ -269,14 +285,17 @@ class ApiFuzzer {
         virtual const ApiObject* generateObject(const ApiType*) = 0;
 
     public:
-        ApiFuzzer(std::mt19937 _rng): next_obj_id(0), instrs(std::vector<std::string>()),
-            objs(std::vector<const ApiObject*>()), types(std::set<const ApiType*>()),
+        ApiFuzzer(std::mt19937 _rng): next_obj_id(0), depth(0),
+            instrs(std::vector<const ApiInstruction*>()),
+            objs(std::vector<const ApiObject*>()),
+            types(std::set<const ApiType*>()),
             funcs(std::set<const ApiFunc*>()), rng(_rng) {};
 
-        std::vector<std::string> getInstrList();
-        std::vector<const ApiObject*> getObjList();
-        std::set<const ApiFunc*> getFuncList();
-        std::set<const ApiType*> getTypeList();
+        std::vector<const ApiInstruction*> getInstrList() const;
+        std::vector<std::string> getInstrStrs() const;
+        std::vector<const ApiObject*> getObjList() const;
+        std::set<const ApiFunc*> getFuncList() const;
+        std::set<const ApiType*> getTypeList() const;
         int getRandInt(int = 0, int = std::numeric_limits<int>::max());
         unsigned int getNextID();
 
@@ -290,7 +309,7 @@ class ApiFuzzer {
             bool (ApiFunc::*)(T) const, T);
         const ApiFunc* getFuncByName(std::string);
 
-        void addInstr(std::string);
+        void addInstr(const ApiInstruction*);
         void addObj(const ApiObject*);
         void addType(const ApiType*);
         void addFunc(const ApiFunc*);
@@ -300,18 +319,13 @@ class ApiFuzzer {
     protected:
         ApiObject* generateApiObjectAndDecl(std::string, std::string,
             std::string, std::initializer_list<std::string>);
-        const ApiObject* generateNamedObjectWithoutDecl(std::string,
-            const ApiType*);
         const ApiObject* generateNamedObject(std::string, const ApiType*,
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
-        const ApiObject* generateApiObjectWithoutDecl(std::string,
-            const ApiType*);
         const ApiObject* generateApiObject(std::string, const ApiType*,
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
+        void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
-            std::vector<const ApiObject*>, bool = false);
-        void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
-            bool = false);
+            std::vector<const ApiObject*>);
         std::vector<const ApiObject*> getFuncArgs(const ApiFunc*);
 
     private:
