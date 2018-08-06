@@ -200,6 +200,9 @@ set_gen:
     - type: 'func'
       func: 'convex_hull'
       target: '<var=s>'
+    - type: 'func'
+      func: 'dump'
+      target: '<var=s>'
 
 #    - isl::set < isl::point
 #    - [isl::set].union

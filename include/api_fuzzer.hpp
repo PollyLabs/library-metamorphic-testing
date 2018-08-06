@@ -36,8 +36,8 @@ class ApiInstruction;
 
 std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
-template<typename T> T getRandomVectorElem(std::vector<T>&);
-template<typename T> T getRandomSetElem(std::set<T>&);
+template<typename T> T getRandomVectorElem(std::vector<T>&, std::mt19937*);
+template<typename T> T getRandomSetElem(std::set<T>&, std::mt19937*);
 template<typename T> std::vector<const ApiObject*> filterObjList
     (std::vector<const ApiObject*>, bool (ApiObject::*)(T) const, T);
 template<typename T> std::set<const ApiFunc*> filterFuncList(
@@ -267,13 +267,13 @@ class ApiFuzzer {
         unsigned int next_obj_id;
         unsigned int depth;
         const unsigned int max_depth = 10;
-        std::mt19937 rng;
+        std::mt19937* rng;
 
 
         virtual const ApiObject* generateObject(const ApiType*) = 0;
 
     public:
-        ApiFuzzer(std::mt19937 _rng): next_obj_id(0), instrs(std::vector<std::string>()),
+        ApiFuzzer(std::mt19937* _rng): next_obj_id(0), instrs(std::vector<std::string>()),
             objs(std::vector<const ApiObject*>()), types(std::set<const ApiType*>()),
             funcs(std::set<const ApiFunc*>()), rng(_rng) {};
 
@@ -281,6 +281,7 @@ class ApiFuzzer {
         std::vector<const ApiObject*> getObjList();
         std::set<const ApiFunc*> getFuncList();
         std::set<const ApiType*> getTypeList();
+        std::mt19937* getRNG() { return this->rng; };
         int getRandInt(int = 0, int = std::numeric_limits<int>::max());
         unsigned int getNextID();
 
@@ -330,7 +331,7 @@ class ApiFuzzerNew : public ApiFuzzer {
     std::vector<YAML::Node> set_gen_instrs;
 
     public:
-        ApiFuzzerNew(std::string&, std::mt19937);
+        ApiFuzzerNew(std::string&, std::mt19937*);
         //~ApiFuzzerNew();
 
     private:

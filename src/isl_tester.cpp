@@ -83,7 +83,7 @@ int
 main(int argc, char **argv)
 {
     isl_tester::Arguments args = isl_tester::parseArgs(argc, argv);
-    std::mt19937 rng(args.seed);
+    std::mt19937* rng = new std::mt19937(args.seed);
     isl_ctx *ctx_pointer = isl_ctx_alloc();
     isl::ctx ctx(ctx_pointer);
 
