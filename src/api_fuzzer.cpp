@@ -61,17 +61,22 @@ makeArgString(std::vector<T> func_args)
 
 template<typename T>
 T
-getRandomVectorElem(std::vector<T>& vector_in)
+getRandomVectorElem(std::vector<T>& vector_in, std::mt19937* rng)
 {
-    return vector_in.at(std::rand() % vector_in.size());
+    unsigned int rand_val = (*rng)();
+    logDebug(fmt::format("RAND GEN {}", rand_val));
+    return vector_in.at(rand_val % vector_in.size());
 }
 
 template<typename T>
 T
-getRandomSetElem(std::set<T>& set_in)
+getRandomSetElem(std::set<T>& set_in, std::mt19937* rng)
 {
     typename std::set<T>::iterator it = set_in.begin();
-    std::advance(it, std::rand() % set_in.size());
+    unsigned int rand_val = (*rng)();
+    logDebug(fmt::format("RAND GEN {}", rand_val));
+    int advance_count = rand_val % set_in.size();
+    std::advance(it, advance_count);
     return *it;
 }
 
@@ -350,8 +355,8 @@ ApiFuzzer::getFuncList() const
 int
 ApiFuzzer::getRandInt(int min, int max)
 {
-    std::uniform_int_distribution<int> uid(min, max);
-    return uid(this->rng);
+    assert(max != 0);
+    return (*this->rng)() % max + min;
 }
 
 unsigned int
@@ -451,7 +456,7 @@ ApiFuzzer::getFuncByName(std::string name)
 {
     std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
     assert(filtered_funcs.size() > 0);
-    return getRandomSetElem(filtered_funcs);
+    return getRandomSetElem(filtered_funcs, this->getRNG());
 }
 
 
@@ -573,13 +578,14 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     std::vector<const ApiObject*> params;
     for (const ApiType* param_type : param_types)
     {
-        if (this->getRandInt(0, 10) < this->depth || this->depth > this->max_depth)
+        if (!param_type->isExplicit() &&
+                this->getRandInt(0, 10) < this->depth || this->depth > this->max_depth)
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
             if (!candidate_params.empty())
             {
-                params.push_back(getRandomVectorElem(candidate_params));
+                params.push_back(getRandomVectorElem(candidate_params, this->getRNG()));
                 continue;
             }
         }
@@ -594,7 +600,8 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
  * ApiFuzzerNew functions
  ******************************************************************************/
 
-ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937 _rng) : ApiFuzzer(_rng)
+ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng) : 
+    ApiFuzzer(_rng)
 {
     YAML::Node config_file = YAML::LoadFile(config_file_path);
     this->initPrimitiveTypes();
@@ -612,10 +619,10 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937 _rng) : A
     this->initConstructors(config_file["constructors"]);
     this->initGenConfig(config_file["set_gen"]);
     this->generateSet();
-    for (std::string inst : this->getInstrStrs())
-    {
-        std::cout << inst << std::endl;
-    }
+    //for (std::string inst : this->getInstrList())
+    //{
+        //std::cout << inst << std::endl;
+    //}
 }
 
 void
@@ -769,6 +776,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         {
             return new ExplicitType(type_str, this->getTypeByName("string"));
         }
+        else if (type_str.find(fmt::format("range{}", delim_mid)) != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+        }
         assert(false);
     }
     return this->getTypeByName(type_str);
@@ -798,7 +809,15 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     else if (obj_type->isExplicit())
     {
         const ExplicitType* expl_type = dynamic_cast<const ExplicitType*>(obj_type);
-        if (expl_type->isInput())
+        if (expl_type->isRange())
+        {
+            const ApiType* obj_type = this->getTypeByName("unsigned int");
+            assert(obj_type->isPrimitive());
+            const PrimitiveType* prim_type = dynamic_cast<const PrimitiveType*>(obj_type);
+            return this->generatePrimitiveObject(prim_type,
+                this->getGeneratorData(expl_type->getDefinition()));
+        }
+        else if (expl_type->isInput())
         {
             std::string input_name =
                 expl_type->getDefinition();
@@ -849,7 +868,7 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
         &ApiFunc::hasReturnType, obj_type);
     ctor_func_candidates = filterFuncList(ctor_func_candidates,
         &ApiFunc::notIsSpecial);
-    const ApiFunc* gen_func = getRandomSetElem(ctor_func_candidates);
+    const ApiFunc* gen_func = getRandomSetElem(ctor_func_candidates, this->getRNG());
     logDebug("Generating " + obj_type->toStr() + " type object with func " +
         gen_func->getName());
     std::vector<const ApiObject*> ctor_args = this->getFuncArgs(gen_func);
@@ -865,7 +884,7 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
         }
         else
         {
-            target_obj = getRandomVectorElem(target_obj_candidates);
+            target_obj = getRandomVectorElem(target_obj_candidates, this->getRNG());
         }
     }
     std::string var_name;
@@ -1152,7 +1171,7 @@ ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
     assert(gen_desc.back() == delim_back);
     assert(gen_desc.find(delim_mid) != std::string::npos);
     return gen_desc.substr(gen_desc.find(delim_mid) + 1,
-        gen_desc.find(delim_back) - gen_desc.find(delim_mid) - 1);
+        gen_desc.rfind(delim_back) - gen_desc.find(delim_mid) - 1);
 }
 
 // TODO make this prettier and better
