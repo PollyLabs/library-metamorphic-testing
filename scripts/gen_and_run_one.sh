@@ -9,9 +9,9 @@ if [ $# -ne 1 ]; then
     echo "Expected 1 parameter, seed."
     exit
 fi
-./isl_tester -m SET_META_NEW -s $1
+./test_emitter -s $1
 cd ${OUT_DIR}
-./compile.sh
-timeout 120 ./test
+./compile_isl.sh test_new.cpp
+timeout 120 ./test_new
 echo $?
 cd ..

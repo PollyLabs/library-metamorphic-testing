@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "api_fuzzer.hpp"
+#include "set_meta_tester_new.hpp"
 
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
@@ -32,9 +33,5 @@ void writeLine(std::stringstream&, std::string);
 void prepareHeader(std::stringstream&, std::vector<std::string>&);
 void mainPreSetup(std::stringstream&);
 void mainPostSetup(std::stringstream&);
-
-namespace set_meta_tester {
-    void runSimple(std::vector<std::string>, Arguments&);
-};
 
 #endif

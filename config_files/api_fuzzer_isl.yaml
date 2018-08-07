@@ -1,4 +1,7 @@
 ---
+includes:
+    - "isl-noexceptions.h"
+
 inputs:
     - name: 'params'
       type: 'unsigned int'
@@ -138,11 +141,6 @@ funcs:
       param_types: ['isl::pw_aff']
       conditions: []
     - name: 'gt_set'
-      member_type: 'isl::pw_aff'
-      return_type: 'isl::set'
-      param_types: ['isl::pw_aff']
-      conditions: []
-    - name: 'eq_set'
       member_type: 'isl::pw_aff'
       return_type: 'isl::set'
       param_types: ['isl::pw_aff']

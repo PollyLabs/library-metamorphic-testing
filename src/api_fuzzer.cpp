@@ -13,8 +13,8 @@ char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
 
-//static const bool DEBUG = false;
-static const bool DEBUG = true;
+static const bool DEBUG = false;
+//static const bool DEBUG = true;
 
 /*******************************************************************************
  * Helper functions

@@ -2,6 +2,9 @@
 # %e = empty set
 # %u = universe
 
+meta_var_type: "isl::set"
+meta_check: "%m.is_equal(%m0)"
+
 generators:
     universe:
         - "%1.unite(%1.complement())"
@@ -14,8 +17,8 @@ generators:
         - "%1.intersect(%e)"
         - "%u.complement()"
 
-    invertible_functions:
-        - [ "%1.complement()" , "%1.complement()" ]
+    #invertible_functions:
+        #- [ "%1.complement()" , "%1.complement()" ]
 
 relations:
     identity:
