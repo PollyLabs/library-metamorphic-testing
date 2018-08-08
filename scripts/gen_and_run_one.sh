@@ -11,7 +11,7 @@ if [ $# -ne 1 ]; then
 fi
 ./test_emitter -s $1
 cd ${OUT_DIR}
-./compile_isl.sh test_new.cpp
-timeout 120 ./test_new
+./compile_isl.sh test.cpp
+timeout 120 ./test
 echo $?
 cd ..

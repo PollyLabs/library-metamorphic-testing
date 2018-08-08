@@ -2,6 +2,9 @@
 includes:
     - "isl-noexceptions.h"
 
+pre_setup:
+    - "isl_ctx *ctx_ptr = isl_ctx_alloc();"
+
 inputs:
     - name: 'params'
       type: 'unsigned int'

@@ -61,17 +61,29 @@ writeLine(std::stringstream &ss, std::string line)
 }
 
 void
-prepareHeader(std::stringstream &ss, std::vector<std::string> &include_list)
+prepareHeader(std::stringstream &ss, std::vector<std::string> &include_list,
+    Arguments& args)
 {
+    writeLine(ss, fmt::format("// SEED : {}", args.seed));
+    writeLine(ss, fmt::format("// API CONFIG FILE : {}", "x"));
+    writeLine(ss, fmt::format("// META CONFIG FILE : {}", "x"));
+    std::time_t curr_time_t = std::time(nullptr);
+    writeLine(ss, fmt::format("// GENERATION TIME : {}",
+        std::ctime(&curr_time_t)));
+    writeLine(ss, "");
     for (std::string incl : include_list)
         writeLine(ss, "#include " + incl);
 }
 
 void
-mainPreSetup(std::stringstream &ss)
+mainPreSetup(std::stringstream &ss, std::vector<std::string>& pre_setup_instrs)
 {
     writeLine(ss, "int main()");
     writeLine(ss, "{");
+    for (std::string pre_setup_instr : pre_setup_instrs)
+    {
+        writeLine(ss, pre_setup_instr);
+    }
     indent++;
 }
 
@@ -88,7 +100,7 @@ main(int argc, char** argv)
     std::mt19937* rng = new std::mt19937(args.seed);
     std::stringstream test_ss;
     std::string config_path =
-        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
+        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_ppl.yaml";
 
     YAML::Node config_file = YAML::LoadFile(config_path);
     std::vector<std::string> include_list = {
@@ -105,10 +117,16 @@ main(int argc, char** argv)
     }
 
     //writeArgs(ss, args, getMetaRelation(meta_rel));
-    prepareHeader(test_ss, include_list);
-    mainPreSetup(test_ss);
-    // ISL specific required instruction
-    writeLine(test_ss, "isl_ctx *ctx_ptr = isl_ctx_alloc();");
+    prepareHeader(test_ss, include_list, args);
+    std::vector<std::string> pre_setup_instrs;
+    if (config_file["pre_setup"].IsDefined())
+    {
+        for (YAML::Node pre_setup_yaml : config_file["pre_setup"])
+        {
+            pre_setup_instrs.push_back(pre_setup_yaml.as<std::string>());
+        }
+    }
+    mainPreSetup(test_ss, pre_setup_instrs);
 
     std::unique_ptr<ApiFuzzer> api_fuzzer (new ApiFuzzerNew(config_path, rng));
     for (std::string instr : api_fuzzer->getInstrStrs())
@@ -116,18 +134,17 @@ main(int argc, char** argv)
         writeLine(test_ss, instr);
     }
 
-    std::string meta_test_file = "../config_files/set_meta_tests.yaml";
+    std::string meta_test_file = "../config_files/set_meta_tests_ppl.yaml";
+    //writeLine(test_ss, "isl_ctx *ctx_ptr = isl_ctx_alloc();");
     std::unique_ptr<SetMetaTester> smt = std::unique_ptr<SetMetaTester>(new SetMetaTester(meta_test_file, rng));
     for (std::string meta_instr : smt->getMetaExprStrs())
     {
         writeLine(test_ss, meta_instr);
     }
-    //smt->genMetaTests();
-    //
     mainPostSetup(test_ss);
 
     std::ofstream ofs;
-    ofs.open("../out/test_new.cpp");
+    ofs.open("../out/test.cpp");
     ofs << test_ss.rdbuf();
     ofs.close();
 }

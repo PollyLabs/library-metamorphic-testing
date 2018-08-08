@@ -1,7 +1,7 @@
 # %n, where n is an integer = input set
 # %e = empty set
 # %u = universe
-
+---
 meta_var_type: "isl::set"
 meta_check: "%m.is_equal(%m0)"
 
@@ -49,4 +49,3 @@ relations:
     intersect:
         - "%1.intersect(%2)"
         - "%1.complement().unite(%2.complement()).complement()" # DeMorgan
-

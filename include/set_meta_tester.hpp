@@ -1,44 +1,54 @@
-#ifndef SET_META_TESTER_HPP
-#define SET_META_TESTER_HPP
+#ifndef SET_META_TESTER_NEW_HPP
+#define SET_META_TESTER_NEW_HPP
 
-#include "isl-noexceptions.h"
-#include "yaml-cpp/yaml.h"
-#include "isl_tester.hpp"
-#include "fmt/format.h"
-
-#include <cassert>
-#include <cstring>
-#include <sstream>
 #include <fstream>
-#include <map>
-#include <queue>
-#include <vector>
 #include <iostream>
+#include <map>
+#include <set>
+#include <queue>
 #include <random>
 
-namespace isl_tester {
-    struct Arguments;
-}
+#include "yaml-cpp/yaml.h"
+#include "fmt/format.h"
 
-namespace set_meta_tester {
+class MetaExpr {
+    protected:
+        std::vector<std::string> instrs;
 
-void writeLine(std::stringstream&, std::string);
-void writeArgs(std::stringstream&, isl_tester::Arguments, std::string);
-void prepareHeader(std::stringstream&);
-void mainPreSetup(std::stringstream&);
-void genSetDeclaration(std::stringstream&, std::vector<std::string>&);
-void genCoalesceSplitTest(std::stringstream&);
-void mainPostSetup(std::stringstream&);
-std::queue<std::string> genMetaRelation(unsigned int);
-std::string getMetaRelation(std::queue<std::string>);
-std::string getRelation(const YAML::Node);
-std::string getGenerator(const YAML::Node, const std::string);
-void replaceMetaInputs(std::string&, const std::string, const YAML::Node);
-std::string genMetaFunc(const std::string, std::string, const YAML::Node);
-size_t genMetaExpr(std::stringstream&, const unsigned int,
-    std::queue<std::string>, const YAML::Node, std::set<size_t>);
-void runSimple(std::vector<std::string>, isl_tester::Arguments&);
+    public:
+        void addInstr(std::string);
+        int getHash(void);
+        std::vector<std::string> getInstrs(void);
+};
 
-}
+class SetMetaTester {
+    protected:
+        std::string input_var_name;
+        std::string meta_var_type;
+        std::string meta_var_name;
+        unsigned int meta_var_id;
+        std::string meta_check_str;
+        std::map<std::string, std::set<std::string>> relations;
+        std::map<std::string, std::set<std::string>> generators;
+        std::vector<MetaExpr*> meta_exprs;
+        std::set<size_t> meta_expr_hashes;
+        std::mt19937* rng;
+
+    public:
+        SetMetaTester(std::string&, std::mt19937*);
+        int getRandInt(int, int) const;
+        std::vector<std::string> getMetaExprStrs(void) const;
+
+    private:
+        void initMetaRels(std::map<std::string, std::set<std::string>>&, YAML::Node);
+        std::queue<std::string> makeMetaRelChain(unsigned int);
+        void genMetaExpr(std::queue<std::string>);
+        bool addMetaExpr(MetaExpr* expr);
+        std::string genInstr(std::string, std::string, std::string);
+        std::string replaceMetaInputs(std::string, std::string);
+        void finalizeExpr(MetaExpr*);
+
+        std::string getRandSetElem(std::set<std::string>&) const;
+};
 
 #endif

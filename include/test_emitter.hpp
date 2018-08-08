@@ -1,10 +1,11 @@
 #ifndef TEST_EMITTER_HPP
 #define TEST_EMITTER_HPP
 
+#include <ctime>
 #include <fstream>
 
 #include "api_fuzzer.hpp"
-#include "set_meta_tester_new.hpp"
+#include "set_meta_tester.hpp"
 
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
@@ -30,8 +31,8 @@ struct Arguments {
 };
 
 void writeLine(std::stringstream&, std::string);
-void prepareHeader(std::stringstream&, std::vector<std::string>&);
-void mainPreSetup(std::stringstream&);
+void prepareHeader(std::stringstream&, std::vector<std::string>&, Arguments&);
+void mainPreSetup(std::stringstream&, std::vector<std::string>&);
 void mainPostSetup(std::stringstream&);
 
 #endif
