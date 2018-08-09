@@ -4,60 +4,14 @@
  * - add a depth for expression generation
  */
 
-std::map<std::string, PrimitiveTypeEnum> primitives_map = {
-    { "string", STRING },
-    { "unsigned int", UINT },
-};
 
 char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
 
-static const bool DEBUG = false;
-//static const bool DEBUG = true;
-
 /*******************************************************************************
  * Helper functions
  ******************************************************************************/
-
-void
-logDebug(std::string message)
-{
-    if (DEBUG)
-    {
-        std::cerr << "DEBUG: " << message << std::endl;
-    }
-}
-
-std::string
-getStringWithDelims(std::vector<std::string> string_list, char delim)
-{
-    if (string_list.begin() == string_list.end())
-    {
-        return "";
-    }
-    std::string string_with_delim = "";
-    std::vector<std::string>::iterator it = string_list.begin();
-    for (int i = 1; i < string_list.size(); i++)
-    {
-        string_with_delim += *it + delim + " ";
-        it++;
-    }
-    string_with_delim += *it;
-    return string_with_delim;
-}
-
-template<typename T>
-std::string
-makeArgString(std::vector<T> func_args)
-{
-    std::vector<std::string> args_to_string;
-    for (T& obj : func_args)
-    {
-        args_to_string.push_back(obj->toStr());
-    }
-    return getStringWithDelims(args_to_string, ',');
-}
 
 template<typename T>
 T
@@ -127,211 +81,28 @@ filterFuncList(std::set<const ApiFunc*> func_list,
     return filtered_funcs;
 }
 
-/*******************************************************************************
- * ApiType functions
- ******************************************************************************/
-
-bool
-ApiType::isType(const ApiType* other) const
-{
-    if (other->isExplicit())
-    {
-        other = dynamic_cast<const ExplicitType*>(other)->getUnderlyingType();
-    }
-    return !this->toStr().compare(other->toStr());
-}
-
-/*******************************************************************************
- * ExplicitFunc functions
- ******************************************************************************/
-
-const ApiObject*
-ExplicitType::retrieveObj() const
-{
-    assert(this->definition.front() == delim_front &&
-        this->definition.back() == delim_back);
-    logDebug("Definition to retrieve: " + this->getDefinition());
-    if  (this->definition.find(fmt::format("string{}", delim_mid))
-            != std::string::npos)
-    {
-        assert(this->getUnderlyingType()->isPrimitive());
-        assert(((PrimitiveType *) this->getUnderlyingType())->getTypeEnum()
-            == STRING);
-        std::string data = this->definition.substr(this->definition.find(delim_mid) + 1,
-            this->definition.find(delim_back) - this->definition.find(delim_mid) - 1);
-        return new PrimitiveObject<std::string>(
-            (PrimitiveType*) this->getUnderlyingType(), data);
-    }
-    else if (this->definition.find(fmt::format("input{}", delim_mid))
-            != std::string::npos)
-    {
-        // TODO
-        assert(false);
-    }
-    assert(false);
-}
-
-std::string
-ExplicitType::extractExplicitTypeDecl(std::string type_str)
-{
-    assert(type_str.front() == delim_front && type_str.back() == delim_back);
-    assert(type_str.find(delim_mid) != std::string::npos);
-    unsigned int substr_start = type_str.find(delim_mid) + 1;
-    unsigned int substr_length = type_str.find(delim_back) - type_str.find(delim_mid) - 1;
-    return type_str.substr(substr_start, substr_length);
-}
-
-/*******************************************************************************
- * ApiFunc functions
- ******************************************************************************/
-
-const ApiType*
-ApiFunc::getParamType(const unsigned int index) const
-{
-    assert(index < this->getParamCount());
-    return this->param_types.at(index);
-}
-
-bool
-ApiFunc::hasParamTypes(std::vector<const ApiType*> param_types_check) const
-{
-    if (param_types_check.size() != this->getParamCount())
-    {
-        return false;
-    }
-    for (int i = 0; i < param_types_check.size(); i++)
-    {
-        if (!param_types_check.at(i)->isType(this->getParamType(i)))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool
-ApiFunc::checkArgs(std::vector<const ApiObject*> args_check) const
-{
-    if (args_check.size() != this->getParamCount())
-    {
-        return false;
-    }
-    for (int i = 0; i < args_check.size(); i++)
-    {
-        if (!args_check.at(i)->getType()->isType(this->getParamType(i)))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-std::string
-ApiFunc::printSignature() const
-{
-    std::stringstream print_ss;
-    if (this->getMemberType()->toStr() != "")
-    {
-        print_ss << this->getMemberType()->toStr() << ".";
-    }
-    print_ss << this->getName() << "(";
-    print_ss << makeArgString(this->getParamTypes()) << ")";
-    return print_ss.str();
-}
-
-std::string
-ApiFunc::printInvocation(std::vector<const ApiObject*> params) const
-{
-    assert(params.size() == this->getParamCount());
-    std::stringstream print_inv_ss;
-    print_inv_ss << this->getName() << "(";
-    print_inv_ss << makeArgString(params) << ")";
-    return print_inv_ss.str();
-}
-/*******************************************************************************
- * ApiInstruction functions
- ******************************************************************************/
-
-std::string
-ApiInstruction::toStr() const
-{
-    std::stringstream instr_ss;
-    if (!this->getFunc()->checkArgs(this->getFuncParams()))
-    {
-        const ApiFunc* func = this->getFunc();
-        std::cout << "Invalid arguments given for func " << func->getName();
-        std::cout << std::endl << "\tExpected types: " << makeArgString(
-            func->getParamTypes());
-        std::vector<std::string> arg_strings;
-        for (const ApiObject* func_param : this->getFuncParams())
-        {
-            arg_strings.push_back(func_param->toStrWithType());
-        }
-        std::cout << std::endl << "\tGiven types: ";
-        std::cout << getStringWithDelims(arg_strings, ',') << std::endl;
-        exit(1);
-    }
-    if (this->getResultObj() != nullptr)
-    {
-        if (this->isNewObjDecl() || this->getFunc()->isCtor())
-        {
-            instr_ss << result_obj->toStrWithType();
-        }
-        else
-        {
-            instr_ss << result_obj->toStr();
-        }
-        instr_ss << " = ";
-    }
-    else
-    {
-        assert(!this->getFunc()->isCtor());
-    }
-    if (!this->getFunc()->getConditions().empty())
-    {
-        assert(false);
-        //instr_ss << this->emitFuncCond(this->getFunc, this->getTargetObj,
-            //this->getFuncParams());
-    }
-    if (!this->getFunc()->isStatic() && target_obj != nullptr)
-    {
-        instr_ss << this->getTargetObj()->toStr() << ".";
-    }
-    else if (this->getFunc()->isStatic())
-    {
-        assert(this->getTargetObj() == nullptr);
-        instr_ss << this->getFunc()->getMemberType()->toStr() << "::";
-    }
-    instr_ss << this->getFunc()->printInvocation(this->getFuncParams());
-    //if (!this->getFunc()->getConditions().empty())
-    //{
-        //apply_func_ss << " : " << this->generateObject(func->getReturnType())->toStr();
-    //}
-    instr_ss << ";";
-    return instr_ss.str();
-}
-
 
 
 /*******************************************************************************
  * ApiFuzzer functions
  ******************************************************************************/
 
-std::vector<const ApiInstruction*>
-ApiFuzzer::getInstrList() const
-{
-    return this->instrs;
-}
+//std::vector<const ApiInstruction*>
+//ApiFuzzer::getInstrList() const
+//{
+    //return this->instrs;
+//}
 
 std::vector<std::string>
 ApiFuzzer::getInstrStrs() const
 {
-    std::vector<std::string> instr_strs;
-    for (const ApiInstruction* api_instr : this->getInstrList())
-    {
-        instr_strs.push_back(api_instr->toStr());
-    }
-    return instr_strs;
+    return this->instrs;
+    //std::vector<std::string> instr_strs;
+    //for (const ApiInstruction* api_instr : this->getInstrList())
+    //{
+        //instr_strs.push_back(api_instr->toStr());
+    //}
+    //return instr_strs;
 }
 
 std::vector<const ApiObject*>
@@ -396,7 +167,7 @@ void
 ApiFuzzer::addInstr(const ApiInstruction* instr)
 {
     //static int counter = 0;
-    this->instrs.push_back(instr);
+    this->instrs.push_back(instr->toStr());
     //this->instrs.push_back(fmt::format("fprintf(stderr, \"{}\n\");\n", ++counter));
 }
 
@@ -600,9 +371,11 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
  * ApiFuzzerNew functions
  ******************************************************************************/
 
-ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng) : 
+ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng,
+    std::unique_ptr<SetMetaTester> _smt) :
     ApiFuzzer(_rng)
 {
+    this->smt = std::move(_smt);
     YAML::Node config_file = YAML::LoadFile(config_file_path);
     this->initPrimitiveTypes();
     this->initInputs(config_file["inputs"]);
@@ -619,6 +392,8 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng) :
     this->initConstructors(config_file["constructors"]);
     this->initGenConfig(config_file["set_gen"]);
     this->generateSet();
+    std::vector<std::string> meta_instrs = smt->genMetaTests(3, 3);
+    this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
     //for (std::string inst : this->getInstrList())
     //{
         //std::cout << inst << std::endl;
@@ -1162,6 +937,10 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         this->applyFunc(this->getFuncByName(func_name), target_obj, return_obj,
             func_params);
     }
+    if (this->getRandInt(0, 1))
+    {
+
+    }
 }
 
 std::string
@@ -1193,310 +972,3 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
         << "0";
     return expr_ss.str();
 }
-
-/*******************************************************************************
- * ApiFuzzerISL functions
- ******************************************************************************/
-
-//std::vector<const ApiType*> isl_types = {
-    //new ApiType("isl::val"),
-    //new ApiType("isl::pw_aff"),
-    //new ApiType("isl::set"),
-    //new ApiType("isl::space"),
-    //new ApiType("isl::local_space"),
-    //new ApiType("isl::ctx"),
-    //new ApiType("void"),
-//};
-
-//struct {
-    //std::string func_name;
-    //std::string member_type_name;
-    //std::string return_type_name;
-    //std::initializer_list<std::string> param_type_name;
-    //std::initializer_list<std::string> conditions;
-//} isl_funcs[] = {
-
-////std::vector<ApiFunc> isl_funcs = {
-    //// isl::val unary funcs
-    //{"two_exp", "isl::val", "isl::val", {}, {}},
-    //{"abs"    , "isl::val", "isl::val", {}, {}},
-    //{"ceil"   , "isl::val", "isl::val", {}, {}},
-    //{"floor"  , "isl::val", "isl::val", {}, {}},
-    //{"inv"    , "isl::val", "isl::val", {}, {}},
-    //{"neg"    , "isl::val", "isl::val", {}, {}},
-    //{"trunc"  , "isl::val", "isl::val", {}, {}},
-    //// isl::val binary funcs
-    ////ApiFunc{"gcd", "isl::val", {"isl::val"}, {}},
-    ////ApiFunc{"mod", "isl::val", {"isl::val"}, {}},
-    //{"add"    , "isl::val", "isl::val", {"isl::val"}, {}},
-    //{"div"    , "isl::val", "isl::val", {"isl::val"}, {}},
-    //{"max"    , "isl::val", "isl::val", {"isl::val"}, {}},
-    //{"min"    , "isl::val", "isl::val", {"isl::val"}, {}},
-    //{"mul"    , "isl::val", "isl::val", {"isl::val"}, {}},
-    //{"sub"    , "isl::val", "isl::val", {"isl::val"}, {}},
-    //// isl::pw_aff unary funcs
-    //{"ceil"   , "isl::pw_aff", "isl::pw_aff", {}, {}},
-    //{"floor"  , "isl::pw_aff", "isl::pw_aff", {}, {}},
-    //// isl::pw_aff binary funcs
-    ////ApiFunc{"mod", "isl::pw_aff", {"isl::val"}, {}},
-    ////ApiFunc{"scale", "isl::pw_aff", {"isl::val"}, {}},
-    //{"add"    , "isl::pw_aff"  , "isl::pw_aff", {"isl::pw_aff"}, {}},
-    //{"sub"    , "isl::pw_aff"  , "isl::pw_aff", {"isl::pw_aff"}, {}},
-    //{"max"    , "isl::pw_aff"  , "isl::pw_aff", {"isl::pw_aff"}, {}},
-    //{"min"    , "isl::pw_aff"  , "isl::pw_aff", {"isl::pw_aff"}, {}},
-    //// isl::set generation funcs from isl::pw_aff
-    //// Other useful funcs
-    //{"dump"     , "isl::set"   , "void", {}, {}},
-    //{"intersect", "isl::set"   , "isl::set", {"isl::set"}, {}},
-    //{"le_set"   , "isl::pw_aff", "isl::set", {"isl::pw_aff"}, {}},
-    //{"ge_set"   , "isl::pw_aff", "isl::set", {"isl::pw_aff"}, {}},
-    //{"lt_set"   , "isl::pw_aff", "isl::set", {"isl::pw_aff"}, {}},
-    //{"gt_set"   , "isl::pw_aff", "isl::set", {"isl::pw_aff"}, {}},
-    //{"eq_set"   , "isl::pw_aff", "isl::set", {"isl::pw_aff"}, {}},
-    //{"ne_set"   , "isl::pw_aff", "isl::set", {"isl::pw_aff"}, {}},
-//};
-
-////std::vector<ApiFunc> set_gen_funcs = {
-    ////ApiFunc("le_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
-    ////ApiFunc("ge_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
-    ////ApiFunc("lt_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
-    ////ApiFunc("gt_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
-    ////ApiFunc("eq_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
-    ////ApiFunc("ne_set", "isl::pw_aff", {"isl::pw_aff"}, {}),
-////};
-
-//ApiFuzzerISL::ApiFuzzerISL(const unsigned int _max_dims,
-    //const unsigned int _max_params, const unsigned int _max_constraints)
-    //: ApiFuzzer(), dims(std::rand() % _max_dims + 1),
-    //params(std::rand() % _max_params + 1),
-    //constraints(std::rand() % _max_constraints + 1)
-//{
-    //this->dim_var_list = std::vector<const ApiObject*>();
-    //this->initTypes();
-    //this->initFuncs();
-//}
-
-//void
-//ApiFuzzerISL::initFuncs()
-//{
-    //const unsigned int func_arr_size = sizeof(isl_funcs) / sizeof(isl_funcs[0]);
-    //for (int i = 0; i < func_arr_size; i++) {
-        //const ApiType* member_type =
-            //isl_funcs[i].member_type_name == "" ?
-            //nullptr :
-            //this->getTypeByName(isl_funcs[i].member_type_name);
-        //const ApiType* return_type =
-            //this->getTypeByName(isl_funcs[i].return_type_name);
-        //std::vector<const ApiType*> param_types;
-        //for (std::string type_str : isl_funcs[i].param_type_name)
-            //param_types.push_back(this->getTypeByName(type_str));
-        //const ApiFunc* new_func = new ApiFunc(isl_funcs[i].func_name, member_type,
-            //return_type, param_types,
-            //std::vector<std::string>(isl_funcs[i].conditions));
-        //this->addFunc(new_func);
-    //}
-//}
-
-//void
-//ApiFuzzerISL::initTypes()
-//{
-    //for (const ApiType* type : isl_types)
-        //this->addType(type);
-//}
-
-//ApiFuzzerISL::~ApiFuzzerISL()
-//{
-    //this->clearObjs();
-    //this->clearFuncs();
-    //this->clearTypes();
-//}
-
-//void
-//ApiFuzzerISL::clearObjs()
-//{
-    //for (const ApiObject* obj : this->getObjList())
-        //delete(obj);
-//}
-
-//void
-//ApiFuzzerISL::clearFuncs()
-//{
-    //for (const ApiFunc* func : this->getFuncList())
-        //delete(func);
-//}
-
-//void
-//ApiFuzzerISL::clearTypes()
-//{
-    //for (const ApiType* type : this->getTypeList())
-        //delete(type);
-//}
-
-//void
-//ApiFuzzerISL::addDimVar(const ApiObject* dim_var)
-//{
-    //this->dim_var_list.push_back(dim_var);
-//}
-
-//std::vector<const ApiObject*>
-//ApiFuzzerISL::getDimVarList()
-//{
-    //return this->dim_var_list;
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::generateSet()
-//{
-    //const ApiObject* ctx = this->generateApiObjectAndDecl(
-        //"ctx", "isl::ctx", "isl::ctx", { "ctx_ptr" });
-    //const ApiObject* space = this->generateApiObjectAndDecl(
-        //"space", "isl::space", "isl::space",
-        //{ctx->toStr(), std::to_string(params), std::to_string(dims)});
-    //const ApiObject* l_space = this->generateApiObjectAndDecl(
-        //"local_space", "isl::local_space", "isl::local_space", {space->toStr()});
-    //for (unsigned int i = 0; i < this->dims; i++) {
-        //const ApiObject* dim_var = this->generateApiObjectAndDecl(
-            //"v", "isl::pw_aff", "isl::pw_aff::var_on_domain",
-            //{l_space->toStr(), "isl::dim::set", std::to_string(i)});
-        //this->addDimVar(dim_var);
-    //}
-    //for (unsigned int i = 0; i < this->params; i++) {
-        //const ApiObject* dim_var = this->generateApiObjectAndDecl(
-            //"v", "isl::pw_aff", "isl::pw_aff::var_on_domain",
-            //{l_space->toStr(), "isl::dim::param", std::to_string(i)});
-        //this->addDimVar(dim_var);
-    //}
-    //const ApiObject* set = this->generateApiObjectAndDecl(
-        //"set", "isl::set", "isl::set::universe", {space->toStr()});
-    //for (int i = 0; i < constraints; i++) {
-        //const ApiObject* cons1 = this->generatePWAff(ctx);
-        //const ApiObject* cons2 = this->generatePWAff(ctx);
-        //const ApiObject* cons_set = this->generateSetFromConstraints(cons1, cons2);
-        //this->addConstraintFromSet(set, cons_set);
-    //}
-    //const ApiFunc* dump_func = getFuncByName("dump");
-    //this->applyFunc(dump_func, set, nullptr, std::vector<const ApiObject*>());
-    //return set;
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::generateObject(const ApiType* obj_type)
-//{
-    //if (obj_type->hasName("isl::val"))
-        //return generateSimpleVal();
-    //std::cout << "Missing object generation for type " << obj_type->toStr();
-    //assert(false);
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::generateObject(std::string obj_name, std::string obj_type)
-//{
-    //const ApiObject* new_obj = new ApiObject(obj_name, this->getNextID(), this->getTypeByName(obj_type));
-    //return new_obj;
-//}
-
-
-//const ApiObject*
-//ApiFuzzerISL::getRandomDimVar()
-//{
-    //std::vector<const ApiObject*> dim_var_list = this->getDimVarList();
-    //return dim_var_list.at(std::rand() % dim_var_list.size());
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::getCtx()
-//{
-    //const ApiType* ctx_type = this->getTypeByName("isl::ctx");
-    //std::vector<const ApiObject*> ctx_list = this->filterObjs(&ApiObject::hasType, ctx_type);
-    //assert (ctx_list.size() == 1);
-    //return ctx_list.at(0);
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::generateVal()
-//{
-    //const ApiObject* val = this->generateSimpleVal();
-    //this->augmentVal(val);
-    //return val;
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::generateSimpleVal()
-//{
-    //const ApiObject* val = this->generateObject("val", "isl::val");
-    //const ApiObject* ctx = this->getCtx();
-    //this->addInstr(fmt::format("{} = isl::val({}, {});",
-        //val->toStrWithType(), ctx->toStr(), (long) std::rand() % 10));
-    //return val;
-//}
-
-//void
-//ApiFuzzerISL::augmentVal(const ApiObject* val)
-//{
-    //const unsigned int val_augment_count = std::rand() % 5 + 1;
-    //for (int i = 0; i < val_augment_count; i++) {
-        //std::set<const ApiFunc*> valid_func_list = filterFuncs(
-            //&ApiFunc::hasMemberType, this->getTypeByName("isl::val"));
-        //const ApiFunc* augment_func = getRandomSetElem(valid_func_list);
-        //this->applyFunc(augment_func, val, val);
-    //}
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::getExistingVal()
-//{
-    //const ApiType* val_type = this->getTypeByName("isl::val");
-    //std::vector<const ApiObject*> all_vals = this->filterObjs(&ApiObject::hasType, val_type);
-    //if (all_vals.size() == 0) {
-        //const ApiObject* ctx = this->getCtx();
-        //return this->generateSimpleVal();
-    //}
-    //return getRandomVectorElem(all_vals);
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::generatePWAff(const ApiObject* ctx)
-//{
-    //const ApiObject* pw_aff = this->getRandomDimVar();
-    //const ApiObject* cons_pwa = this->generateApiObjectAndDecl(
-        //"pw_aff", "isl::pw_aff", "isl::pw_aff", {pw_aff->toStr()});
-    //unsigned int op_count = 5;
-    //while (op_count-- > 0) {
-        //std::set<const ApiFunc*> valid_func_list = filterFuncs(
-            //&ApiFunc::hasMemberType, this->getTypeByName("isl::pw_aff"));
-        //valid_func_list = filterFuncList(valid_func_list,
-            //&ApiFunc::hasReturnType, this->getTypeByName("isl::pw_aff"));
-        //const ApiFunc* augment_func = getRandomSetElem(valid_func_list);
-        //std::vector<const ApiType*> func_params = augment_func->getParamTypes();
-        //// TODO still a hack actually
-        //if (func_params.empty())
-            //this->applyFunc(augment_func, cons_pwa, cons_pwa);
-        //else if (func_params.at(0)->hasName("isl::val"))
-            //this->applyFunc(augment_func, cons_pwa, cons_pwa,
-                //std::vector<const ApiObject*>({ this->generateVal() }));
-        //else if (func_params.at(0)->hasName("isl::pw_aff"))
-            //this->applyFunc(augment_func, cons_pwa, cons_pwa,
-                //std::vector<const ApiObject*>({ this->getRandomDimVar() }));
-    //}
-    //return cons_pwa;
-//}
-
-//const ApiObject*
-//ApiFuzzerISL::generateSetFromConstraints(const ApiObject* cons1, const ApiObject* cons2)
-//{
-    //std::set<const ApiFunc*> set_gen_funcs = this->filterFuncs(
-        //&ApiFunc::hasReturnType, getTypeByName("isl::set"));
-    //set_gen_funcs = filterFuncList(set_gen_funcs,
-        //&ApiFunc::hasMemberType, getTypeByName("isl::pw_aff"));
-    //const ApiFunc* set_decl_func = getRandomSetElem(set_gen_funcs);
-    //return this->generateApiObjectAndDecl("set", "isl::set",
-        //fmt::format("{}.{}", cons1->toStr(), set_decl_func->getName()),
-        //{ cons2->toStr() });
-//}
-
-//void
-//ApiFuzzerISL::addConstraintFromSet(const ApiObject* set, const ApiObject* constraint)
-//{
-    //const ApiFunc* intersect_func = getFuncByName("intersect");
-    //this->applyFunc(intersect_func, set, set, std::vector<const ApiObject*>({ constraint }));
-//}

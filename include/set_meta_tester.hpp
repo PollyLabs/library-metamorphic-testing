@@ -8,17 +8,57 @@
 #include <queue>
 #include <random>
 
+#include "api_elements.hpp"
+
 #include "yaml-cpp/yaml.h"
 #include "fmt/format.h"
 
-class MetaExpr {
+int getRandInt(std::mt19937*, int, int);
+std::string getRandSetElem(std::mt19937*, std::set<std::string>&);
+
+class MetaInstr {
     protected:
-        std::vector<std::string> instrs;
+        std::string instr_str;
 
     public:
-        void addInstr(std::string);
-        int getHash(void);
-        std::vector<std::string> getInstrs(void);
+        MetaInstr(std::string _instr_str) : instr_str(_instr_str) {};
+
+        size_t getHash(void) const;
+        std::string toStr() { return this->instr_str; };
+};
+
+class MetaTest {
+    protected:
+        std::string meta_var_type;
+        std::string meta_var_name;
+        unsigned int meta_var_id;
+        std::string input_var_name;
+        std::map<std::string, std::set<std::string>>* generators;
+        std::mt19937* rng;
+        std::vector<MetaInstr*> instrs;
+        bool result_var_defined = false;
+
+    public:
+        MetaTest(std::string _mvt, std::string _mvn, unsigned int _mvi,
+            std::string _ivn,
+            std::map<std::string, std::set<std::string>>* _gen,
+            std::mt19937* _rng) :
+            meta_var_type(_mvt), meta_var_name(_mvn), meta_var_id(_mvi),
+            input_var_name(_ivn), generators(_gen), rng(_rng) {};
+
+        void parseAndAddInstr(std::string);
+        void finalizeTest(std::string);
+
+        void addInstr(MetaInstr* instr)
+        {
+            this->instrs.push_back(instr);
+        };
+        size_t getHash(void) const;
+        std::vector<MetaInstr*> getInstrs(void) const;
+        std::vector<std::string> getInstrStrs(void) const;
+
+    private:
+        std::string replaceMetaInputs(std::string);
 };
 
 class SetMetaTester {
@@ -30,25 +70,22 @@ class SetMetaTester {
         std::string meta_check_str;
         std::map<std::string, std::set<std::string>> relations;
         std::map<std::string, std::set<std::string>> generators;
-        std::vector<MetaExpr*> meta_exprs;
+        std::vector<MetaTest*> meta_exprs;
         std::set<size_t> meta_expr_hashes;
         std::mt19937* rng;
 
     public:
         SetMetaTester(std::string&, std::mt19937*);
-        int getRandInt(int, int) const;
-        std::vector<std::string> getMetaExprStrs(void) const;
+        std::vector<std::string> getMetaTestStrs(void) const;
+        std::vector<std::string> genMetaTests(unsigned int, unsigned int);
 
     private:
         void initMetaRels(std::map<std::string, std::set<std::string>>&, YAML::Node);
         std::queue<std::string> makeMetaRelChain(unsigned int);
-        void genMetaExpr(std::queue<std::string>);
-        bool addMetaExpr(MetaExpr* expr);
-        std::string genInstr(std::string, std::string, std::string);
-        std::string replaceMetaInputs(std::string, std::string);
-        void finalizeExpr(MetaExpr*);
+        void genOneMetaTest(std::queue<std::string>);
+        bool addMetaTest(MetaTest* expr);
+        std::string genMetaExprStr(std::string);
 
-        std::string getRandSetElem(std::set<std::string>&) const;
 };
 
 #endif

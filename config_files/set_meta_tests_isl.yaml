@@ -1,51 +1,52 @@
 # %n, where n is an integer = input set
 # %e = empty set
 # %u = universe
+# %m = metamorphic test variable
 ---
 meta_var_type: "isl::set"
 meta_check: "%m.is_equal(%m0)"
 
 generators:
     universe:
-        - "%1.unite(%1.complement())"
-        - "%e.complement()"
+        - "%1.unite(%1.complement());"
+        - "%e.complement();"
 
     empty:
-        - "%1.intersect(%1.complement())"
-        - "%1.subtract(%1)"
-        - "%1.subtract(%u)"
-        - "%1.intersect(%e)"
-        - "%u.complement()"
+        - "%1.intersect(%1.complement());"
+        - "%1.subtract(%1);"
+        - "%1.subtract(%u);"
+        - "%1.intersect(%e);"
+        - "%u.complement();"
 
     #invertible_functions:
-        #- [ "%1.complement()" , "%1.complement()" ]
+        #- [ "%1.complement();" , "%1.complement();" ]
 
 relations:
     identity:
-        - "%1.unite(%1)"
-        - "%1.unite(%e)"
-        - "%1.intersect(%1)"
-        - "%1.intersect(%u)"
-        - "%1.subtract(%e)"
-        - "%u.subtract(%1.complement())"
-        - "%1.intersect(%1.unite(%2))"
-        - "%1.unite(%1.intersect(%2))"
-        - "%1.complement().complement()"
-        - "%1.coalesce()"
-        - "%1.detect_equalities()"
+        - "%m = %1.unite(%1);"
+        - "%m = %1.unite(%e);"
+        - "%m = %1.intersect(%1);"
+        - "%m = %1.intersect(%u);"
+        - "%m = %1.subtract(%e);"
+        - "%m = %u.subtract(%1.complement());"
+        - "%m = %1.intersect(%1.unite(%2));"
+        - "%m = %1.unite(%1.intersect(%2));"
+        - "%m = %1.complement().complement();"
+        - "%m = %1.coalesce();"
+        - "%m = %1.detect_equalities();"
 
     complement:
-        - "%1.complement()"
-        - "%u.subtract(%1)"
+        - "%m = %1.complement();"
+        - "%m = %u.subtract(%1);"
 
     subtract:
-        - "%1.subtract(%2)"
-        - "%1.intersect(%2.complement())"
+        - "%m = %1.subtract(%2);"
+        - "%m = %1.intersect(%2.complement());"
 
     union:
-        - "%1.unite(%2)"
-        - "%1.complement().intersect(%2.complement()).complement()" # DeMorgan
+        - "%m = %1.unite(%2);"
+        - "%m = %1.complement().intersect(%2.complement()).complement();" # DeMorgan
 
     intersect:
-        - "%1.intersect(%2)"
-        - "%1.complement().unite(%2.complement()).complement()" # DeMorgan
+        - "%m = %1.intersect(%2);"
+        - "%m = %1.complement().unite(%2.complement()).complement();" # DeMorgan
