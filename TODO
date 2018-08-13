@@ -1,13 +1,20 @@
 meta_runner.py
 * refactor coverage logging and file locations
+* add more statistics logging (e.g. empty sets)
 
 set_meta_tester.cpp
-* add flag for coalescing test generation
+* further integrate with ApiFuzzer (e.g. random int generation)
 
 api_fuzzer.cpp
-* rewrite object construction
+* intersperse generation with metamorphic testing
 * merge ApiFuzzerNew with ApiFuzzer
+* fuzz input sets as requested by the set_meta_tester
+* get rid of hardcoded variable names (i.e. link output variable name from
+fuzzer to input variables of meta tester)
 
-api_fuzzer_xxx.yaml
-* try for other libraries to see how well design choices translate
+api_elements.cpp
+* finish ApiExpr definition and replace the hardcoded linear expression
+generation hack
 
+test_emitter.cpp
+* move paths to config file
