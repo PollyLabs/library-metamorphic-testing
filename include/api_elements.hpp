@@ -217,6 +217,7 @@ class ApiFunc {
         bool notIsSpecial() const { return !this->special; };
         bool isStatic() const { return this->statik; };
         bool isCtor() const { return this->ctor; };
+        bool notIsCtor() const { return !this->ctor; };
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;

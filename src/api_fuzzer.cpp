@@ -126,7 +126,8 @@ ApiFuzzer::getFuncList() const
 int
 ApiFuzzer::getRandInt(int min, int max)
 {
-    assert(max != 0);
+    assert(max >= min);
+    return std::uniform_int_distribution<int>(min, max)(*this->rng);
     return (*this->rng)() % max + min;
 }
 
@@ -230,19 +231,6 @@ ApiFuzzer::getFuncByName(std::string name)
     return getRandomSetElem(filtered_funcs, this->getRNG());
 }
 
-
-//const ApiObject*
-//ApiFuzzer::generateNamedObjectWithoutDecl(std::string name,
-    //const ApiType* type)
-//{
-    //const NamedObject* new_obj = new NamedObject(name, type);
-    //std::stringstream obj_init_ss;
-    //obj_init_ss << new_obj->toStrWithType() << ";";
-    //this->addObj(new_obj);
-    //this->addInstr(obj_init_ss.str());
-    //return new_obj;
-//}
-
 const ApiObject*
 ApiFuzzer::generateNamedObject(std::string name, const ApiType* type,
     const ApiFunc* init_func, const ApiObject* target_obj,
@@ -252,23 +240,10 @@ ApiFuzzer::generateNamedObject(std::string name, const ApiType* type,
     const NamedObject* new_obj = new NamedObject(name, type);
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
         target_obj, init_func_args, new_obj_decl);
-    //this->applyFunc(init_func, target_obj, new_obj, init_func_args, true);
     this->addObj(new_obj);
     this->addInstr(new_instr);
     return new_obj;
 }
-
-//const ApiObject*
-//ApiFuzzer::generateApiObjectWithoutDecl(std::string name,
-    //const ApiType* type)
-//{
-    //const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
-    //std::stringstream obj_init_ss;
-    //obj_init_ss << new_obj->toStrWithType() << ";";
-    //this->addObj(new_obj);
-    //this->addInstr(obj_init_ss.str());
-    //return new_obj;
-//}
 
 const ApiObject*
 ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
@@ -279,10 +254,6 @@ ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
         target_obj, init_func_args, new_obj_decl);
-    //this->applyFunc(init_func, target_obj, new_obj, init_func_args, true);
-    //std::stringstream obj_init_ss;
-    //obj_init_ss << new_obj->toStrWithType() << " = ";
-    //obj_init_ss << init_func->printInvocation(init_func_args, target_obj) << ";";
     this->addObj(new_obj);
     this->addInstr(new_instr);
     return new_obj;
@@ -350,7 +321,7 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     for (const ApiType* param_type : param_types)
     {
         if (!param_type->isExplicit() &&
-                this->getRandInt(0, 10) < this->depth || this->depth > this->max_depth)
+                this->getRandInt(0, this->max_depth) < this->depth || this->depth > this->max_depth)
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
@@ -360,9 +331,8 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
                 continue;
             }
         }
-        this->depth++;
+        logDebug("Depth is " + std::to_string(this->depth));
         params.push_back(this->generateObject(param_type));
-        this->depth--;
     }
     return params;
 }
@@ -379,6 +349,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng,
     YAML::Node config_file = YAML::LoadFile(config_file_path);
     this->initPrimitiveTypes();
     this->initInputs(config_file["inputs"]);
+    this->max_depth = this->getInputObjectData<unsigned int>("depth_max");
     for (std::pair<std::string, const ApiObject*> pair_in : this->fuzzer_input)
     {
         const PrimitiveObject<unsigned int>* po =
@@ -631,6 +602,14 @@ ApiFuzzerNew::getInputObject(std::string input_name)
     return this->fuzzer_input[input_name];
 }
 
+template<typename T>
+T
+ApiFuzzerNew::getInputObjectData(std::string input_name)
+{
+    const ApiObject* input_obj = this->getInputObject(input_name);
+    assert(input_obj->isPrimitive());
+    return dynamic_cast<const PrimitiveObject<T>*>(input_obj)->getData();
+}
 
 const ApiObject*
 ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
@@ -639,11 +618,33 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
     {
         return generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
     }
+    ++this->depth;
     std::set<const ApiFunc*> ctor_func_candidates = this->filterFuncs(
         &ApiFunc::hasReturnType, obj_type);
-    ctor_func_candidates = filterFuncList(ctor_func_candidates,
-        &ApiFunc::notIsSpecial);
+    if (this->depth >= this->max_depth)
+    {
+        ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            &ApiFunc::isCtor);
+    }
+    else
+    {
+        ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            &ApiFunc::notIsSpecial);
+        std::set<const ApiFunc*> non_ctor_func_cands = filterFuncList(ctor_func_candidates,
+            &ApiFunc::notIsCtor);
+        // TODO this currently forces tests to be produced with full depth
+        if (!non_ctor_func_cands.empty())
+        {
+            ctor_func_candidates = non_ctor_func_cands;
+        }
+    }
+    logDebug("Candidate funcs:");
+    for (const ApiFunc* func_cand : ctor_func_candidates)
+    {
+        logDebug(fmt::format("\t{}", func_cand->getName()));
+    }
     const ApiFunc* gen_func = getRandomSetElem(ctor_func_candidates, this->getRNG());
+    logDebug(fmt::format("Selected func = {}", gen_func->getName()));
     logDebug("Generating " + obj_type->toStr() + " type object with func " +
         gen_func->getName());
     std::vector<const ApiObject*> ctor_args = this->getFuncArgs(gen_func);
@@ -671,9 +672,8 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
     {
         // TODO change
         var_name = obj_type->toStr().substr(obj_type->toStr().rfind(':') + 1);
-        //var_name = o
-        //var_name = "v";
     }
+    --this->depth;
     return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
 }
 

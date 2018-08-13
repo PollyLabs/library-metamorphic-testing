@@ -36,7 +36,7 @@ class ApiFuzzer {
         std::vector<std::string> instrs;
         unsigned int next_obj_id;
         unsigned int depth;
-        const unsigned int max_depth = 10;
+        unsigned int max_depth;
         std::mt19937* rng;
 
 
@@ -123,53 +123,13 @@ class ApiFuzzerNew : public ApiFuzzer {
         const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
         const ApiObject* generateSet();
         const ApiObject* getInputObject(std::string);
+        template<typename T> T getInputObjectData(std::string);
 
         std::pair<int, int> parseRange(std::string);
         int parseRangeSubstr(std::string);
         const ApiType* parseTypeStr(std::string);
         std::string getGeneratorData(std::string) const;
         std::string makeLinearExpr(std::vector<const ApiObject*>);
-};
-
-class ApiFuzzerISL : public ApiFuzzer {
-    public:
-        const unsigned int dims;
-        const unsigned int params;
-        const unsigned int constraints;
-
-        ApiFuzzerISL(const unsigned int, const unsigned int, const unsigned int);
-        ~ApiFuzzerISL();
-
-        const ApiObject* generateSet();
-
-    private:
-
-        std::vector<const ApiObject*> dim_var_list;
-
-        std::vector<const ApiObject*> getDimVarList();
-        void addDimVar(const ApiObject*);
-
-        void initFuncs();
-        void initTypes();
-        void clearObjs();
-        void clearFuncs();
-        void clearTypes();
-
-        const ApiObject* generateObject(const ApiType*);
-        const ApiObject* generateObject(std::string, std::string);
-        const ApiObject* getCtx();
-        const ApiObject* generateContext();
-        const ApiObject* generateDimVar(const ApiObject*, std::string, const unsigned int);
-        const ApiObject* getRandomDimVar();
-        const ApiObject* getExistingVal();
-        const ApiObject* generateVal();
-        const ApiObject* generateSimpleVal();
-        void augmentVal(const ApiObject*);
-        void augmentConstraint(const ApiObject*);
-        void addConstraintFromSet(const ApiObject*, const ApiObject*);
-        const ApiObject* generatePWAff(const ApiObject*);
-        void applyPWAFunc(const ApiObject*, std::string, std::initializer_list<std::string>);
-        const ApiObject* generateSetFromConstraints(const ApiObject*, const ApiObject*);
 };
 
 #endif

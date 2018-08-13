@@ -65,7 +65,7 @@ MetaTest::replaceMetaInputs(std::string input_string)
     if (input_string.rfind("%m =") == 0 && !this->result_var_defined)
     {
         input_string.replace(0, 2,
-            fmt::format("{} {}_{}", this->meta_var_type, this->meta_var_name, 
+            fmt::format("{} {}_{}", this->meta_var_type, this->meta_var_name,
                 this->meta_var_id));
         this->result_var_defined = true;
     }
@@ -181,7 +181,7 @@ SetMetaTester::genMetaExprStr(std::string rel_type)
 {
     assert(this->relations.count(rel_type));
     std::string rel_expr = getRandSetElem(this->rng, this->relations[rel_type]);
-    return rel_expr;
+    return rel_expr + ";";
 }
 
 void

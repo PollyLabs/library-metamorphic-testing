@@ -2,6 +2,7 @@
 
 static unsigned int indent = 0;
 const bool DEBUG = false;
+//const bool DEBUG = true;
 
 std::map<std::string, Modes> string_to_mode {
     {"SET_FUZZ", SET_FUZZ},
@@ -101,7 +102,7 @@ main(int argc, char** argv)
     std::mt19937* rng = new std::mt19937(args.seed);
     std::stringstream test_ss;
     std::string config_path =
-        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
+        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl_point.yaml";
 
     YAML::Node config_file = YAML::LoadFile(config_path);
     std::vector<std::string> include_list = {
@@ -129,8 +130,7 @@ main(int argc, char** argv)
     }
     mainPreSetup(test_ss, pre_setup_instrs);
     std::string meta_test_file = "../config_files/set_meta_tests_isl.yaml";
-    std::unique_ptr<SetMetaTester> smt = std::unique_ptr<SetMetaTester>(
-        new SetMetaTester(meta_test_file, rng));
+    std::unique_ptr<SetMetaTester> smt (new SetMetaTester(meta_test_file, rng));
 
     std::unique_ptr<ApiFuzzer> api_fuzzer (
         new ApiFuzzerNew(config_path, rng, std::move(smt)));
