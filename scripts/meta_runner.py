@@ -63,7 +63,7 @@ def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
     timeout = str(timeout)
     global test_count
     test_count += 1
-    generator_cmd = [isl_tester_path, "-m", args.tester_mode, "-s", seed]
+    generator_cmd = [isl_tester_path, "-s", seed]
     # generator_cmd = [isl_tester_path, "-m", "SET_META", "-s", seed]
     if input_file_path:
         generator_cmd.extend(["--input-sets-file", input_file_path])
@@ -204,6 +204,7 @@ def targeted_testing():
 log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
 log_writer.write("MODE: " + args.mode + "\n")
 log_writer.write("FUZZER_MODE: " + args.tester_mode + "\n")
+log_writer.write("START TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 log_writer.write("\n")
 
 if (os.path.exists(output_tests_folder)):
