@@ -363,13 +363,36 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng,
     this->initConstructors(config_file["constructors"]);
     this->initGenConfig(config_file["set_gen"]);
     this->generateSet();
+    assert(output_var);
+    smt->setInputVarNames(std::vector<std::string>({output_var->toStr()}));
     std::vector<std::string> meta_instrs = smt->genMetaTests(3, 3);
+    /* Emitting statistics for set */
+    this->instrs.push_back(fmt::format(
+        "printStats({});", this->output_var->toStr()));
+    this->instrs.push_back(fmt::format("// CURR META TEST: {}",
+        smt->getMetaRelChain()));
     this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
     //for (std::string inst : this->getInstrList())
     //{
         //std::cout << inst << std::endl;
     //}
 }
+
+const ApiObject*
+ApiFuzzerNew::getOutputVar(const ApiType* output_type = nullptr)
+{
+    if (!this->output_var)
+    {
+        assert(output_type);
+        this->output_var = this->generateNewObject(output_type);
+    }
+    if (output_type)
+    {
+        assert(this->output_var->hasType(output_type));
+    }
+    return this->output_var;
+}
+
 
 void
 ApiFuzzerNew::initPrimitiveTypes()
@@ -502,10 +525,16 @@ const ApiType*
 ApiFuzzerNew::parseTypeStr(std::string type_str)
 {
     if (type_str.front() == delim_front && type_str.back() == delim_back) {
+        if (type_str.find("output_var") != std::string::npos)
+        {
+            assert(this->output_var);
+            return new ExplicitType(type_str, this->output_var->getType());
+        }
+
         assert (type_str.find(delim_mid) != std::string::npos);
-        // HACK: replace by type of input
         if (type_str.find(fmt::format("input{}", delim_mid)) != std::string::npos)
         {
+            // HACK: replace by type of input
             return new ExplicitType(type_str,
                 this->getTypeByName("unsigned int"));
         }
@@ -583,6 +612,10 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
             const ExprObject* new_expr_obj = new ExprObject(this->makeLinearExpr(expr_params),
                 dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()));
             return new_expr_obj;
+        }
+        else if (expl_type->getDefinition().find("output_var") != std::string::npos)
+        {
+            return this->getOutputVar(obj_type);
         }
         else
         {
@@ -718,7 +751,7 @@ ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
     return filtered_objs.at(0);
 }
 
-const ApiObject*
+void
 ApiFuzzerNew::generateSet()
 {
     for (YAML::Node gen_instr_yaml : this->set_gen_instrs)
@@ -740,7 +773,6 @@ ApiFuzzerNew::generateSet()
             assert(false);
         }
     }
-    return nullptr;
 }
 
 void
@@ -832,14 +864,21 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     if (instr_config["target"].IsDefined())
     {
         // TODO consider more possibilities
-        assert(instr_config["target"].as<std::string>().find(
-            fmt::format("var{}", delim_mid)));
-        std::string obj_name = this->getGeneratorData(
-            instr_config["target"].as<std::string>());
-        std::vector<const ApiObject*> candidate_objs =
-            this->filterObjs(&ApiObject::hasName, obj_name);
-        assert(candidate_objs.size() == 1);
-        target_obj = candidate_objs.at(0);
+        std::string target_type = instr_config["target"].as<std::string>();
+        if (target_type.find("output_var") != std::string::npos)
+        {
+            target_obj = this->getOutputVar(func->getMemberType());
+        }
+        else if (target_type.find(fmt::format("var{}", delim_mid)) !=
+                std::string::npos)
+        {
+            std::string obj_name = this->getGeneratorData(
+                instr_config["target"].as<std::string>());
+            std::vector<const ApiObject*> candidate_objs =
+                this->filterObjs(&ApiObject::hasName, obj_name);
+            assert(candidate_objs.size() == 1);
+            target_obj = candidate_objs.at(0);
+        }
         assert(target_obj->getType()->isType(func->getMemberType()));
     }
     else if (func->getMemberType() && !func->isStatic())
@@ -875,6 +914,11 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
                 gen_new_named_obj = true;
                 // TODO check for singleton object? Pipe this through generateObject
             }
+        }
+        else if (obj_name.find("output_var") != std::string::npos)
+        {
+            // TODO collapse this into first case
+            return_obj = this->getOutputVar(func->getReturnType());
         }
         else
         {

@@ -74,7 +74,7 @@ class ApiFuzzer {
         void addType(const ApiType*);
         void addFunc(const ApiFunc*);
 
-        virtual const ApiObject* generateSet() = 0;
+        virtual void generateSet() = 0;
 
     protected:
         ApiObject* generateApiObjectAndDecl(std::string, std::string,
@@ -99,6 +99,7 @@ class ApiFuzzerNew : public ApiFuzzer {
     std::map<std::string, const ApiObject*> fuzzer_input;
     std::vector<YAML::Node> set_gen_instrs;
     std::unique_ptr<SetMetaTester> smt;
+    const ApiObject* output_var;
 
     public:
         ApiFuzzerNew(std::string&, std::mt19937*, std::unique_ptr<SetMetaTester>);
@@ -116,12 +117,13 @@ class ApiFuzzerNew : public ApiFuzzer {
         void generateForLoop(YAML::Node);
         void generateFunc(YAML::Node, int = -1);
         const ApiObject* getSingletonObject(const ApiType*);
+        const ApiObject* getOutputVar(const ApiType*);
 
         const ApiObject* generateObject(const ApiType*);
         const ApiObject* generateNewObject(const ApiType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
-        const ApiObject* generateSet();
+        void generateSet();
         const ApiObject* getInputObject(std::string);
         template<typename T> T getInputObjectData(std::string);
 

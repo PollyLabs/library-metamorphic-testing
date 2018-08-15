@@ -78,7 +78,11 @@ MetaTest::replaceMetaInputs(std::string input_string)
         char type = input_string[pos + 1];
         if (std::isdigit(type))
         {
-            input_string.replace(pos, 2, this->input_var_name);
+            int input_var_id = type - '0';
+            //assert(this->input_var_names.size() > input_var_id);
+            assert(!std::isdigit(input_string[pos + 2]));
+            //input_string.replace(pos, 2, this->input_var_names.at(input_var_id));
+            input_string.replace(pos, 2, this->input_var_names.at(0));
         }
         else
         {
@@ -151,15 +155,29 @@ SetMetaTester::initMetaRels(std::map<std::string, std::set<std::string>>& target
 std::queue<std::string>
 SetMetaTester::makeMetaRelChain(unsigned int rel_count)
 {
-    std::queue<std::string> rel_chain;
     while (rel_count > 0)
     {
         std::map<std::string, std::set<std::string>>::const_iterator it = this->relations.begin();
         std::advance(it, getRandInt(this->rng, 0, this->relations.size()));
-        rel_chain.push(it->first);
+        this->rel_chain.push(it->first);
         rel_count--;
     }
-    return rel_chain;
+    return this->rel_chain;
+}
+
+std::string
+SetMetaTester::getMetaRelChain(void) const
+{
+    assert(!this->rel_chain.empty());
+    std::string rel_acc = "";
+    std::queue<std::string> rel_chain_cp(this->rel_chain);
+    while (!rel_chain_cp.empty())
+    {
+        rel_acc += rel_chain_cp.front() + '-';
+        rel_chain_cp.pop();
+    }
+    rel_acc.pop_back();
+    return rel_acc;
 }
 
 bool
@@ -191,7 +209,7 @@ SetMetaTester::genOneMetaTest(std::queue<std::string> rel_chain)
     while (try_count >= 0)
     {
         MetaTest* new_test = new MetaTest(this->meta_var_type,
-            this->meta_var_name, this->meta_var_id, this->input_var_name,
+            this->meta_var_name, this->meta_var_id, this->input_var_names,
             &this->generators, this->rng);
         std::queue<std::string> rel_chain_copy(rel_chain);
         while (!rel_chain_copy.empty())
@@ -227,6 +245,7 @@ SetMetaTester::getMetaTestStrs(void) const
 std::vector<std::string>
 SetMetaTester::genMetaTests(unsigned int rel_cnt, unsigned int expr_cnt)
 {
+    assert(!this->input_var_names.empty());
     std::queue<std::string> rel_chain = this->makeMetaRelChain(rel_cnt);
     while (expr_cnt > 0)
     {
@@ -238,7 +257,6 @@ SetMetaTester::genMetaTests(unsigned int rel_cnt, unsigned int expr_cnt)
 
 SetMetaTester::SetMetaTester(std::string& meta_test_file, std::mt19937* _rng)
 {
-    this->input_var_name = "s";
     this->meta_var_name = "r";
     this->meta_var_id = 0;
     this->rng = _rng;

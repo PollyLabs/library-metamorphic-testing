@@ -5,6 +5,8 @@ import subprocess
 import shutil
 import os
 import random
+import re
+import statistics
 import sys
 import time
 import yaml
@@ -95,9 +97,7 @@ def execute_test(timeout, test_run_path):
     start_time = time.time()
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = test_proc.communicate()
-    if "true" in out:
-        global false_count
-        false_count += 1
+    check_stats(err)
     if test_proc.returncode != 0:
         log_writer.write("!!! Execution fail\n")
         log_writer.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
@@ -105,6 +105,33 @@ def execute_test(timeout, test_run_path):
         log_writer.write("STDOUT:\n" + out + "\n")
         log_writer.write("STDERR:\n" + err + "\n")
     return test_proc.returncode == 0
+
+def check_stats(err):
+    # Empty set check
+    global set_empty_regex
+    set_empty_match = set_empty_regex.search(err)
+    if set_empty_match:
+        global set_empty_count
+        if "true" in set_empty_match.group(0):
+            set_empty_count += 1
+    # Set dim recording
+    global dim_set_regex
+    dim_set_match = dim_set_regex.search(err)
+    if dim_set_match:
+        global dim_set_list
+        dim_set_list.append(int(dim_set_match.group(0).split("= ")[1]))
+    # Set param recording
+    global dim_param_regex
+    dim_param_match = dim_param_regex.search(err)
+    if dim_param_match:
+        global dim_param_list
+        dim_param_list.append(int(dim_param_match.group(0).split("= ")[1]))
+    # N constraint recording
+    global n_constraint_regex
+    n_constraint_match = n_constraint_regex.search(err)
+    if n_constraint_match:
+        global n_constraint_list
+        n_constraint_list.append(int(n_constraint_match.group(0).split("= ")[1]))
 
 def gather_coverage_files():
     shutil.copy(coverage_source_file, coverage_output_dir)
@@ -212,7 +239,14 @@ if (os.path.exists(output_tests_folder)):
 os.mkdir(output_tests_folder)
 
 test_count = 0
-empty_count = 0
+dim_set_list = []
+dim_param_list = []
+set_empty_count = 0
+n_constraint_list = []
+dim_set_regex = re.compile("DIM SET = [0-9]+")
+dim_param_regex = re.compile("DIM PARAM = [0-9]+")
+set_empty_regex = re.compile("SET EMPTY = (true|false)")
+n_constraint_regex = re.compile("N CONSTRAINTS = [0-9]+")
 
 random.seed(42)
 
@@ -227,6 +261,22 @@ elif args.mode == "targeted":
 
 log_writer.write("\n" + 80 * "=" + "\n")
 log_writer.write("Statistics:\n")
-log_writer.write("\t* False sets: {} of {} ({}%)\n".format(
-    empty_count, test_count, empty_count * 100 / test_count))
+# Set empty stats
+log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
+    set_empty_count, test_count, set_empty_count * 100 / test_count))
+# Dim set stats
+log_writer.write("\t* Dim set average: {}\n".format(
+    statistics.mean(dim_set_list)))
+log_writer.write("\t* Dim set median: {}\n".format(
+    statistics.median(dim_set_list)))
+# Dim param stats
+log_writer.write("\t* Dim param average: {}\n".format(
+    statistics.mean(dim_param_list)))
+log_writer.write("\t* Dim param median: {}\n".format(
+    statistics.median(dim_param_list)))
+# N constraint stats
+log_writer.write("\t* N constraint average: {}\n".format(
+    statistics.mean(n_constraint_list)))
+log_writer.write("\t* N constraint median: {}\n".format(
+    statistics.median(n_constraint_list)))
 exit(0)

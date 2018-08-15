@@ -196,19 +196,19 @@ constructors:
 set_gen:
     - type: 'func'
       func: 'empty'
-      return: '<var=s>'
+      return: '<output_var>'
     - type: 'for'
       counter: '[0,<input=constraints>]'
       func: 'unite'
-      return: '<var=s>'
+      return: '<output_var>'
       func_params:
           - '<new=isl::set>'
     - type: 'func'
       func: 'convex_hull'
-      target: '<var=s>'
+      target: '<output_var>'
     - type: 'func'
       func: 'dump'
-      target: '<var=s>'
+      target: '<output_var>'
 
 #    - isl::set < isl::point
 #    - [isl::set].union

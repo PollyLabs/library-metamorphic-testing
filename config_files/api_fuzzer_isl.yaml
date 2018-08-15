@@ -1,6 +1,7 @@
 ---
 includes:
     - "isl-noexceptions.h"
+    - "testing/isl-meta-stats.h"
 
 pre_setup:
     - "isl_ctx *ctx_ptr = isl_ctx_alloc();"
@@ -213,14 +214,14 @@ set_gen:
           - '<loop_counter>'
     - type: 'func'
       func: 'universe'
-      return: '<var=s>'
+      return: '<output_var>'
     - type: 'for'
       counter: '[0,<input=constraints>)'
       func: 'intersect'
-      target: '<var=s>'
-      return: '<var=s>'
+      target: '<output_var>'
+      return: '<output_var>'
       func_params:
           - '<new=isl::set>'
     - type: 'func'
       func: 'dump'
-      target: '<var=s>'
+      target: '<output_var>'
