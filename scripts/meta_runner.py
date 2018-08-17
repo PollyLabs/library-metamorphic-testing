@@ -128,6 +128,12 @@ def check_stats(err):
     if dim_param_match:
         global dim_param_list
         dim_param_list.append(int(dim_param_match.group(0).split("= ")[1]))
+    # N basic_set recording
+    global n_basic_set_regex
+    n_basic_set_match = n_basic_set_regex.search(err)
+    if n_basic_set_match:
+        global n_basic_set_list
+        n_basic_set_list.append(int(n_basic_set_match.group(0).split("= ")[1]))
     # N constraint recording
     global n_constraint_regex
     n_constraint_match = n_constraint_regex.search(err)
@@ -249,10 +255,12 @@ test_count = 0
 dim_set_list = []
 dim_param_list = []
 set_empty_count = 0
+n_basic_set_list = []
 n_constraint_list = []
 dim_set_regex = re.compile("DIM SET = [0-9]+")
 dim_param_regex = re.compile("DIM PARAM = [0-9]+")
 set_empty_regex = re.compile("SET EMPTY = (true|false)")
+n_basic_set_regex = re.compile("N BASIC SET = [0-9]+")
 n_constraint_regex = re.compile("N CONSTRAINTS = [0-9]+")
 
 random.seed(42)
@@ -282,6 +290,11 @@ log_writer.write("\t* Dim param average: {}\n".format(
     statistics.mean(dim_param_list)))
 log_writer.write("\t* Dim param median: {}\n".format(
     statistics.median(dim_param_list)))
+# N basic set stats
+log_writer.write("\t* N basic set average: {}\n".format(
+    statistics.mean(n_basic_set_list)))
+log_writer.write("\t* N basic set median: {}\n".format(
+    statistics.median(n_basic_set_list)))
 # N constraint stats
 log_writer.write("\t* N constraint average: {}\n".format(
     statistics.mean(n_constraint_list)))
