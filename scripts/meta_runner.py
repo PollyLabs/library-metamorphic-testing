@@ -39,8 +39,6 @@ coverage_notes_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contri
 coverage_data_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcda"
 coverage_target = 40
 
-log_writer = open(log_file, 'w')
-
 ###############################################################################
 # Argument parsing
 ###############################################################################
@@ -48,10 +46,14 @@ log_writer = open(log_file, 'w')
 parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
 parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
     help = "Define the mode in which to run the testing.")
-parser.add_argument("tester_mode", choices=["SET_META_STR", "SET_META_API", "SET_META_NEW"],
-    help = "Define the mode used to generate inputs, in case of random inputs.")
+# parser.add_argument("tester_mode", choices=["SET_META_STR", "SET_META_API", "SET_META_NEW"],
+    # help = "Define the mode used to generate inputs, in case of random inputs.")
 parser.add_argument("--seed-max", type=int, default=1000,
-    help = "[bounded] Set the max number of tests to run (seed starts at 0)")
+    help = "[bounded] Set the max seed (default 1000)")
+parser.add_argument("--seed-min", type=int, default=0,
+    help = "[bounded] Set the starting seed (default 0)")
+parser.add_argument("--output-log", type=str,
+    help = "Overwrite output log location.")
 parser.add_argument("--timeout", type=int, default=default_timeout,
     help = "The amount of time (in seconds) to run each test before giving up.")
 args = parser.parse_args()
@@ -150,8 +152,8 @@ def get_coverage():
 # Testing mode functions
 ###############################################################################
 
-def bounded_testing(seed_max):
-    for seed in range(0, seed_max):
+def bounded_testing(seed_min, seed_max):
+    for seed in range(seed_min, seed_max):
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         log_writer.write(80 * "=" + "\n")
         log_writer.write("SEED: " + str(seed) + "\n")
@@ -228,15 +230,20 @@ def targeted_testing():
 # Main entry point
 ###############################################################################
 
-log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
-log_writer.write("MODE: " + args.mode + "\n")
-log_writer.write("FUZZER_MODE: " + args.tester_mode + "\n")
-log_writer.write("START TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-log_writer.write("\n")
-
 if (os.path.exists(output_tests_folder)):
     shutil.rmtree(output_tests_folder)
 os.mkdir(output_tests_folder)
+
+if args.output_log:
+    log_writer = open(args.output_log, 'w')
+else:
+    log_writer = open(log_file, 'w')
+
+log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
+log_writer.write("MODE: " + args.mode + "\n")
+# log_writer.write("FUZZER_MODE: " + args.tester_mode + "\n")
+log_writer.write("START TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+log_writer.write("\n")
 
 test_count = 0
 dim_set_list = []
@@ -251,7 +258,7 @@ n_constraint_regex = re.compile("N CONSTRAINTS = [0-9]+")
 random.seed(42)
 
 if args.mode == "bounded":
-    bounded_testing(args.seed_max)
+    bounded_testing(args.seed_min, args.seed_max)
 elif args.mode == "coverage":
     coverage_testing(coverage_target)
 elif args.mode == "continuous":
@@ -260,6 +267,7 @@ elif args.mode == "targeted":
     targeted_testing()
 
 log_writer.write("\n" + 80 * "=" + "\n")
+log_writer.write("END TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
 log_writer.write("Statistics:\n")
 # Set empty stats
 log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
@@ -279,4 +287,5 @@ log_writer.write("\t* N constraint average: {}\n".format(
     statistics.mean(n_constraint_list)))
 log_writer.write("\t* N constraint median: {}\n".format(
     statistics.median(n_constraint_list)))
+log_writer.close()
 exit(0)
