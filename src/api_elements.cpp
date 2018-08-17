@@ -246,6 +246,7 @@ ApiInstruction::toStr() const
     }
     if (!this->getFunc()->isStatic() && target_obj != nullptr)
     {
+        // TODO consider pointer objects
         instr_ss << this->getTargetObj()->toStr() << ".";
     }
     else if (this->getFunc()->isStatic())

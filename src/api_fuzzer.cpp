@@ -365,13 +365,12 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng,
     this->generateSet();
     assert(output_var);
     smt->setInputVarNames(std::vector<std::string>({output_var->toStr()}));
-    std::vector<std::string> meta_instrs = smt->genMetaTests(3, 3);
-    /* Emitting statistics for set */
-    this->instrs.push_back(fmt::format(
-        "printStats({});", this->output_var->toStr()));
+
+    std::vector<std::string> meta_instrs = smt->genMetaTests(5, 20);
     this->instrs.push_back(fmt::format("// CURR META TEST: {}",
         smt->getMetaRelChain()));
     this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
+
     //for (std::string inst : this->getInstrList())
     //{
         //std::cout << inst << std::endl;
@@ -631,6 +630,7 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
 const ApiObject*
 ApiFuzzerNew::getInputObject(std::string input_name)
 {
+    logDebug("Looking for input " + input_name);
     assert(this->fuzzer_input.count(input_name) != 0);
     return this->fuzzer_input[input_name];
 }
@@ -935,6 +935,10 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
                 return_obj = this->generateNewObject(func->getReturnType());
             }
         }
+    }
+    else if (func->getReturnType())
+    {
+        return_obj = this->generateObject(func->getReturnType());
     }
     // Set function parameters
     std::vector<const ApiObject*> func_params;

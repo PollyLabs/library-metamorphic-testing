@@ -125,7 +125,8 @@ class ApiObject {
             return fmt::format("{}_{}", this->name, std::to_string(this->id));
         };
         virtual std::string toStrWithType() const {
-            return fmt::format("{} {}", this->getType()->toStr(), this->toStr());
+            return fmt::format("{} {}", this->getType()->toStr(),
+                this->toStr());
         };
 };
 

@@ -179,6 +179,12 @@ funcs:
       conditions: []
       special: true
       static: true
+    - name: 'printStats'
+      member_type: ''
+      return_type: ''
+      param_types: ['isl::set']
+      conditions: []
+      special: true
 
 constructors:
     - name: 'isl::space'
@@ -223,5 +229,6 @@ set_gen:
       func_params:
           - '<new=isl::set>'
     - type: 'func'
-      func: 'dump'
-      target: '<output_var>'
+      func: 'printStats'
+      func_params:
+          - '<output_var>'
