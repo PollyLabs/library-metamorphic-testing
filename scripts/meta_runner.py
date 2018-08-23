@@ -6,6 +6,7 @@ import shutil
 import os
 import random
 import re
+import signal
 import statistics
 import sys
 import time
@@ -153,6 +154,39 @@ def check_stats(err):
         global n_constraint_list
         n_constraint_list.append(int(n_constraint_match.group(0).split("= ")[1]))
 
+def write_stats():
+    log_writer.write("\n" + 80 * "=" + "\n")
+    log_writer.write("END TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
+    log_writer.write("Statistics:\n")
+    # Set empty stats
+    log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
+        set_empty_count, test_count, set_empty_count * 100 / test_count))
+    # Timeout stats
+    log_writer.write("\t* Timeouts: {} of {} ({}%)\n".format(
+        timeout_count, test_count, timeout_count * 100 / test_count))
+    # Dim set stats
+    log_writer.write("\t* Dim set average: {}\n".format(
+        statistics.mean(dim_set_list)))
+    log_writer.write("\t* Dim set median: {}\n".format(
+        statistics.median(dim_set_list)))
+    # Dim param stats
+    log_writer.write("\t* Dim param average: {}\n".format(
+        statistics.mean(dim_param_list)))
+    log_writer.write("\t* Dim param median: {}\n".format(
+        statistics.median(dim_param_list)))
+    # N basic set stats
+    log_writer.write("\t* N basic set average: {}\n".format(
+        statistics.mean(n_basic_set_list)))
+    log_writer.write("\t* N basic set median: {}\n".format(
+        statistics.median(n_basic_set_list)))
+    # N constraint stats
+    log_writer.write("\t* N constraint average: {}\n".format(
+        statistics.mean(n_constraint_list)))
+    log_writer.write("\t* N constraint median: {}\n".format(
+        statistics.median(n_constraint_list)))
+    log_writer.close()
+
+
 def gather_coverage_files():
     shutil.copy(coverage_source_file, coverage_output_dir)
     shutil.copy(coverage_notes_file, coverage_output_dir)
@@ -165,6 +199,12 @@ def get_coverage():
     gcov_output = [x for x in gcov_output[0].split("\n") if "Lines executed" in x]
     gcov_output = gcov_output[0].split(":")[1].split("%")[0]
     return float(gcov_output)
+
+def int_handler(sig, frame):
+    print("Received SIGINT, dumping logged data and stopping...")
+    write_stats()
+    log_writer.close()
+    exit(0)
 
 ###############################################################################
 # Testing mode functions
@@ -249,6 +289,8 @@ def targeted_testing():
 # Main entry point
 ###############################################################################
 
+signal.signal(signal.SIGINT, int_handler)
+
 if os.path.exists(output_tests_folder):
     print("Found existing output folder {}, deleting...".format(output_tests_folder))
     shutil.rmtree(output_tests_folder)
@@ -291,34 +333,6 @@ elif args.mode == "continuous":
 elif args.mode == "targeted":
     targeted_testing()
 
-log_writer.write("\n" + 80 * "=" + "\n")
-log_writer.write("END TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
-log_writer.write("Statistics:\n")
-# Set empty stats
-log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
-    set_empty_count, test_count, set_empty_count * 100 / test_count))
-# Timeout stats
-log_writer.write("\t* Timeouts: {} of {} ({}%)\n".format(
-    timeout_count, test_count, timeout_count * 100 / test_count))
-# Dim set stats
-log_writer.write("\t* Dim set average: {}\n".format(
-    statistics.mean(dim_set_list)))
-log_writer.write("\t* Dim set median: {}\n".format(
-    statistics.median(dim_set_list)))
-# Dim param stats
-log_writer.write("\t* Dim param average: {}\n".format(
-    statistics.mean(dim_param_list)))
-log_writer.write("\t* Dim param median: {}\n".format(
-    statistics.median(dim_param_list)))
-# N basic set stats
-log_writer.write("\t* N basic set average: {}\n".format(
-    statistics.mean(n_basic_set_list)))
-log_writer.write("\t* N basic set median: {}\n".format(
-    statistics.median(n_basic_set_list)))
-# N constraint stats
-log_writer.write("\t* N constraint average: {}\n".format(
-    statistics.mean(n_constraint_list)))
-log_writer.write("\t* N constraint median: {}\n".format(
-    statistics.median(n_constraint_list)))
-log_writer.close()
+# write_stats()
+
 exit(0)
