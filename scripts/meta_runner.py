@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import datetime
 import subprocess
@@ -12,11 +12,35 @@ import time
 import yaml
 
 ###############################################################################
+# Argument parsing
+###############################################################################
+
+parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
+parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
+    help = "Define the mode in which to run the testing.")
+parser.add_argument("--seed-max", type=int, default=1000,
+    help = "[bounded] Set the max seed (default 1000)")
+parser.add_argument("--seed-min", type=int, default=0,
+    help = "[bounded] Set the starting seed (default 0)")
+parser.add_argument("--config-file", type=str,
+    help = "Overwrite default config file to use.")
+parser.add_argument("--timeout", type=int, default=60,
+    help = "The amount of time (in seconds) to run each test before giving up.")
+args = parser.parse_args()
+
+###############################################################################
 # Set working paths and constants
 ###############################################################################
 
-config_file_path = os.path.dirname(os.path.abspath(__file__))
-config_file_path += "/../config_files/config.yaml"
+if not args.config_file:
+    config_file_path = os.path.dirname(os.path.abspath(__file__))
+    config_file_path += "/../config_files/config.yaml"
+else:
+    config_file_path = args.config_file
+    if not os.path.exists(config_file_path):
+        print("Could not find given config file path: {}".format(
+            config_file_path))
+        exit(1)
 with open(config_file_path, 'r') as config_file_fd:
     config_file = yaml.load(config_file_fd)
 os.chdir(config_file["working_dir"])
@@ -30,7 +54,6 @@ test_source_path = runner_config_file["test_source_path"]
 test_run_path = runner_config_file["test_run_path"]
 log_file = runner_config_file["log_file_path"]
 output_tests_folder = runner_config_file["output_tests_folder"]
-default_timeout = runner_config_file["default_timeout"]
 
 coverage_output_dir = "./out/coverage/"
 input_sets_file = "./input_tests/input_sets_autotuner"
@@ -41,35 +64,15 @@ coverage_data_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib
 coverage_target = 40
 
 ###############################################################################
-# Argument parsing
-###############################################################################
-
-parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
-parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
-    help = "Define the mode in which to run the testing.")
-parser.add_argument("--seed-max", type=int, default=1000,
-    help = "[bounded] Set the max seed (default 1000)")
-parser.add_argument("--seed-min", type=int, default=0,
-    help = "[bounded] Set the starting seed (default 0)")
-parser.add_argument("--output-log", type=str,
-    help = "Overwrite output log location.")
-parser.add_argument("--output-folder", type=str,
-    help = "Overwrite output folder.")
-parser.add_argument("--timeout", type=int, default=default_timeout,
-    help = "The amount of time (in seconds) to run each test before giving up.")
-args = parser.parse_args()
-
-###############################################################################
 # Helper functions
 ###############################################################################
 
-def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
+def generate_test(seed, timeout, input_file_path = None):
     seed = str(seed)
     timeout = str(timeout)
     global test_count
     test_count += 1
-    generator_cmd = [isl_tester_path, "-s", seed]
-    # generator_cmd = [isl_tester_path, "-m", "SET_META", "-s", seed]
+    generator_cmd = [isl_tester_path, "-s", seed, "-o", test_source_path]
     if input_file_path:
         generator_cmd.extend(["--input-sets-file", input_file_path])
     # print("CMD is " + " ".join(generator_cmd))
@@ -87,7 +90,9 @@ def generate_test(seed, timeout, isl_tester_path, input_file_path = None):
 
 def compile_test(test_compile_bin, test_compile_dir):
     try:
-        compile_cmd = [test_compile_bin]
+        # Path below is hack
+        compile_cmd = [test_compile_bin, test_source_path.rsplit("/", 1)[1]]
+        # print("CMD is " + " ".join(compile_cmd))
         compile_proc = subprocess.run(compile_cmd, check=True, cwd=test_compile_dir)
         return True
     except subprocess.CalledProcessError:
@@ -98,6 +103,7 @@ def execute_test(timeout, test_run_path):
     timeout = str(timeout)
     test_cmd = ["timeout", timeout, test_run_path]
     start_time = time.time()
+    # print("CMD is " + " ".join(test_cmd))
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = test_proc.communicate()
     check_stats(err)
@@ -170,7 +176,8 @@ def bounded_testing(seed_min, seed_max):
         log_writer.write(80 * "=" + "\n")
         log_writer.write("SEED: " + str(seed) + "\n")
         print(date_time + " Running seed " + str(seed), end='\r')
-        if not generate_test(seed, args.timeout, isl_tester_path):
+        global test_source_path
+        if not generate_test(seed, args.timeout):
             continue
         if not compile_test(test_compile_bin, test_compile_dir):
             shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(seed) + ".cpp")
@@ -242,9 +249,6 @@ def targeted_testing():
 # Main entry point
 ###############################################################################
 
-if args.output_folder:
-    output_tests_folder = args.output_folder
-
 if os.path.exists(output_tests_folder):
     print("Found existing output folder {}, deleting...".format(output_tests_folder))
     shutil.rmtree(output_tests_folder)
@@ -255,10 +259,7 @@ if not os.path.exists(lib_path):
     exit(1)
 os.environ["LD_LIBRARY_PATH"] = lib_path
 
-if args.output_log:
-    log_writer = open(args.output_log, 'w')
-else:
-    log_writer = open(log_file, 'w')
+log_writer = open(log_file, 'w')
 
 log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
 log_writer.write("MODE: " + args.mode + "\n")
@@ -299,7 +300,6 @@ log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
 # Timeout stats
 log_writer.write("\t* Timeouts: {} of {} ({}%)\n".format(
     timeout_count, test_count, timeout_count * 100 / test_count))
-
 # Dim set stats
 log_writer.write("\t* Dim set average: {}\n".format(
     statistics.mean(dim_set_list)))

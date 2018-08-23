@@ -22,6 +22,10 @@ parseArgs(int argc, char **argv)
         if (!strcmp(argv[i], "--seed") || !strcmp(argv[i], "-s")) {
             args.seed = atoi(argv[++i]);
         }
+	else if (!strcmp(argv[i], "--output") || !strcmp(argv[i], "-o"))
+	{
+	    args.output_file = argv[++i];
+	}
         //else if (!strcmp(argv[i], "--mode") || !strcmp(argv[i], "-m")) {
             //std::string mode_arg = argv[++i];
             //std::map<std::string, Modes>::iterator mode_find =
@@ -102,12 +106,9 @@ main(int argc, char** argv)
     std::mt19937* rng = new std::mt19937(args.seed);
     std::stringstream test_ss;
     std::string config_path =
-        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_omega.yaml";
-        //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
-        //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl_point.yaml";
+        "/home/isl_testing/isl-metamorphic-testing/config_files/api_fuzzer_isl_point.yaml";
     std::string meta_test_file =
-        //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/set_meta_tests_isl.yaml";
-        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/set_meta_tests_omega.yaml";
+        "/home/isl_testing/isl-metamorphic-testing/config_files/set_meta_tests_isl.yaml";
 
     YAML::Node config_file = YAML::LoadFile(config_path);
     std::vector<std::string> include_list = {
@@ -150,7 +151,8 @@ main(int argc, char** argv)
     mainPostSetup(test_ss);
 
     std::ofstream ofs;
-    ofs.open("/home/sentenced/Documents/Internships/2018_ETH/work/sets/out/test.cpp");
+    ofs.open(args.output_file);
     ofs << test_ss.rdbuf();
+//    printf(test_ss.rdbuf()->str().c_str());
     ofs.close();
 }

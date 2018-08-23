@@ -26,8 +26,10 @@ struct Arguments {
     unsigned int max_params;
     unsigned int max_set_count;
     std::string input_sets;
+    std::string output_file;
 
-    Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3), input_sets("") {}
+    Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3), input_sets(""),
+       output_file("/home/isl_testing/isl-metamorphic-testing/out/test.cpp")	{}
 };
 
 void writeLine(std::stringstream&, std::string);

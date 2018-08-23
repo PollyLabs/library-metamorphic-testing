@@ -16,13 +16,15 @@ writeConstraintCoeff(isl::constraint c)
     fprintf(stderr, "[");
     for (int i = 0; i < c.get_space().dim(isl::dim::set); ++i)
     {
-        fprintf(stderr,
-            std::to_string(c.get_coefficient_val(isl::dim::set, i).get_num_si()).c_str());
+        fputs(
+            std::to_string(c.get_coefficient_val(isl::dim::set, i).get_num_si()).c_str(),
+	    stderr);
     }
     for (int i = 0; i < c.get_space().dim(isl::dim::param); ++i)
     {
-        fprintf(stderr,
-            std::to_string(c.get_coefficient_val(isl::dim::param, i).get_num_si()).c_str());
+        fputs(
+            std::to_string(c.get_coefficient_val(isl::dim::param, i).get_num_si()).c_str(),
+	    stderr);
     }
     fprintf(stderr, "]");
     return isl::stat::ok;
