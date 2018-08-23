@@ -23,6 +23,7 @@ os.chdir(config_file["working_dir"])
 
 runner_config_file = config_file["meta_runner"]
 isl_tester_path = runner_config_file["isl_tester_path"]
+lib_path = runner_config_file["lib_path"]
 test_compile_dir = runner_config_file["test_compile_dir"]
 test_compile_bin = runner_config_file["test_compile_bin"]
 test_source_path = runner_config_file["test_source_path"]
@@ -46,14 +47,14 @@ coverage_target = 40
 parser = argparse.ArgumentParser(description = "isl metamorphic testing runner")
 parser.add_argument("mode", choices=["bounded", "coverage", "continuous", "targeted"],
     help = "Define the mode in which to run the testing.")
-# parser.add_argument("tester_mode", choices=["SET_META_STR", "SET_META_API", "SET_META_NEW"],
-    # help = "Define the mode used to generate inputs, in case of random inputs.")
 parser.add_argument("--seed-max", type=int, default=1000,
     help = "[bounded] Set the max seed (default 1000)")
 parser.add_argument("--seed-min", type=int, default=0,
     help = "[bounded] Set the starting seed (default 0)")
 parser.add_argument("--output-log", type=str,
     help = "Overwrite output log location.")
+parser.add_argument("--output-folder", type=str,
+    help = "Overwrite output folder.")
 parser.add_argument("--timeout", type=int, default=default_timeout,
     help = "The amount of time (in seconds) to run each test before giving up.")
 args = parser.parse_args()
@@ -102,6 +103,11 @@ def execute_test(timeout, test_run_path):
     check_stats(err)
     if test_proc.returncode != 0:
         log_writer.write("!!! Execution fail\n")
+        if test_proc.returncode == 124:
+            global timeout_count
+            timeout_count += 1
+        else:
+            log_writer.write("Non-timeout\n")
         log_writer.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
         log_writer.write("RUNTIME: " + str(time.time() - start_time) + "\n")
         log_writer.write("STDOUT:\n" + out + "\n")
@@ -236,9 +242,18 @@ def targeted_testing():
 # Main entry point
 ###############################################################################
 
-if (os.path.exists(output_tests_folder)):
+if args.output_folder:
+    output_tests_folder = args.output_folder
+
+if os.path.exists(output_tests_folder):
+    print("Found existing output folder {}, deleting...".format(output_tests_folder))
     shutil.rmtree(output_tests_folder)
 os.mkdir(output_tests_folder)
+
+if not os.path.exists(lib_path):
+    print("Could not find given library folder: {}".format(lib_path))
+    exit(1)
+os.environ["LD_LIBRARY_PATH"] = lib_path
 
 if args.output_log:
     log_writer = open(args.output_log, 'w')
@@ -255,6 +270,7 @@ test_count = 0
 dim_set_list = []
 dim_param_list = []
 set_empty_count = 0
+timeout_count = 0
 n_basic_set_list = []
 n_constraint_list = []
 dim_set_regex = re.compile("DIM SET = [0-9]+")
@@ -280,6 +296,10 @@ log_writer.write("Statistics:\n")
 # Set empty stats
 log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
     set_empty_count, test_count, set_empty_count * 100 / test_count))
+# Timeout stats
+log_writer.write("\t* Timeouts: {} of {} ({}%)\n".format(
+    timeout_count, test_count, timeout_count * 100 / test_count))
+
 # Dim set stats
 log_writer.write("\t* Dim set average: {}\n".format(
     statistics.mean(dim_set_list)))
