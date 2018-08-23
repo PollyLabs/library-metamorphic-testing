@@ -1,8 +1,8 @@
 #include "test_emitter.hpp"
 
 static unsigned int indent = 0;
-//const bool DEBUG = false;
-const bool DEBUG = true;
+const bool DEBUG = false;
+//const bool DEBUG = true;
 
 std::map<std::string, Modes> string_to_mode {
     {"SET_FUZZ", SET_FUZZ},
@@ -64,11 +64,11 @@ writeLine(std::stringstream &ss, std::string line)
 
 void
 prepareHeader(std::stringstream &ss, std::vector<std::string> &include_list,
-    Arguments& args)
+    Arguments& args, std::string api_file, std::string meta_file)
 {
     writeLine(ss, fmt::format("// SEED : {}", args.seed));
-    writeLine(ss, fmt::format("// API CONFIG FILE : {}", "x"));
-    writeLine(ss, fmt::format("// META CONFIG FILE : {}", "x"));
+    writeLine(ss, fmt::format("// API CONFIG FILE : {}", api_file));
+    writeLine(ss, fmt::format("// META CONFIG FILE : {}", meta_file));
     std::time_t curr_time_t = std::time(nullptr);
     writeLine(ss, fmt::format("// GENERATION TIME : {}",
         std::ctime(&curr_time_t)));
@@ -102,8 +102,12 @@ main(int argc, char** argv)
     std::mt19937* rng = new std::mt19937(args.seed);
     std::stringstream test_ss;
     std::string config_path =
-        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
+        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_omega.yaml";
+        //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl.yaml";
         //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl_point.yaml";
+    std::string meta_test_file =
+        //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/set_meta_tests_isl.yaml";
+        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/set_meta_tests_omega.yaml";
 
     YAML::Node config_file = YAML::LoadFile(config_path);
     std::vector<std::string> include_list = {
@@ -120,7 +124,7 @@ main(int argc, char** argv)
     }
 
     //writeArgs(ss, args, getMetaRelation(meta_rel));
-    prepareHeader(test_ss, include_list, args);
+    prepareHeader(test_ss, include_list, args, config_path, meta_test_file);
     std::vector<std::string> pre_setup_instrs;
     if (config_file["pre_setup"].IsDefined())
     {
@@ -130,12 +134,10 @@ main(int argc, char** argv)
         }
     }
     mainPreSetup(test_ss, pre_setup_instrs);
-    std::string meta_test_file =
-        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/set_meta_tests_isl.yaml";
     std::unique_ptr<SetMetaTester> smt (new SetMetaTester(meta_test_file, rng));
 
     std::unique_ptr<ApiFuzzer> api_fuzzer (
-        new ApiFuzzerNew(config_path, rng, std::move(smt)));
+        new ApiFuzzerNew(config_path, args.seed, rng, std::move(smt)));
     for (std::string instr : api_fuzzer->getInstrStrs())
     {
         writeLine(test_ss, instr);

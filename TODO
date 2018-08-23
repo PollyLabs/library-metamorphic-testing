@@ -1,3 +1,6 @@
+no basic sets
+no constraints per equality / inequality
+
 meta_runner.py
 * refactor coverage logging and file locations
 * add more statistics logging (e.g. empty sets)

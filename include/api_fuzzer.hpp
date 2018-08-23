@@ -37,17 +37,18 @@ class ApiFuzzer {
         unsigned int next_obj_id;
         unsigned int depth;
         unsigned int max_depth;
+        const unsigned int seed;
         std::mt19937* rng;
 
 
         virtual const ApiObject* generateObject(const ApiType*) = 0;
 
     public:
-        ApiFuzzer(std::mt19937* _rng): next_obj_id(0), depth(0),
+        ApiFuzzer(unsigned int _seed, std::mt19937* _rng): next_obj_id(0), depth(0),
             instrs(std::vector<std::string>()),
             objs(std::vector<const ApiObject*>()),
             types(std::set<const ApiType*>()),
-            funcs(std::set<const ApiFunc*>()), rng(_rng) {};
+            funcs(std::set<const ApiFunc*>()), rng(_rng), seed(_seed) {};
 
         //std::vector<const ApiInstruction*> getInstrList() const;
         std::vector<std::string> getInstrStrs() const;
@@ -102,7 +103,8 @@ class ApiFuzzerNew : public ApiFuzzer {
     const ApiObject* output_var;
 
     public:
-        ApiFuzzerNew(std::string&, std::mt19937*, std::unique_ptr<SetMetaTester>);
+        ApiFuzzerNew(std::string&, unsigned int, std::mt19937*,
+            std::unique_ptr<SetMetaTester>);
         //~ApiFuzzerNew();
 
     private:

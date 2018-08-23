@@ -341,9 +341,9 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
  * ApiFuzzerNew functions
  ******************************************************************************/
 
-ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, std::mt19937* _rng,
-    std::unique_ptr<SetMetaTester> _smt) :
-    ApiFuzzer(_rng)
+ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, unsigned int _seed,
+    std::mt19937* _rng, std::unique_ptr<SetMetaTester> _smt) :
+    ApiFuzzer(_seed,_rng)
 {
     this->smt = std::move(_smt);
     YAML::Node config_file = YAML::LoadFile(config_file_path);
@@ -529,7 +529,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
             assert(this->output_var);
             return new ExplicitType(type_str, this->output_var->getType());
         }
-
+        if (type_str.find("seed") != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+        }
         assert (type_str.find(delim_mid) != std::string::npos);
         if (type_str.find(fmt::format("input{}", delim_mid)) != std::string::npos)
         {
@@ -616,6 +619,18 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         {
             return this->getOutputVar(obj_type);
         }
+        else if (expl_type->getDefinition().find("seed") != std::string::npos)
+        {
+            assert(expl_type->getUnderlyingType()->isPrimitive());
+            return new PrimitiveObject<unsigned int>(
+                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
+                this->seed);
+        }
+        //else if (expl_type->getDefinition().find("rand") != std::string::npos)
+        //{
+            //return new PrimitiveObject<unsigned int>(
+                //dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
+                //this->getRandInt
         else
         {
             return expl_type->retrieveObj();
@@ -705,6 +720,11 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
     {
         // TODO change
         var_name = obj_type->toStr().substr(obj_type->toStr().rfind(':') + 1);
+        // hack
+        while (var_name.find('*') != std::string::npos)
+        {
+            var_name = var_name.replace(var_name.find('*'), 1, "");
+        }
     }
     --this->depth;
     return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
