@@ -502,9 +502,20 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         assert(ctor_yaml["name"].IsDefined());
         assert(ctor_yaml["param_types"].IsDefined());
         std::string func_name = ctor_yaml["name"].as<std::string>();
-        const ApiType* ctor_type = this->parseTypeStr(func_name);
         const ApiType* member_type = nullptr;
-        const ApiType* return_type = ctor_type;
+        // TODO could we handle this better?
+        // this is used to not run out of functions when reaching depth limit,
+        // in case we want to use a specific function to generate certain objects
+        const ApiType* return_type;
+        if (ctor_yaml["return_type"].IsDefined())
+        {
+            return_type =
+                this->parseTypeStr(ctor_yaml["return_type"].as<std::string>());
+        }
+        else
+        {
+            return_type = this->parseTypeStr(func_name);
+        }
         YAML::Node param_types_list_yaml = ctor_yaml["param_types"];
         std::vector<const ApiType *> param_types_list;
         for (YAML::Node param_types_yaml : param_types_list_yaml)

@@ -195,6 +195,9 @@ funcs:
 constructors:
     - name: 'isl::space'
       param_types: ['isl::ctx', '<input=params>', '<input=dims>']
+    - name: 'get_point_with_coordinates'
+      return_type: 'isl::point'
+      param_types: ['isl::space']
     - name: 'isl::local_space'
       param_types: ['isl::space']
     - name: 'isl::val'

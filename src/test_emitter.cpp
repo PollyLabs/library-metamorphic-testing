@@ -1,8 +1,8 @@
 #include "test_emitter.hpp"
 
 static unsigned int indent = 0;
-const bool DEBUG = false;
-//const bool DEBUG = true;
+//const bool DEBUG = false;
+const bool DEBUG = true;
 
 std::map<std::string, Modes> string_to_mode {
     {"SET_FUZZ", SET_FUZZ},
@@ -22,10 +22,10 @@ parseArgs(int argc, char **argv)
         if (!strcmp(argv[i], "--seed") || !strcmp(argv[i], "-s")) {
             args.seed = atoi(argv[++i]);
         }
-	else if (!strcmp(argv[i], "--output") || !strcmp(argv[i], "-o"))
-	{
-	    args.output_file = argv[++i];
-	}
+    else if (!strcmp(argv[i], "--output") || !strcmp(argv[i], "-o"))
+    {
+        args.output_file = argv[++i];
+    }
         //else if (!strcmp(argv[i], "--mode") || !strcmp(argv[i], "-m")) {
             //std::string mode_arg = argv[++i];
             //std::map<std::string, Modes>::iterator mode_find =
@@ -106,9 +106,11 @@ main(int argc, char** argv)
     std::mt19937* rng = new std::mt19937(args.seed);
     std::stringstream test_ss;
     std::string config_path =
-        "/home/isl_testing/isl-metamorphic-testing/config_files/api_fuzzer_isl_point.yaml";
+        //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_omega.yaml";
+        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/api_fuzzer_isl_point.yaml";
     std::string meta_test_file =
-        "/home/isl_testing/isl-metamorphic-testing/config_files/set_meta_tests_isl.yaml";
+        //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/set_meta_tests_omega.yaml";
+        "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/set_meta_tests_isl.yaml";
 
     YAML::Node config_file = YAML::LoadFile(config_path);
     std::vector<std::string> include_list = {
@@ -144,10 +146,6 @@ main(int argc, char** argv)
         writeLine(test_ss, instr);
     }
 
-    //for (std::string meta_instr : smt->getMetaExprStrs())
-    //{
-        //writeLine(test_ss, meta_instr);
-    //}
     mainPostSetup(test_ss);
 
     std::ofstream ofs;
