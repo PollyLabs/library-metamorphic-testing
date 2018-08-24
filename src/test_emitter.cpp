@@ -22,10 +22,10 @@ parseArgs(int argc, char **argv)
         if (!strcmp(argv[i], "--seed") || !strcmp(argv[i], "-s")) {
             args.seed = atoi(argv[++i]);
         }
-    else if (!strcmp(argv[i], "--output") || !strcmp(argv[i], "-o"))
-    {
-        args.output_file = argv[++i];
-    }
+        else if (!strcmp(argv[i], "--output") || !strcmp(argv[i], "-o"))
+        {
+            args.output_file = argv[++i];
+        }
         //else if (!strcmp(argv[i], "--mode") || !strcmp(argv[i], "-m")) {
             //std::string mode_arg = argv[++i];
             //std::map<std::string, Modes>::iterator mode_find =
