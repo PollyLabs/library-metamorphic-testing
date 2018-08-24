@@ -1,0 +1,114 @@
+---
+includes:
+    - "omega.h"
+    - "testing/omega-gen-helpers.h"
+
+pre_setup:
+    - "srand(42);"
+
+inputs:
+    - name: 'var_count'
+      type: 'unsigned int'
+      range: '[2,2]'
+    - name: 'constraints'
+      type: 'unsigned int'
+      range: '[5,9]'
+    - name: 'depth_max'
+      type: 'unsigned int'
+      range: '[10,10]'
+
+types:
+    - name: 'omega::Relation'
+    #- name: 'omega::Variable_ID'
+    #- name: 'omega::GEQ_Handle'
+    #- name: 'omega::EQ_Handle'
+    #- name: 'omega::Stride_Handle'
+    #- name: 'omega::F_Or*'
+    #- name: 'omega::F_And*'
+    #- name: 'omega::F_Exists*'
+
+funcs:
+    #- name: 'update_coef'
+      #member_type: 'omega::GEQ_Handle'
+      #return_type: ''
+      #param_types: ['omega::Variable_ID', 'unsigned int']
+      #conditions: []
+    #- name: 'update_const'
+      #member_type: 'omega::GEQ_Handle'
+      #return_type: ''
+      #param_types: ['unsigned int']
+      #conditions: []
+    #- name: 'add_and'
+      #member_type: 'omega::Relation'
+      #return_type: 'omega::F_And*'
+      #param_types: []
+      #conditions: []
+    #- name: 'add_or'
+      #member_type: 'omega::Relation'
+      #return_type: 'omega::F_Or*'
+      #param_types: []
+      #conditions: []
+    #- name: 'add_exists'
+      #member_type: 'omega::Relation'
+      #return_type: 'omega::F_Exists*'
+      #param_types: []
+      #conditions: []
+    #- name: 'add_GEQ'
+      #member_type: 'omega::F_And*'
+      #return_type: 'omega::GEQ_Handle'
+      #param_types: []
+      #conditions: []
+    #- name: 'set_var'
+      #member_type: 'omega::Relation'
+      #return_type: 'omega::Variable_ID'
+      #param_types: ['<range=[0,<input=var_count>)>']
+      #conditions: []
+    #- name: 'makeRelation'
+      #member_type: ''
+      #return_type: 'omega::Relation'
+      #param_types: ['<seed>', '<input=var_count>']
+    - name: 'makeTupleRelation'
+      member_type: ''
+      return_type: 'omega::Relation'
+      param_types: ['<range=(0,10]>', '<range=(0,10]>']
+    # Special funcs
+    - name: 'print'
+      member_type: 'omega::Relation'
+      return_type: ''
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'Union'
+      member_type: ''
+      return_type: 'omega::Relation'
+      param_types: ['omega::Relation', 'omega::Relation']
+      special: true
+    - name: 'ConvexHull'
+      member_type: ''
+      return_type: 'omega::Relation'
+      param_types: ['omega::Relation']
+      special: true
+
+#constructors:
+    #- name: 'omega::Relation'
+      #param_types: ['<input=var_count>']
+
+set_gen:
+    - type: 'for'
+      counter: '[0,<input=constraints>]'
+      func: 'Union'
+      return: '<output_var>'
+      func_params:
+            - '<output_var>'
+            - '<new=omega::Relation>'
+    - type: 'func'
+      func: 'print'
+      target: '<output_var>'
+    - type: 'func'
+      func: 'ConvexHull'
+      return: '<output_var>'
+      func_params:
+            - '<output_var>'
+    - type: 'func'
+      func: 'print'
+      target: '<output_var>'

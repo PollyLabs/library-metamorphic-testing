@@ -1,0 +1,57 @@
+---
+meta_var_type: "omega::Relation"
+meta_check: "Must_Be_Subset(copy(%m), copy(%m0)) && Must_Be_Subset(copy(%m0), copy(%m))"
+
+generators:
+    universe:
+        - "Union(copy(%1), Complement(copy(%1)))" # Complementarity
+        - "Complement(%e)" # logical inverse
+        - "Union(copy(%1), %u)" # dominance
+
+    empty:
+        - "Intersection(copy(%1), Complement(copy(%1)))" # Complementarity
+        - "Difference(copy(%1), copy(%1))"
+        - "Difference(copy(%1), %u)"
+        - "Intersection(copy(%1), %e)" # dominance
+        - "Complement(%u)" # logical inverse
+
+    #invertible_functions:
+        #- [ "copy(%1).Complement()" , "copy(%1).Complement()" ]
+
+relations:
+    identity:
+        - "%m = Union(copy(%1), copy(%1))" # idempotence
+        - "%m = Union(copy(%1), %e)" # identity
+        - "%m = Intersection(copy(%1), copy(%1))" # idempotence
+        - "%m = Intersection(copy(%1), %u)" # identity
+        - "%m = Difference(copy(%1), %e)"
+        - "%m = Difference(%u, Complement(copy(%1)))"
+        - "%m = Intersection(copy(%1), Union(copy(%1), copy(%2)))" # absorption
+        - "%m = Union(copy(%1), Intersection(copy(%1), copy(%2)))" # absorption
+        - "%m = Complement(Complement(copy(%1)))" # involution
+
+    Complement:
+        - "%m = Complement(copy(%1))"
+        - "%m = Difference(%u, copy(%1))"
+
+    Difference:
+        - "%m = Difference(copy(%1), copy(%2))"
+        - "%m = Intersection(copy(%1), Complement(copy(%2)))"
+
+    union:
+        - "%m = Union(copy(%1), copy(%2))"
+        - "%m = Union(copy(%2), copy(%1))" # commutativity
+        - "%m = Complement(Intersection(Complement(copy(%1)), Complement(copy(%2))))" # DeMorgan
+
+    Intersection:
+        - "%m = Intersection(copy(%1), copy(%2))"
+        - "%m = Intersection(copy(%2), copy(%1))" # commutativity
+        - "%m = Complement(Union(Complement(copy(%1)), Complement(copy(%2))))" # DeMorgan
+
+    associativity_union:
+        - "%m = Union(Union(copy(%1), copy(%2)), copy(%3))"
+        - "%m = Union(copy(%1), Union(copy(%2), copy(%3)))"
+
+    associativity_Intersection:
+        - "%m = Intersection(Intersection(copy(%1), copy(%2)), copy(%3))"
+        - "%m = Intersection(copy(%1), Intersection(copy(%2), copy(%3)))"
