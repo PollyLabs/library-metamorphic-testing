@@ -47,6 +47,7 @@ class MetaTest {
             input_var_names(_ivn), generators(_gen), rng(_rng) {};
 
         void parseAndAddInstr(std::string);
+        void updateFirstInputVarName();
         void finalizeTest(std::string);
 
         void addInstr(MetaInstr* instr)
@@ -54,6 +55,7 @@ class MetaTest {
             this->instrs.push_back(instr);
         };
         size_t getHash(void) const;
+        std::string getFullMetaVarName();
         std::vector<MetaInstr*> getInstrs(void) const;
         std::vector<std::string> getInstrStrs(void) const;
 
@@ -91,7 +93,6 @@ class SetMetaTester {
         void genOneMetaTest(std::queue<std::string>);
         bool addMetaTest(MetaTest* expr);
         std::string genMetaExprStr(std::string);
-
 };
 
 #endif

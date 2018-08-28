@@ -52,6 +52,12 @@ MetaTest::getInstrStrs(void) const
     return instrStrs;
 }
 
+std::string
+MetaTest::getFullMetaVarName()
+{
+    return fmt::format("{}_{}", this->meta_var_name, this->meta_var_id);
+}
+
 void
 MetaTest::parseAndAddInstr(std::string instr)
 {
@@ -110,8 +116,7 @@ MetaTest::replaceMetaInputs(std::string input_string)
                     else
                     {
                         input_string.replace(pos, 2,
-                            fmt::format("{}_{}", this->meta_var_name,
-                                this->meta_var_id));
+                            this->getFullMetaVarName());
                     }
                     break;
                 }
@@ -124,6 +129,12 @@ MetaTest::replaceMetaInputs(std::string input_string)
         }
     }
     return input_string;
+}
+
+void
+MetaTest::updateFirstInputVarName()
+{
+    this->input_var_names.at(0) = this->getFullMetaVarName();
 }
 
 void
@@ -193,7 +204,6 @@ SetMetaTester::addMetaTest(MetaTest* expr)
     return true;
 }
 
-
 std::string
 SetMetaTester::genMetaExprStr(std::string rel_type)
 {
@@ -214,7 +224,9 @@ SetMetaTester::genOneMetaTest(std::queue<std::string> rel_chain)
         std::queue<std::string> rel_chain_copy(rel_chain);
         while (!rel_chain_copy.empty())
         {
-            new_test->parseAndAddInstr(this->genMetaExprStr(rel_chain_copy.front()));
+            new_test->parseAndAddInstr(this->genMetaExprStr(
+                rel_chain_copy.front()));
+            new_test->updateFirstInputVarName();
             rel_chain_copy.pop();
         }
         new_test->finalizeTest(this->meta_check_str);
