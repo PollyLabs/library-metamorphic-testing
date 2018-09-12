@@ -87,22 +87,21 @@ filterFuncList(std::set<const ApiFunc*> func_list,
  * ApiFuzzer functions
  ******************************************************************************/
 
-//std::vector<const ApiInstruction*>
-//ApiFuzzer::getInstrList() const
-//{
-    //return this->instrs;
-//}
+std::vector<const ApiInstruction*>
+ApiFuzzer::getInstrList() const
+{
+    return this->instrs;
+}
 
 std::vector<std::string>
 ApiFuzzer::getInstrStrs() const
 {
-    return this->instrs;
-    //std::vector<std::string> instr_strs;
-    //for (const ApiInstruction* api_instr : this->getInstrList())
-    //{
-        //instr_strs.push_back(api_instr->toStr());
-    //}
-    //return instr_strs;
+    std::vector<std::string> instr_strs;
+    for (const ApiInstruction* api_instr : this->getInstrList())
+    {
+        instr_strs.push_back(api_instr->toStr());
+    }
+    return instr_strs;
 }
 
 std::vector<const ApiObject*>
@@ -167,8 +166,9 @@ ApiFuzzer::hasFuncName(std::string func_check)
 void
 ApiFuzzer::addInstr(const ApiInstruction* instr)
 {
+    this->instrs.push_back(instr);
     //static int counter = 0;
-    this->instrs.push_back(instr->toStr());
+    //this->instrs.push_back(instr->toStr());
     //this->instrs.push_back(fmt::format("fprintf(stderr, \"{}\n\");\n", ++counter));
 }
 
@@ -190,8 +190,72 @@ ApiFuzzer::addFunc(const ApiFunc* func)
     this->funcs.insert(func);
 }
 
+void
+ApiFuzzer::addRelation(const MetaRelation* meta_rel)
+{
+    this->relations.push_back(meta_rel);
+}
+
+void
+ApiFuzzer::addMetaCheck(const MetaRelation* meta_check)
+{
+    this->meta_checks.push_back(meta_check);
+}
+
+void
+ApiFuzzer::addMetaVar(std::string identifier, const ApiType* meta_var_type)
+{
+    std::vector<const MetaRelation*> empty_relations({});
+    this->addMetaVar(identifier, meta_var_type, empty_relations);
+}
+
+void
+ApiFuzzer::addMetaVar(std::string identifier, const ApiType* meta_var_type,
+    std::vector<const MetaRelation*>& meta_var_relations)
+{
+    MetaVarObject* new_meta_obj(
+        new MetaVarObject(identifier, meta_var_type, this->rng));
+    std::for_each(meta_var_relations.begin(), meta_var_relations.end(),
+        [&](const MetaRelation* meta_rel)
+        {
+            new_meta_obj->addRelation(meta_rel);
+        });
+    this->meta_vars.push_back(new_meta_obj);
+}
+
+const ApiObject*
+ApiFuzzer::getMetaVariant(size_t id) const
+{
+    for (const ApiObject* meta_var : this->meta_variants)
+    {
+        if (meta_var->getID() == id)
+        {
+            return meta_var;
+        }
+    }
+    std::cout << "Failed retrieving meta variant variable with id " << id;
+    std::cout  << std::endl;
+    assert(false);
+}
+
+MetaVarObject*
+ApiFuzzer::getMetaVar(std::string id_check) const
+{
+    std::vector<MetaVarObject*>::const_iterator it = this->meta_vars.begin();
+    for (; it != this->meta_vars.end(); it++)
+    {
+        if (!(*it)->getIdentifier().compare(id_check))
+        {
+            // TODO replace this with check that there is only one
+            return *it;
+        }
+    }
+    std::cout << "Could not find MetaVar of type " << id_check << std::endl;
+    assert(false);
+}
+
 const ApiType*
-ApiFuzzer::getTypeByName(std::string type_check)
+ApiFuzzer::getTypeByName(std::string type_check) const
 {
     for (const ApiType* type : this->getTypeList())
     {
@@ -219,14 +283,16 @@ ApiFuzzer::filterObjs(bool (ApiObject::*filter_func)(T) const, T filter_check)
 template<typename T>
 std::set<const ApiFunc*>
 ApiFuzzer::filterFuncs(bool (ApiFunc::*filter_func)(T) const, T filter_check)
+    const
 {
     return filterFuncList(this->getFuncList(), filter_func, filter_check);
 }
 
 const ApiFunc*
-ApiFuzzer::getFuncByName(std::string name)
+ApiFuzzer::getFuncByName(std::string name) const
 {
     std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
+    logDebug("Searching for func name " + name);
     assert(filtered_funcs.size() > 0);
     return getRandomSetElem(filtered_funcs, this->getRNG());
 }
@@ -311,7 +377,6 @@ ApiFuzzer::parseCondition(std::string condition, const ApiObject* target_obj,
     return condition;
 }
 
-
 std::vector<const ApiObject*>
 ApiFuzzer::getFuncArgs(const ApiFunc* func)
 {
@@ -341,14 +406,14 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
  * ApiFuzzerNew functions
  ******************************************************************************/
 
-ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, unsigned int _seed,
-    std::mt19937* _rng, std::unique_ptr<SetMetaTester> _smt) :
-    ApiFuzzer(_seed,_rng)
+ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_path,
+    unsigned int _seed, std::mt19937* _rng) :
+    ApiFuzzer(_seed, _rng)
 {
-    this->smt = std::move(_smt);
-    YAML::Node config_file = YAML::LoadFile(config_file_path);
+    /* Fuzzer initialization */
+    YAML::Node api_fuzzer_data = YAML::LoadFile(api_fuzzer_path);
     this->initPrimitiveTypes();
-    this->initInputs(config_file["inputs"]);
+    this->initInputs(api_fuzzer_data["inputs"]);
     this->max_depth = this->getInputObjectData<unsigned int>("depth_max");
     for (std::pair<std::string, const ApiObject*> pair_in : this->fuzzer_input)
     {
@@ -356,19 +421,47 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& config_file_path, unsigned int _seed,
             dynamic_cast<const PrimitiveObject<unsigned int>*>(pair_in.second);
         logDebug(fmt::format("{} = {}", pair_in.first, po->toStr()));
     }
-    this->initTypes(config_file["types"]);
-    this->initTypes(config_file["singleton_types"]);
-    this->initFuncs(config_file["funcs"]);
-    this->initFuncs(config_file["special_funcs"]);
-    this->initConstructors(config_file["constructors"]);
-    this->initGenConfig(config_file["set_gen"]);
-    this->generateSet();
-    assert(output_var);
-    smt->setInputVarNames(std::vector<std::string>({output_var->toStr()}));
+    this->initTypes(api_fuzzer_data["types"]);
+    this->initTypes(api_fuzzer_data["singleton_types"]);
+    this->initFuncs(api_fuzzer_data["funcs"]);
+    this->initFuncs(api_fuzzer_data["special_funcs"]);
+    this->initConstructors(api_fuzzer_data["constructors"]);
+    this->initGenConfig(api_fuzzer_data["set_gen"]);
 
-    std::vector<std::string> meta_instrs = smt->genMetaTests(5, 20);
-    this->instrs.push_back(fmt::format("// CURR META TEST: {}",
-        smt->getMetaRelChain()));
+    /* Object fuzzing */
+    this->generateSet();
+    assert(this->output_var);
+
+    /* Metamorphic testing start */
+    YAML::Node meta_test_data = YAML::LoadFile(meta_test_path);
+    this->meta_variant_type = this->getTypeByName(
+        meta_test_data["meta_var_type"].as<std::string>());
+    this->initMetaVariantVars();
+    this->initMetaVarObjs(meta_test_data["generators"]);
+    this->initMetaGenerators(meta_test_data["generators"]);
+    this->initMetaRelations(meta_test_data["relations"]);
+    this->initMetaChecks(meta_test_data["meta_check"]);
+
+    //smt->setInputVarNames(std::vector<std::string>({output_var->toStr()}));
+    this->meta_in_vars.push_back(output_var);
+    std::vector<const ApiObject*> meta_in_var_candidates =
+        filterObjs(&ApiObject::hasType, this->meta_variant_type);
+    this->meta_in_vars.push_back(getRandomVectorElem(meta_in_var_candidates, this->rng));
+    this->meta_in_vars.push_back(getRandomVectorElem(meta_in_var_candidates, this->rng));
+
+    // TODO Ideally, meta_vars should be vector of const, but need to rethink
+    // generator initialization process
+    std::vector<const MetaVarObject*> meta_vars_const(this->meta_vars.begin(),
+        this->meta_vars.end());
+    this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(
+        relations, meta_checks, meta_in_vars, meta_vars_const, meta_variants,
+        this->meta_variant_type, rng));
+
+    std::vector<const ApiInstruction*> meta_instrs = smt->genMetaTests(5);
+    logDebug(fmt::format("META TEST = {}", smt->getAbstractMetaRelChain()));
+    // TODO add comments
+    //this->instrs.push_back(fmt::format("// CURR META TEST: {}",
+        //smt->getAbstractMetaRelChain()));
     this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
 
     //for (std::string inst : this->getInstrList())
@@ -580,6 +673,230 @@ ApiFuzzerNew::initGenConfig(YAML::Node gen_config_yaml)
     {
         this->set_gen_instrs.push_back(gen_config_instr);
     }
+}
+
+void
+ApiFuzzerNew::initMetaVariantVars()
+{
+    for (size_t i = 0; i < this->meta_variant_count; ++i)
+    {
+        const ApiObject* new_meta_variant_var =
+            new ApiObject(this->meta_variant_name, i, this->meta_variant_type);
+        this->meta_variants.push_back(new_meta_variant_var);
+    }
+}
+
+void
+ApiFuzzerNew::initMetaVarObjs(YAML::Node meta_gen_data)
+{
+    this->addMetaVar("<m_curr>", this->meta_variant_type);
+    // TODO add required number of input variables
+    this->addMetaVar("1", this->output_var->getType());
+    this->addMetaVar("2", this->output_var->getType());
+    this->addMetaVar("3", this->output_var->getType());
+    for (YAML::const_iterator meta_gen_it = meta_gen_data.begin();
+        meta_gen_it != meta_gen_data.end(); ++meta_gen_it)
+    {
+        this->addMetaVar(meta_gen_it->second["identifier"].as<std::string>(),
+            this->meta_variant_type);
+    }
+}
+
+void
+ApiFuzzerNew::initMetaGenerators(YAML::Node meta_gen_yaml)
+{
+    YAML::const_iterator meta_gen_it = meta_gen_yaml.begin();
+    for (; meta_gen_it != meta_gen_yaml.end(); meta_gen_it++)
+    {
+        std::string gen_type = meta_gen_it->second["identifier"].as<std::string>();
+        // TODO need to further customise this
+        YAML::const_iterator gen_it = meta_gen_it->second["relations"].begin();
+        std::vector<const MetaRelation*> gen_rels;
+        for (; gen_it != meta_gen_it->second["relations"].end(); gen_it++)
+        {
+            logDebug(fmt::format("Adding gen rel {}", gen_it->as<std::string>()));
+            this->getMetaVar(gen_type)->addRelation(
+                parseRelationString(gen_it->as<std::string>(), gen_type));
+        }
+    }
+}
+
+void
+ApiFuzzerNew::initMetaRelations(YAML::Node meta_relation_yaml)
+{
+    YAML::const_iterator rel_desc_it = meta_relation_yaml.begin();
+    for (; rel_desc_it != meta_relation_yaml.end(); rel_desc_it++)
+    {
+        std::string rel_type_name = rel_desc_it->first.as<std::string>();
+        YAML::const_iterator rel_it = rel_desc_it->second.begin();
+        for (; rel_it != rel_desc_it->second.end(); rel_it++)
+        {
+            logDebug(fmt::format("Parsing relation {}", rel_it->as<std::string>()));
+            const MetaRelation* new_rel =
+                parseRelationString(rel_it->as<std::string>(), rel_type_name);
+            this->addRelation(new_rel);
+        }
+    }
+}
+
+void
+ApiFuzzerNew::initMetaChecks(YAML::Node check_list_yaml)
+{
+    for (YAML::const_iterator check_list_it = check_list_yaml.begin();
+        check_list_it != check_list_yaml.end(); ++check_list_it)
+    {
+        this->addMetaCheck(
+            parseRelationString(check_list_it->as<std::string>(), "check"));
+    }
+}
+
+const ApiObject*
+ApiFuzzerNew::parseRelationStringVar(std::string rel_string_var) const
+{
+    assert(rel_string_var.length() <= 3);
+    assert(rel_string_var.length() >= 1);
+    assert(rel_string_var[0] == '%');
+    // TODO maybe move this whole logic to getMetaVar?
+    if (std::isdigit(rel_string_var[1]))
+    {
+        assert(rel_string_var.size() == 2);
+        // TODO properly add all input vars
+        return this->getMetaVar(rel_string_var.substr(1));
+    }
+    if (rel_string_var[1] == 'm')
+    {
+        if (std::isdigit(rel_string_var[2]))
+        {
+            return this->getMetaVariant(stoi(rel_string_var.substr(2)));
+        }
+        return this->getMetaVar("<m_curr>");
+    }
+    assert(rel_string_var.size() == 2);
+    return this->getMetaVar(std::string(1, rel_string_var[1]));
+}
+
+const ApiObject*
+ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr) const
+{
+    if (std::isspace(rel_substr.front()))
+    {
+        size_t space_counter = 1;
+        while (std::isspace(rel_substr.at(space_counter)))
+        {
+            ++space_counter;
+        }
+        rel_substr = rel_substr.substr(space_counter);
+    }
+    logDebug("Parsing substring " + rel_substr);
+    if (rel_substr.find('(') != std::string::npos &&
+            rel_substr.find(')') != std::string::npos)
+    {
+        return parseRelationStringFunc(rel_substr);
+    }
+    else if (rel_substr.front() == '%')
+    {
+        return parseRelationStringVar(rel_substr);
+    }
+    else
+    {
+        std::cout << "Could not parse relation func param " << rel_substr;
+        std::cout << std::endl;
+        assert(false);
+    }
+}
+
+const FuncObject*
+ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
+{
+    size_t paren_count = 0;
+    std::stack<std::string> funcs;
+    std::vector<std::string> params;
+    std::vector<const ApiObject*> param_objs;
+    std::string func_name;
+    std::string accumulator = "";
+    std::string::reverse_iterator r_it = rel_string.rbegin();
+    size_t it_count = 0;
+    for (; r_it != rel_string.rend(); r_it++)
+    {
+        ++it_count;
+        if (*r_it == ')')
+        {
+            if (paren_count != 0)
+            {
+                accumulator.insert(0, 1, *r_it);
+            }
+            ++paren_count;
+        }
+        else if (*r_it == '(')
+        {
+            --paren_count;
+            if (paren_count == 0)
+            {
+                if (accumulator != "")
+                {
+                    params.push_back(accumulator);
+                    accumulator.clear();
+                }
+            }
+            else
+            {
+                accumulator.insert(0, 1, *r_it);
+            }
+        }
+        else if (*r_it == ',' && paren_count == 1)
+        {
+            assert(accumulator != "");
+            params.push_back(accumulator);
+            accumulator.clear();
+        }
+        else if (*r_it == '.' && paren_count == 0)
+        {
+            assert(accumulator != "");
+            func_name = accumulator;
+            accumulator.clear();
+            break;
+        }
+        else
+        {
+            accumulator.insert(0, 1, *r_it);
+        }
+    }
+    assert (paren_count == 0);
+    if (accumulator != "")
+    {
+        assert(func_name.empty());
+        func_name = accumulator;
+    }
+    assert(!func_name.empty());
+    const ApiObject* target = nullptr;
+    if (it_count != rel_string.size())
+    {
+        target = this->parseRelationStringSubstr(
+            rel_string.substr(0, rel_string.size() - it_count));
+    }
+    const ApiFunc* func = this->getFuncByName(func_name);
+    for (std::string param : params)
+    {
+        param_objs.push_back(this->parseRelationStringSubstr(param));
+    }
+    return new FuncObject(func, target, param_objs);
+}
+
+MetaRelation*
+ApiFuzzerNew::parseRelationString(std::string rel_string, std::string rel_name)
+    const
+{
+    const ApiObject* store_result_var = nullptr;
+
+    size_t eq_pos = rel_string.find('=');
+    if (eq_pos != std::string::npos)
+    {
+        store_result_var = this->parseRelationStringVar(
+            rel_string.substr(0, eq_pos));
+        rel_string = rel_string.substr(eq_pos + 1);
+    }
+    const FuncObject* base_func = parseRelationStringFunc(rel_string);
+    return new MetaRelation(rel_name, base_func, store_result_var);
 }
 
 const ApiObject*

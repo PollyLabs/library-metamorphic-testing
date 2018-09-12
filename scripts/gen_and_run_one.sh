@@ -13,5 +13,5 @@ fi
 cd ${OUT_DIR}
 ./compile_isl.sh test.cpp
 timeout 120 ./test
-echo $?
+echo "RETURN CODE = $?"
 cd ..

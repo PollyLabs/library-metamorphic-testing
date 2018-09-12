@@ -5,7 +5,6 @@
 #include <fstream>
 
 #include "api_fuzzer.hpp"
-#include "set_meta_tester.hpp"
 
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
@@ -29,9 +28,12 @@ struct Arguments {
     std::string output_file;
 
     Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3), input_sets(""),
-       output_file("/home/isl_testing/isl-metamorphic-testing/out/test.cpp")	{}
+       output_file("./test.cpp")
+       {}
 };
 
+void parseArgs(Arguments&, int, char**);
+YAML::Node loadYAMLFileWithCheck(const std::string&);
 void writeLine(std::stringstream&, std::string);
 void prepareHeader(std::stringstream&, std::vector<std::string>&, Arguments&);
 void mainPreSetup(std::stringstream&, std::vector<std::string>&);

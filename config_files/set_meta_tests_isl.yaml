@@ -7,20 +7,25 @@
 # https://www.allaboutcircuits.com/technical-articles/boolean-identities/
 ---
 meta_var_type: "isl::set"
-meta_check: "%m.is_equal(%m0)"
+meta_check:
+    - "assert(%m.is_equal(%m0))"
 
 generators:
-    universe:
-        - "%1.unite(%1.complement())" # complementarity
-        - "%e.complement()" # logical inverse
-        - "%1.unite(%u)" # dominance
+    universe: # universe
+        identifier: 'u'
+        relations:
+            - "%1.unite(%1.complement())" # complementarity
+            - "%e.complement()" # logical inverse
+            - "%1.unite(%u)" # dominance
 
-    empty:
-        - "%1.intersect(%1.complement())" # complementarity
-        - "%1.subtract(%1)"
-        - "%1.subtract(%u)"
-        - "%1.intersect(%e)" # dominance
-        - "%u.complement()" # logical inverse
+    empty: # empty
+        identifier: 'e'
+        relations:
+            - "%1.intersect(%1.complement())" # complementarity
+            - "%1.subtract(%1)"
+            - "%1.subtract(%u)"
+            - "%1.intersect(%e)" # dominance
+            - "%u.complement()" # logical inverse
 
     #invertible_functions:
         #- [ "%1.complement()" , "%1.complement()" ]

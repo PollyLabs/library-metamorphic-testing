@@ -5,14 +5,18 @@
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <random>
 #include <sstream>
 #include <vector>
 
 #include "fmt/format.h"
 
+
+// TODO move to api_elements
 enum PrimitiveTypeEnum {
     STRING,
     UINT,
+    BOOL,
 };
 
 extern std::map<std::string, PrimitiveTypeEnum> primitives_map;
@@ -24,6 +28,9 @@ std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
 
 class ApiObject;
+class ApiFunc;
+class MetaRelation;
+class MetaVarObject;
 
 class ApiType {
     const std::string name;
@@ -103,7 +110,7 @@ class ExplicitType : public ApiType {
 
 class ApiObject {
     protected:
-        const unsigned int id;
+        const size_t id;
         const std::string name;
         const ApiType* type;
 
@@ -112,6 +119,7 @@ class ApiObject {
             id(_id), name(_name), type(_type) {};
 
         const ApiType* getType() const { return this->type; };
+        size_t getID() const { return this->id; };
 
         bool isPrimitive() const { return this->getType()->isPrimitive(); };
         bool hasName(std::string name_check) const {
@@ -140,14 +148,8 @@ class PrimitiveObject : public ApiObject {
 
         T getData() const { return this->data; };
 
-        std::string toStr() const
-        {
-            return fmt::format("{}", this->data);
-        };
-        std::string toStrWithType() const
-        {
-            assert(false);
-        };
+        std::string toStr() const { return fmt::format("{}", this->data); };
+        std::string toStrWithType() const { assert(false); };
 };
 
 class NamedObject : public ApiObject {
@@ -155,10 +157,7 @@ class NamedObject : public ApiObject {
         NamedObject(std::string _name, const ApiType* _type) :
             ApiObject(_name, -1, _type) {};
 
-        std::string toStr() const
-        {
-            return this->name;
-        }
+        std::string toStr() const { return this->name; }
 };
 
 class ExprObject : public ApiObject {
@@ -169,6 +168,27 @@ class ExprObject : public ApiObject {
         std::string toStr() const { return this->name; };
         std::string toStrWithType() const { assert(false); };
 };
+
+class FuncObject : public ApiObject {
+    const ApiFunc* func;
+    const ApiObject* target = nullptr;
+    std::vector<const ApiObject*> params;
+
+    public:
+        FuncObject(const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
+
+        FuncObject* concretizeVars(const ApiObject*,
+            const std::vector<const ApiObject*>&,
+            const std::vector<const ApiObject*>&) const;
+
+        const ApiFunc* getFunc() const { return this->func; };
+        std::vector<const ApiObject*> getParams() const { return this->params; };
+        const ApiObject* getTarget() const { return this->target; };
+
+        std::string toStr() const;
+        std::string toStrWithType() const { assert(false); };
+};
+
 
 class ApiFunc {
     const std::string name;
@@ -280,6 +300,56 @@ class ApiInstruction
         bool isNewObjDecl() const { return this->new_obj_decl; };
 
         std::string toStr() const;
+};
+
+class MetaRelation {
+    protected:
+        const std::string abstract_relation;
+        const FuncObject* base_func;
+        const ApiObject* store_var;
+
+    public:
+        MetaRelation(std::string _abstract_relation, const FuncObject* _base_func,
+            const ApiObject* _store_var):
+            abstract_relation(_abstract_relation), base_func(_base_func),
+            store_var(_store_var) {};
+
+        const MetaRelation* concretizeVars(const ApiObject*,
+            const std::vector<const ApiObject*>&,
+            const std::vector<const ApiObject*>&) const;
+        const ApiInstruction* toApiInstruction(bool = false) const;
+
+        std::string getAbstractRelation() const { return this->abstract_relation; }
+        const FuncObject* getBaseFunc() const { return this->base_func; }
+        const ApiObject* getStoreVar() const { return this->store_var; }
+
+        std::string toStr() const;
+};
+
+class MetaVarObject : public ApiObject {
+    const std::string identifier;
+    const ApiType* type;
+    std::vector<const MetaRelation*> meta_relations;
+    std::mt19937* rng;
+
+    public:
+        MetaVarObject(std::string _identifier, const ApiType* _type,
+            std::mt19937* _rng) :
+            ApiObject(_identifier, -1, _type), identifier(_identifier),
+            rng(_rng) {};
+
+        void addRelation(const MetaRelation* rel)
+        {
+            this->meta_relations.push_back(rel);
+        };
+
+        const ApiObject* getConcreteVar(const ApiObject*,
+            const std::vector<const ApiObject*>&,
+            const std::vector<const ApiObject*>&) const;
+
+        std::string getIdentifier() const { return this->identifier; };
+        std::string toStr() const { assert(false); };
+        std::string toStrWithType() const { assert(false); };
 };
 
 #endif

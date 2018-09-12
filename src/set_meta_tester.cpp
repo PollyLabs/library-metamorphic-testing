@@ -24,164 +24,82 @@ MetaInstr::getHash(void) const
     return string_hash_func(this->instr_str);
 }
 
+MetaTest::~MetaTest()
+{
+    std::for_each(this->concrete_relations.begin(), this->concrete_relations.end(),
+        [](const MetaRelation* concrete_mr)
+        {
+            delete concrete_mr;
+        });
+}
+
 size_t
 MetaTest::getHash(void) const
 {
     size_t string_hash;
-    for (MetaInstr* instr : this->getInstrs())
+    std::hash<std::string> string_hash_func;
+    for (const MetaRelation* rel : this->getRelations())
     {
-        string_hash += instr->getHash();
+        string_hash += string_hash_func(rel->toStr());
     }
     return string_hash;
 }
 
-std::vector<MetaInstr*>
-MetaTest::getInstrs(void) const
+std::vector<const ApiInstruction*>
+MetaTest::getApiInstructions() const
 {
-    return this->instrs;
+    std::vector<const ApiInstruction*> api_instructions;
+    bool first = true;
+    std::for_each(this->concrete_relations.begin(), this->concrete_relations.end(),
+        [&](const MetaRelation* rel)
+        {
+            api_instructions.push_back(rel->toApiInstruction(first));
+            first = false;
+        });
+    return api_instructions;
 }
 
-std::vector<std::string>
-MetaTest::getInstrStrs(void) const
+//void
+//MetaTest::updateFirstInputVarName()
+//{
+    //this->input_var_names.at(0) = this->getFullMetaVarName();
+//}
+
+void
+SetMetaTesterNew::finalizeTest(MetaTest* new_test) const
 {
-    std::vector<std::string> instrStrs;
-    for (MetaInstr* instr : this->getInstrs())
+    for (const MetaRelation* meta_check : this->meta_checks)
     {
-        instrStrs.push_back(instr->toStr());
-    }
-    return instrStrs;
-}
-
-std::string
-MetaTest::getFullMetaVarName()
-{
-    return fmt::format("{}_{}", this->meta_var_name, this->meta_var_id);
-}
-
-void
-MetaTest::parseAndAddInstr(std::string instr)
-{
-    MetaInstr* meta_instr = new MetaInstr(this->replaceMetaInputs(instr));
-    this->addInstr(std::move(meta_instr));
-}
-
-std::string
-MetaTest::replaceMetaInputs(std::string input_string)
-{
-    if (input_string.rfind("%m =") == 0 && !this->result_var_defined)
-    {
-        input_string.replace(0, 2,
-            fmt::format("{} {}_{}", this->meta_var_type, this->meta_var_name,
-                this->meta_var_id));
-        this->result_var_defined = true;
-    }
-    while (true) {
-        int pos = input_string.find("%");
-        if (pos == std::string::npos)
-        {
-            break;
-        }
-        char type = input_string[pos + 1];
-        if (std::isdigit(type))
-        {
-            int input_var_id = type - '0';
-            //assert(this->input_var_names.size() > input_var_id);
-            assert(!std::isdigit(input_string[pos + 2]));
-            //input_string.replace(pos, 2, this->input_var_names.at(input_var_id));
-            input_string.replace(pos, 2, this->input_var_names.at(0));
-        }
-        else
-        {
-            switch (type)
-            {
-                case 'e':
-                {
-                    input_string.replace(pos, 2,
-                        getRandSetElem(this->rng, (*this->generators)["empty"]));
-                    break;
-                }
-                case 'u':
-                {
-                    input_string.replace(pos, 2,
-                        getRandSetElem(this->rng, (*this->generators)["universe"]));
-                    break;
-                }
-                case 'm':
-                {
-                    if (std::isdigit(input_string[pos + 2]))
-                    {
-                        input_string.replace(pos, 2,
-                            fmt::format("{}_", this->meta_var_name));
-                    }
-                    else
-                    {
-                        input_string.replace(pos, 2,
-                            this->getFullMetaVarName());
-                    }
-                    break;
-                }
-                default:
-                {
-                    std::cout << "Unknown input modifier %" << type << std::endl;
-                    exit(1);
-                }
-            }
-        }
-    }
-    return input_string;
-}
-
-void
-MetaTest::updateFirstInputVarName()
-{
-    this->input_var_names.at(0) = this->getFullMetaVarName();
-}
-
-void
-MetaTest::finalizeTest(std::string check_str)
-{
-    check_str = this->replaceMetaInputs(check_str);
-    MetaInstr* check_instr = new MetaInstr(fmt::format("assert({});", check_str));
-    this->addInstr(check_instr);
-}
-
-void
-SetMetaTester::initMetaRels(std::map<std::string, std::set<std::string>>& target_map, YAML::Node meta_rel_yaml)
-{
-    YAML::const_iterator rel_desc_it = meta_rel_yaml.begin();
-    for (; rel_desc_it != meta_rel_yaml.end(); rel_desc_it++)
-    {
-        std::string rel_type_name = rel_desc_it->first.as<std::string>();
-        std::set<std::string> meta_rels_for_type;
-        YAML::const_iterator rel_it = rel_desc_it->second.begin();
-        for (; rel_it != rel_desc_it->second.end(); rel_it++)
-        {
-            meta_rels_for_type.insert(rel_it->as<std::string>());
-        }
-        target_map.insert(std::make_pair(rel_type_name, meta_rels_for_type));
+        new_test->addRelation(meta_check->concretizeVars(
+            new_test->getVariantVar(), this->meta_variants, this->meta_in_vars));
+;
     }
 }
-
 
 std::queue<std::string>
-SetMetaTester::makeMetaRelChain(unsigned int rel_count)
+SetMetaTesterNew::makeAbstractMetaRelChain(unsigned int rel_count)
 {
+    std::set<std::string> abstract_relations;
+    for (const MetaRelation* rel : this->relations)
+    {
+        abstract_relations.insert(rel->getAbstractRelation());
+    }
     while (rel_count > 0)
     {
-        std::map<std::string, std::set<std::string>>::const_iterator it = this->relations.begin();
-        std::advance(it, getRandInt(this->rng, 0, this->relations.size()));
-        this->rel_chain.push(it->first);
+        std::set<std::string>::const_iterator it = abstract_relations.begin();
+        std::advance(it, getRandInt(this->rng, 0, abstract_relations.size()));
+        this->abstract_rel_chain.push(*it);
         rel_count--;
     }
-    return this->rel_chain;
+    return this->abstract_rel_chain;
 }
 
 std::string
-SetMetaTester::getMetaRelChain(void) const
+SetMetaTesterNew::getAbstractMetaRelChain(void) const
 {
-    assert(!this->rel_chain.empty());
+    assert(!this->abstract_rel_chain.empty());
     std::string rel_acc = "";
-    std::queue<std::string> rel_chain_cp(this->rel_chain);
+    std::queue<std::string> rel_chain_cp(this->abstract_rel_chain);
     while (!rel_chain_cp.empty())
     {
         rel_acc += rel_chain_cp.front() + '-';
@@ -192,98 +110,108 @@ SetMetaTester::getMetaRelChain(void) const
 }
 
 bool
-SetMetaTester::addMetaTest(MetaTest* expr)
+SetMetaTesterNew::addMetaTest(MetaTest* test)
 {
-    size_t expr_hash = expr->getHash();
-    if (meta_expr_hashes.count(expr_hash))
+    size_t test_hash = test->getHash();
+    if (this->meta_test_hashes.count(test_hash))
     {
         return false;
     }
-    this->meta_exprs.push_back(expr);
-    this->meta_expr_hashes.insert(expr_hash);
+    this->meta_tests.push_back(test);
+    this->meta_test_hashes.insert(test_hash);
     return true;
 }
 
-std::string
-SetMetaTester::genMetaExprStr(std::string rel_type)
+const MetaRelation*
+SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
+    const ApiObject* meta_variant_var, std::vector<const ApiObject*> input_vars)
+    const
 {
-    assert(this->relations.count(rel_type));
-    std::string rel_expr = getRandSetElem(this->rng, this->relations[rel_type]);
-    return rel_expr + ";";
+    std::vector<const MetaRelation*> concrete_relation_candidates;
+    for (std::vector<const MetaRelation*>::const_iterator it =
+            this->relations.begin(); it != this->relations.end(); ++it)
+    {
+        if (!(*it)->getAbstractRelation().compare(rel_type))
+        {
+            concrete_relation_candidates.push_back(*it);
+        }
+    }
+    assert(!concrete_relation_candidates.empty());
+    const MetaRelation* concrete_relation = concrete_relation_candidates.at(
+        getRandInt(this->rng, 0, concrete_relation_candidates.size()));
+    const MetaRelation* concretized_relation =
+        concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
+            input_vars);
+    return concretized_relation;
 }
 
 void
-SetMetaTester::genOneMetaTest(std::queue<std::string> rel_chain)
+SetMetaTesterNew::genOneMetaTest(std::queue<std::string> rel_chain,
+    const ApiObject* meta_variant_var)
 {
     int try_count = 10;
     while (try_count >= 0)
     {
-        MetaTest* new_test = new MetaTest(this->meta_var_type,
-            this->meta_var_name, this->meta_var_id, this->input_var_names,
-            &this->generators, this->rng);
+        MetaTest* new_test = new MetaTest(meta_variant_var);
+        //std::unique_ptr<MetaTest*> new_test = std::unique_ptr<MetaTest*>(new MetaTest());
         std::queue<std::string> rel_chain_copy(rel_chain);
+        std::vector<const ApiObject*> input_vars(this->meta_in_vars);
         while (!rel_chain_copy.empty())
         {
-            new_test->parseAndAddInstr(this->genMetaExprStr(
-                rel_chain_copy.front()));
-            new_test->updateFirstInputVarName();
+            const MetaRelation* concrete_meta_rel = this->getConcreteMetaRel(
+                rel_chain_copy.front(), meta_variant_var, input_vars);
+            new_test->addRelation(concrete_meta_rel);
+            input_vars.at(0) = meta_variant_var;
             rel_chain_copy.pop();
         }
-        new_test->finalizeTest(this->meta_check_str);
+        this->finalizeTest(new_test);
         if (this->addMetaTest(new_test))
         {
-            ++this->meta_var_id;
-            break;
+            return;
         }
         else
         {
-            free(new_test);
+            delete new_test;
         }
     }
 }
 
-std::vector<std::string>
-SetMetaTester::getMetaTestStrs(void) const
+std::vector<const ApiInstruction*>
+SetMetaTesterNew::testsToApiInstrs(void) const
 {
-    std::vector<std::string> expr_strs;
-    for (MetaTest* meta_expr : this->meta_exprs)
-    {
-        std::vector<std::string> meta_expr_strs = meta_expr->getInstrStrs();
-        expr_strs.insert(expr_strs.end(), meta_expr_strs.begin(), meta_expr_strs.end());
-    }
-    return expr_strs;
+    std::vector<const ApiInstruction*> api_instrs;
+    std::for_each(this->meta_tests.begin(), this->meta_tests.end(),
+        [&](const MetaTest* meta_test)
+        {
+            std::vector<const ApiInstruction*> test_instrs = meta_test->getApiInstructions();
+            api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
+        });
+    return api_instrs;
 }
 
-std::vector<std::string>
-SetMetaTester::genMetaTests(unsigned int rel_cnt, unsigned int expr_cnt)
+std::vector<const ApiInstruction*>
+SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
 {
-    assert(!this->input_var_names.empty());
-    std::queue<std::string> rel_chain = this->makeMetaRelChain(rel_cnt);
-    while (expr_cnt > 0)
+    assert(!this->meta_in_vars.empty());
+    std::queue<std::string> rel_chain = this->makeAbstractMetaRelChain(rel_cnt);
+    size_t rel_counter = 0;
+    for (const ApiObject* variant : this->meta_variants)
     {
-        this->genOneMetaTest(rel_chain);
-        --expr_cnt;
+        //this->instrs.push_back(fmt::format("// Meta test {}", rel_counter++));
+        this->genOneMetaTest(rel_chain, variant);
     }
-    return this->getMetaTestStrs();
+    //return this->instrs;
+    //return this->getMetaTestStrs();
+    return this->testsToApiInstrs();
 }
 
-SetMetaTester::SetMetaTester(std::string& meta_test_file, std::mt19937* _rng)
-{
-    this->meta_var_name = "r";
-    this->meta_var_id = 0;
-    this->rng = _rng;
-    this->relations = std::map<std::string, std::set<std::string>>();
-    this->generators = std::map<std::string, std::set<std::string>>();
-    this->meta_exprs = std::vector<MetaTest*>();
-    YAML::Node meta_test_yaml = YAML::LoadFile(meta_test_file);
-    this->meta_var_type = meta_test_yaml["meta_var_type"].as<std::string>();
-    this->meta_check_str = meta_test_yaml["meta_check"].as<std::string>();
-    this->initMetaRels(this->relations, meta_test_yaml["relations"]);
-    this->initMetaRels(this->generators, meta_test_yaml["generators"]);
-    //std::queue<std::string> rel_chain = this->makeMetaRelChain(5);
-    //unsigned int meta_exprs_count = 20;
-    //for (int i = 0; i < meta_exprs_count; i++)
-    //{
-        //this->genMetaTest(rel_chain);
-    //}
-}
+SetMetaTesterNew::SetMetaTesterNew(
+    const std::vector<const MetaRelation*>& _relations,
+    const std::vector<const MetaRelation*>& _meta_checks,
+    const std::vector<const ApiObject*>& _meta_in_vars,
+    const std::vector<const MetaVarObject*>& _meta_vars,
+    const std::vector<const ApiObject*>& _meta_variants,
+    const ApiType* _meta_var_type, std::mt19937* _rng
+    ) : relations(_relations), meta_checks(_meta_checks), meta_vars(_meta_vars),
+        meta_in_vars(_meta_in_vars), meta_variants(_meta_variants),
+        meta_var_type(_meta_var_type), rng(_rng), meta_var_name("r") { }
