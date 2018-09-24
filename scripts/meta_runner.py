@@ -29,6 +29,9 @@ parser.add_argument("--config-file", type=str,
     help = "Overwrite default config file to use.")
 parser.add_argument("--timeout", type=int, default=60,
     help = "The amount of time (in seconds) to run each test before giving up.")
+parser.add_argument("--append-id", action='store_true',
+    help = "If set, the produced file names will contain special IDs meant to\
+        distinguish between various runs.")
 args = parser.parse_args()
 
 ###############################################################################
@@ -58,6 +61,7 @@ test_run_path = runner_config_file["test_run_path"]
 log_file = runner_config_file["log_file_path"]
 stat_log_file = runner_config_file["stat_log_file_path"]
 output_tests_folder = runner_config_file["output_tests_folder"]
+
 
 coverage_output_dir = "./out/coverage/"
 input_sets_file = "./input_tests/input_sets_autotuner"
@@ -102,6 +106,15 @@ def compile_test(test_compile_bin, test_compile_dir):
     except subprocess.CalledProcessError:
         log_writer.write("!!! Compilation Failure\n")
         return False
+
+def append_id_to_string(string, run_id):
+    id_string = "_" + str(run_id)
+    if string[-1] == '/':
+        return str(id_string + "/").join(string.rsplit('/', 1))
+    if '/' in string:
+        if '.' in string.rsplit('/', 1)[1]:
+            return str(id_string + ".").join(string.rsplit('.', 1))
+    return string + id_string
 
 def execute_test(timeout, test_run_path):
     timeout = str(timeout)
@@ -298,6 +311,16 @@ def targeted_testing():
 
 signal.signal(signal.SIGINT, int_handler)
 
+# random.seed(42)
+internal_seed = random.randrange(sys.maxsize)
+random.seed(internal_seed)
+if args.append_id:
+    log_file = append_id_to_string(log_file, internal_seed)
+    stat_log_file = append_id_to_string(stat_log_file, internal_seed)
+    output_tests_folder = append_id_to_string(output_tests_folder, internal_seed)
+    test_source_path = append_id_to_string(test_source_path, internal_seed)
+    test_run_path = append_id_to_string(test_run_path, internal_seed)
+
 if os.path.exists(output_tests_folder):
     print("Found existing output folder {}, deleting...".format(output_tests_folder))
     shutil.rmtree(output_tests_folder)
@@ -329,9 +352,6 @@ set_empty_regex = re.compile("^SET EMPTY = (true|false)$", re.M)
 n_basic_set_regex = re.compile("^N BASIC SET = [0-9]+$", re.M)
 n_constraint_regex = re.compile("^N CONSTRAINTS = [0-9]+$", re.M)
 
-# random.seed(42)
-internal_seed = random.randrange(sys.maxsize)
-random.seed(internal_seed)
 with open(stat_log_file, 'w') as stat_log_writer:
     stat_log_writer.write("MODE: " + args.mode + "\n")
     stat_log_writer.write("INTERNAL SEED: " + str(internal_seed) + "\n")
