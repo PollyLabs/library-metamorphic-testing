@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(LibMetaTesting)
 set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_STANDARD 11)
 
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(LIB_DIR ${CMAKE_SOURCE_DIR}/libs)
