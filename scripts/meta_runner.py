@@ -12,6 +12,8 @@ import sys
 import time
 import yaml
 
+import pdb
+
 ###############################################################################
 # Argument parsing
 ###############################################################################
@@ -35,7 +37,7 @@ args = parser.parse_args()
 
 if not args.config_file:
     config_file_path = os.path.dirname(os.path.abspath(__file__))
-    config_file_path += "/../config_files/config.yaml"
+    config_file_path += "/../config_files/config_isl.yaml"
 else:
     config_file_path = args.config_file
     if not os.path.exists(config_file_path):
@@ -47,13 +49,14 @@ with open(config_file_path, 'r') as config_file_fd:
 os.chdir(config_file["working_dir"])
 
 runner_config_file = config_file["meta_runner"]
-isl_tester_path = runner_config_file["isl_tester_path"]
+isl_tester_path = runner_config_file["test_emitter_path"]
 lib_path = runner_config_file["lib_path"]
 test_compile_dir = runner_config_file["test_compile_dir"]
 test_compile_bin = runner_config_file["test_compile_bin"]
 test_source_path = runner_config_file["test_source_path"]
 test_run_path = runner_config_file["test_run_path"]
 log_file = runner_config_file["log_file_path"]
+stat_log_file = runner_config_file["stat_log_file_path"]
 output_tests_folder = runner_config_file["output_tests_folder"]
 
 coverage_output_dir = "./out/coverage/"
@@ -124,68 +127,66 @@ def execute_test(timeout, test_run_path):
 def check_stats(err):
     # Empty set check
     global set_empty_regex
-    set_empty_match = set_empty_regex.search(err)
-    if set_empty_match:
+    # pdb.set_trace()
+    for set_empty_match in set_empty_regex.finditer(err):
         global set_empty_count
         if "true" in set_empty_match.group(0):
             set_empty_count += 1
     # Set dim recording
     global dim_set_regex
-    dim_set_match = dim_set_regex.search(err)
-    if dim_set_match:
+    for dim_set_match in dim_set_regex.finditer(err):
         global dim_set_list
         dim_set_list.append(int(dim_set_match.group(0).split("= ")[1]))
     # Set param recording
     global dim_param_regex
-    dim_param_match = dim_param_regex.search(err)
-    if dim_param_match:
+    for dim_param_match in dim_param_regex.finditer(err):
         global dim_param_list
         dim_param_list.append(int(dim_param_match.group(0).split("= ")[1]))
     # N basic_set recording
     global n_basic_set_regex
-    n_basic_set_match = n_basic_set_regex.search(err)
-    if n_basic_set_match:
+    for n_basic_set_match in n_basic_set_regex.finditer(err):
         global n_basic_set_list
         n_basic_set_list.append(int(n_basic_set_match.group(0).split("= ")[1]))
     # N constraint recording
     global n_constraint_regex
-    n_constraint_match = n_constraint_regex.search(err)
-    if n_constraint_match:
+    for n_constraint_match in n_constraint_regex.finditer(err):
         global n_constraint_list
         n_constraint_list.append(int(n_constraint_match.group(0).split("= ")[1]))
 
 def write_stats():
-    log_writer.write("\n" + 80 * "=" + "\n")
-    log_writer.write("END TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
-    log_writer.write("Statistics:\n")
-    # Set empty stats
-    log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
-        set_empty_count, test_count, set_empty_count * 100 / test_count))
-    # Timeout stats
-    log_writer.write("\t* Timeouts: {} of {} ({}%)\n".format(
-        timeout_count, test_count, timeout_count * 100 / test_count))
-    # Dim set stats
-    log_writer.write("\t* Dim set average: {}\n".format(
-        statistics.mean(dim_set_list)))
-    log_writer.write("\t* Dim set median: {}\n".format(
-        statistics.median(dim_set_list)))
-    # Dim param stats
-    log_writer.write("\t* Dim param average: {}\n".format(
-        statistics.mean(dim_param_list)))
-    log_writer.write("\t* Dim param median: {}\n".format(
-        statistics.median(dim_param_list)))
-    # N basic set stats
-    log_writer.write("\t* N basic set average: {}\n".format(
-        statistics.mean(n_basic_set_list)))
-    log_writer.write("\t* N basic set median: {}\n".format(
-        statistics.median(n_basic_set_list)))
-    # N constraint stats
-    log_writer.write("\t* N constraint average: {}\n".format(
-        statistics.mean(n_constraint_list)))
-    log_writer.write("\t* N constraint median: {}\n".format(
-        statistics.median(n_constraint_list)))
-    log_writer.close()
-
+    with open(stat_log_file, 'a') as stat_log_writer:
+        stat_log_writer.write("END TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
+        stat_log_writer.write("Statistics:\n")
+        # Set empty stats
+        stat_log_writer.write("\t* Empty sets: {} of {} ({}%)\n".format(
+            set_empty_count, test_count, set_empty_count * 100 / test_count))
+        # Timeout stats
+        stat_log_writer.write("\t* Timeouts: {} of {} ({}%)\n".format(
+            timeout_count, test_count, timeout_count * 100 / test_count))
+        # Dim set stats
+        if dim_set_list:
+            stat_log_writer.write("\t* Dim set average: {}\n".format(
+                statistics.mean(dim_set_list)))
+            stat_log_writer.write("\t* Dim set median: {}\n".format(
+                statistics.median(dim_set_list)))
+        # Dim param stats
+        if dim_param_list:
+            stat_log_writer.write("\t* Dim param average: {}\n".format(
+                statistics.mean(dim_param_list)))
+            stat_log_writer.write("\t* Dim param median: {}\n".format(
+                statistics.median(dim_param_list)))
+        # N basic set stats
+        if n_basic_set_list:
+            stat_log_writer.write("\t* N basic set average: {}\n".format(
+                statistics.mean(n_basic_set_list)))
+            stat_log_writer.write("\t* N basic set median: {}\n".format(
+                statistics.median(n_basic_set_list)))
+        # N constraint stats
+        if n_constraint_list:
+            stat_log_writer.write("\t* N constraint average: {}\n".format(
+                statistics.mean(n_constraint_list)))
+            stat_log_writer.write("\t* N constraint median: {}\n".format(
+                statistics.median(n_constraint_list)))
 
 def gather_coverage_files():
     shutil.copy(coverage_source_file, coverage_output_dir)
@@ -250,16 +251,22 @@ def coverage_testing(coverage_target):
 
 # TODO: log generating command, log time to execute, timeout y/n, any other thing?
 def continuous_testing():
-    seed = 0
     while True:
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        seed = random.randint(0, sys.maxsize)
         log_writer.write(80 * "=" + "\n")
         log_writer.write("SEED: " + str(seed))
         print(date_time + " Running seed " + str(seed), end='\r')
-        generate_test(seed, args.timeout, isl_tester_path)
-        compile_test(test_compile_bin, test_compile_dir)
-        execute_test(args.timeout, test_run_path)
-        seed += 1
+        if not generate_test(seed, args.timeout):
+            continue
+        if not compile_test(test_compile_bin, test_compile_dir):
+            shutil.copy(test_source_path, output_tests_folder + "/test_compile_"\
+                + str(seed) + ".cpp")
+            continue
+        if not execute_test(args.timeout, test_run_path):
+            shutil.copy(test_source_path, output_tests_folder + "/test_run_"\
+                + str(seed) + ".cpp")
+        log_writer.flush()
 
 def targeted_testing():
     max_tests_per_set = 10
@@ -316,13 +323,18 @@ set_empty_count = 0
 timeout_count = 0
 n_basic_set_list = []
 n_constraint_list = []
-dim_set_regex = re.compile("DIM SET = [0-9]+")
-dim_param_regex = re.compile("DIM PARAM = [0-9]+")
-set_empty_regex = re.compile("SET EMPTY = (true|false)")
-n_basic_set_regex = re.compile("N BASIC SET = [0-9]+")
-n_constraint_regex = re.compile("N CONSTRAINTS = [0-9]+")
+dim_set_regex = re.compile("^DIM SET = [0-9]+$", re.M)
+dim_param_regex = re.compile("^DIM PARAM = [0-9]+$", re.M)
+set_empty_regex = re.compile("^SET EMPTY = (true|false)$", re.M)
+n_basic_set_regex = re.compile("^N BASIC SET = [0-9]+$", re.M)
+n_constraint_regex = re.compile("^N CONSTRAINTS = [0-9]+$", re.M)
 
-random.seed(42)
+# random.seed(42)
+internal_seed = random.randrange(sys.maxsize)
+random.seed(internal_seed)
+with open(stat_log_file, 'w') as stat_log_writer:
+    stat_log_writer.write("MODE: " + args.mode + "\n")
+    stat_log_writer.write("INTERNAL SEED: " + str(internal_seed) + "\n")
 
 if args.mode == "bounded":
     bounded_testing(args.seed_min, args.seed_max)
@@ -333,6 +345,7 @@ elif args.mode == "continuous":
 elif args.mode == "targeted":
     targeted_testing()
 
-# write_stats()
+log_writer.close()
+write_stats()
 
 exit(0)

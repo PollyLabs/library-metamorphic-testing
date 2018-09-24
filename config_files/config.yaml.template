@@ -12,5 +12,6 @@ meta_runner:
     test_run_path: "./out/test"
     test_coverage_output_dir: "./out/coverage"
     log_file_path: "./out/meta_test.log"
+    stat_log_file_path: "./out/meta_test_stats.log"
     output_tests_folder: "./out/out_tests/"
     default_timeout: 30
