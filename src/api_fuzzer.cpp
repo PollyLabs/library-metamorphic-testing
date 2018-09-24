@@ -87,7 +87,7 @@ filterFuncList(std::set<const ApiFunc*> func_list,
  * ApiFuzzer functions
  ******************************************************************************/
 
-std::vector<const ApiInstruction*>
+std::vector<const ApiInstructionInterface*>
 ApiFuzzer::getInstrList() const
 {
     return this->instrs;
@@ -97,7 +97,7 @@ std::vector<std::string>
 ApiFuzzer::getInstrStrs() const
 {
     std::vector<std::string> instr_strs;
-    for (const ApiInstruction* api_instr : this->getInstrList())
+    for (const ApiInstructionInterface* api_instr : this->getInstrList())
     {
         instr_strs.push_back(api_instr->toStr());
     }
@@ -108,6 +108,12 @@ std::vector<const ApiObject*>
 ApiFuzzer::getObjList() const
 {
     return this->objs;
+}
+
+std::vector<const ApiObject*>
+ApiFuzzer::getAllObjList() const
+{
+    return this->all_objs;
 }
 
 std::set<const ApiType*>
@@ -164,7 +170,7 @@ ApiFuzzer::hasFuncName(std::string func_check)
 }
 
 void
-ApiFuzzer::addInstr(const ApiInstruction* instr)
+ApiFuzzer::addInstr(const ApiInstructionInterface* instr)
 {
     this->instrs.push_back(instr);
     //static int counter = 0;
@@ -176,6 +182,7 @@ void
 ApiFuzzer::addObj(const ApiObject* obj)
 {
     this->objs.push_back(obj);
+    this->all_objs.push_back(obj);
 }
 
 void
@@ -221,6 +228,12 @@ ApiFuzzer::addMetaVar(std::string identifier, const ApiType* meta_var_type,
             new_meta_obj->addRelation(meta_rel);
         });
     this->meta_vars.push_back(new_meta_obj);
+}
+
+void
+ApiFuzzer::addInputMetaVar(size_t id)
+{
+    this->addMetaVar(std::to_string(id), this->meta_variant_type);
 }
 
 const ApiObject*
@@ -278,6 +291,13 @@ std::vector<const ApiObject*>
 ApiFuzzer::filterObjs(bool (ApiObject::*filter_func)(T) const, T filter_check)
 {
     return filterObjList(this->getObjList(), filter_func, filter_check);
+}
+
+template<typename T>
+std::vector<const ApiObject*>
+ApiFuzzer::filterAllObjs(bool (ApiObject::*filter_func)(T) const, T filter_check)
+{
+    return filterObjList(this->getAllObjList(), filter_func, filter_check);
 }
 
 template<typename T>
@@ -428,40 +448,43 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     this->initConstructors(api_fuzzer_data["constructors"]);
     this->initGenConfig(api_fuzzer_data["set_gen"]);
 
-    /* Object fuzzing */
-    this->generateSet();
-    assert(this->output_var);
-
-    /* Metamorphic testing start */
+    /* Metamorphic testing initialization */
     YAML::Node meta_test_data = YAML::LoadFile(meta_test_path);
     this->meta_variant_type = this->getTypeByName(
         meta_test_data["meta_var_type"].as<std::string>());
     this->initMetaVariantVars();
-    this->initMetaVarObjs(meta_test_data["generators"]);
+    this->initMetaVarObjs(meta_test_data["generators"],
+        meta_test_data["input_count"]);
     this->initMetaGenerators(meta_test_data["generators"]);
     this->initMetaRelations(meta_test_data["relations"]);
     this->initMetaChecks(meta_test_data["meta_check"]);
 
-    //smt->setInputVarNames(std::vector<std::string>({output_var->toStr()}));
-    this->meta_in_vars.push_back(output_var);
-    std::vector<const ApiObject*> meta_in_var_candidates =
-        filterObjs(&ApiObject::hasType, this->meta_variant_type);
-    this->meta_in_vars.push_back(getRandomVectorElem(meta_in_var_candidates, this->rng));
-    this->meta_in_vars.push_back(getRandomVectorElem(meta_in_var_candidates, this->rng));
+    /* Object fuzzing */
+    size_t input_var_count = meta_test_data["input_count"].as<size_t>();
+    for (int i = 1; i <= input_var_count; ++i)
+    {
+        this->current_output_var = this->generateNewObject(this->meta_variant_type);
+        this->objs.clear();
+        this->output_vars.push_back(this->current_output_var);
+        this->addInstr(new ApiComment(fmt::format(
+            "Start generate input var id {} in variable {}",
+            i, this->current_output_var->toStr())));
+        this->generateSet();
+    }
+    assert(!this->output_vars.empty());
 
     // TODO Ideally, meta_vars should be vector of const, but need to rethink
     // generator initialization process
     std::vector<const MetaVarObject*> meta_vars_const(this->meta_vars.begin(),
         this->meta_vars.end());
     this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(
-        relations, meta_checks, meta_in_vars, meta_vars_const, meta_variants,
+        relations, meta_checks, this->output_vars, meta_vars_const, meta_variants,
         this->meta_variant_type, rng));
 
-    std::vector<const ApiInstruction*> meta_instrs = smt->genMetaTests(5);
+    std::vector<const ApiInstructionInterface*> meta_instrs = smt->genMetaTests(5);
     logDebug(fmt::format("META TEST = {}", smt->getAbstractMetaRelChain()));
-    // TODO add comments
-    //this->instrs.push_back(fmt::format("// CURR META TEST: {}",
-        //smt->getAbstractMetaRelChain()));
+    this->instrs.push_back(new ApiComment(fmt::format("CURR META TEST: {}",
+        smt->getAbstractMetaRelChain())));
     this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
 
     //for (std::string inst : this->getInstrList())
@@ -471,18 +494,14 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
 }
 
 const ApiObject*
-ApiFuzzerNew::getOutputVar(const ApiType* output_type = nullptr)
+ApiFuzzerNew::getCurrOutputVar(const ApiType* output_type = nullptr)
 {
-    if (!this->output_var)
-    {
-        assert(output_type);
-        this->output_var = this->generateNewObject(output_type);
-    }
+    assert(this->current_output_var);
     if (output_type)
     {
-        assert(this->output_var->hasType(output_type));
+        assert(this->meta_variant_type->isType(output_type));
     }
-    return this->output_var;
+    return this->current_output_var;
 }
 
 
@@ -630,8 +649,8 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
     if (type_str.front() == delim_front && type_str.back() == delim_back) {
         if (type_str.find("output_var") != std::string::npos)
         {
-            assert(this->output_var);
-            return new ExplicitType(type_str, this->output_var->getType());
+            assert(this->current_output_var);
+            return new ExplicitType(type_str, this->getCurrOutputVar()->getType());
         }
         if (type_str.find("seed") != std::string::npos)
         {
@@ -687,13 +706,14 @@ ApiFuzzerNew::initMetaVariantVars()
 }
 
 void
-ApiFuzzerNew::initMetaVarObjs(YAML::Node meta_gen_data)
+ApiFuzzerNew::initMetaVarObjs(YAML::Node meta_gen_data,
+    YAML::Node input_count_data)
 {
     this->addMetaVar("<m_curr>", this->meta_variant_type);
-    // TODO add required number of input variables
-    this->addMetaVar("1", this->output_var->getType());
-    this->addMetaVar("2", this->output_var->getType());
-    this->addMetaVar("3", this->output_var->getType());
+    for (int i = input_count_data.as<size_t>(); i > 0; --i)
+    {
+        this->addInputMetaVar(i);
+    }
     for (YAML::const_iterator meta_gen_it = meta_gen_data.begin();
         meta_gen_it != meta_gen_data.end(); ++meta_gen_it)
     {
@@ -760,7 +780,6 @@ ApiFuzzerNew::parseRelationStringVar(std::string rel_string_var) const
     if (std::isdigit(rel_string_var[1]))
     {
         assert(rel_string_var.size() == 2);
-        // TODO properly add all input vars
         return this->getMetaVar(rel_string_var.substr(1));
     }
     if (rel_string_var[1] == 'm')
@@ -945,7 +964,7 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         }
         else if (expl_type->getDefinition().find("output_var") != std::string::npos)
         {
-            return this->getOutputVar(obj_type);
+            return this->getCurrOutputVar(obj_type);
         }
         else if (expl_type->getDefinition().find("seed") != std::string::npos)
         {
@@ -1091,7 +1110,7 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
 const ApiObject*
 ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
 {
-    std::vector<const ApiObject*> filtered_objs = this->filterObjs(
+    std::vector<const ApiObject*> filtered_objs = this->filterAllObjs(
         &ApiObject::hasType, obj_type);
     assert (filtered_objs.size() <= 1);
     if (filtered_objs.size() == 0)
@@ -1215,7 +1234,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         std::string target_type = instr_config["target"].as<std::string>();
         if (target_type.find("output_var") != std::string::npos)
         {
-            target_obj = this->getOutputVar(func->getMemberType());
+            target_obj = this->getCurrOutputVar(func->getMemberType());
         }
         else if (target_type.find(fmt::format("var{}", delim_mid)) !=
                 std::string::npos)
@@ -1266,7 +1285,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         else if (obj_name.find("output_var") != std::string::npos)
         {
             // TODO collapse this into first case
-            return_obj = this->getOutputVar(func->getReturnType());
+            return_obj = this->getCurrOutputVar(func->getReturnType());
         }
         else
         {

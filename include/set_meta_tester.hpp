@@ -41,7 +41,7 @@ class MetaTest {
 
         void parseAndAddInstr(std::string);
         void updateFirstInputVarName();
-        std::vector<const ApiInstruction*> getApiInstructions() const;
+        std::vector<const ApiInstructionInterface*> getApiInstructions() const;
 
         void addRelation(const MetaRelation* meta_rel)
         {
@@ -89,7 +89,7 @@ class SetMetaTesterNew {
             const std::vector<const MetaVarObject*>&,
             const std::vector<const ApiObject*>&,
             const ApiType*, std::mt19937*);
-        std::vector<const ApiInstruction*> genMetaTests(unsigned int);
+        std::vector<const ApiInstructionInterface*> genMetaTests(unsigned int);
         std::string getAbstractMetaRelChain() const;
 
     private:
@@ -99,7 +99,7 @@ class SetMetaTesterNew {
         bool addMetaTest(MetaTest* expr);
         const MetaRelation* getConcreteMetaRel(std::string, const ApiObject*,
             std::vector<const ApiObject*>) const;
-        std::vector<const ApiInstruction*> testsToApiInstrs(void) const;
+        std::vector<const ApiInstructionInterface*> testsToApiInstrs(void) const;
         void finalizeTest(MetaTest*) const;
 };
 

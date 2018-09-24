@@ -34,8 +34,9 @@ class ApiFuzzer {
         /* Fuzzing members */
         std::set<const ApiType*> types;
         std::set<const ApiFunc*> funcs;
+        std::vector<const ApiInstructionInterface*> instrs;
         std::vector<const ApiObject*> objs;
-        std::vector<const ApiInstruction*> instrs;
+        std::vector<const ApiObject*> all_objs;
         unsigned int next_obj_id;
         unsigned int depth;
         unsigned int max_depth;
@@ -57,14 +58,16 @@ class ApiFuzzer {
 
     public:
         ApiFuzzer(unsigned int _seed, std::mt19937* _rng): next_obj_id(0), depth(0),
-            instrs(std::vector<const ApiInstruction*>()),
+            instrs(std::vector<const ApiInstructionInterface*>()),
             objs(std::vector<const ApiObject*>()),
+            all_objs(std::vector<const ApiObject*>()),
             types(std::set<const ApiType*>()),
             funcs(std::set<const ApiFunc*>()), rng(_rng), seed(_seed) {};
 
-        std::vector<const ApiInstruction*> getInstrList() const;
+        std::vector<const ApiInstructionInterface*> getInstrList() const;
         std::vector<std::string> getInstrStrs() const;
         std::vector<const ApiObject*> getObjList() const;
+        std::vector<const ApiObject*> getAllObjList() const;
         std::set<const ApiFunc*> getFuncList() const;
         std::set<const ApiType*> getTypeList() const;
         std::mt19937* getRNG() const { return this->rng; };
@@ -78,11 +81,13 @@ class ApiFuzzer {
         const ApiType* getTypeByName(std::string) const;
         template<typename T> std::vector<const ApiObject*> filterObjs(
             bool (ApiObject::*)(T) const, T);
+        template<typename T> std::vector<const ApiObject*> filterAllObjs(
+            bool (ApiObject::*)(T) const, T);
         template<typename T> std::set<const ApiFunc*> filterFuncs(
             bool (ApiFunc::*)(T) const, T) const;
         const ApiFunc* getFuncByName(std::string) const;
 
-        void addInstr(const ApiInstruction*);
+        void addInstr(const ApiInstructionInterface*);
         void addObj(const ApiObject*);
         void addType(const ApiType*);
         void addFunc(const ApiFunc*);
@@ -105,6 +110,7 @@ class ApiFuzzer {
         void addMetaCheck(const MetaRelation*);
         void addMetaVar(std::string, const ApiType*);
         void addMetaVar(std::string, const ApiType*, std::vector<const MetaRelation*>&);
+        void addInputMetaVar(size_t);
         MetaVarObject* getMetaVar(std::string) const;
         const ApiObject* getMetaVariant(size_t id) const;
 
@@ -119,7 +125,8 @@ class ApiFuzzerNew : public ApiFuzzer {
     std::map<std::string, const ApiObject*> fuzzer_input;
     std::vector<YAML::Node> set_gen_instrs;
     std::unique_ptr<SetMetaTesterNew> smt;
-    const ApiObject* output_var = nullptr;
+    const ApiObject* current_output_var;
+    std::vector<const ApiObject*> output_vars;
 
     public:
         ApiFuzzerNew(std::string&, std::string&, unsigned int, std::mt19937*);
@@ -136,10 +143,9 @@ class ApiFuzzerNew : public ApiFuzzer {
         void runGeneration(YAML::Node);
         void generateForLoop(YAML::Node);
         void generateFunc(YAML::Node, int = -1);
-        const ApiObject* getSingletonObject(const ApiType*);
-        const ApiObject* getOutputVar(const ApiType*);
 
-        void initMetaVarObjs(YAML::Node);
+
+        void initMetaVarObjs(YAML::Node, YAML::Node);
         void initMetaVariantVars();
         void initMetaRelations(YAML::Node);
         void initMetaGenerators(YAML::Node);
@@ -156,6 +162,8 @@ class ApiFuzzerNew : public ApiFuzzer {
         void generateSet();
         const ApiObject* getInputObject(std::string);
         template<typename T> T getInputObjectData(std::string);
+        const ApiObject* getSingletonObject(const ApiType*);
+        const ApiObject* getCurrOutputVar(const ApiType*);
 
         std::pair<int, int> parseRange(std::string);
         int parseRangeSubstr(std::string);

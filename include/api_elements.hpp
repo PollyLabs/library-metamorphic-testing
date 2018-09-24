@@ -273,7 +273,13 @@ class BinaryExpr : ApiExpr
         std::string toStr() const;
 };
 
-class ApiInstruction
+class ApiInstructionInterface
+{
+    public:
+        virtual std::string toStr() const = 0;
+};
+
+class ApiInstruction : public ApiInstructionInterface
 {
     const ApiFunc* func;
     const ApiObject* target_obj;
@@ -300,6 +306,18 @@ class ApiInstruction
         bool isNewObjDecl() const { return this->new_obj_decl; };
 
         std::string toStr() const;
+};
+
+class ApiComment : public ApiInstructionInterface
+{
+    private:
+        const std::string comment_string;
+
+    public:
+        ApiComment(std::string _comment_string) :
+            comment_string(_comment_string) {};
+
+        std::string toStr() const { return fmt::format("// {}", this->comment_string); };
 };
 
 class MetaRelation {

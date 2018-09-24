@@ -45,10 +45,10 @@ MetaTest::getHash(void) const
     return string_hash;
 }
 
-std::vector<const ApiInstruction*>
+std::vector<const ApiInstructionInterface*>
 MetaTest::getApiInstructions() const
 {
-    std::vector<const ApiInstruction*> api_instructions;
+    std::vector<const ApiInstructionInterface*> api_instructions;
     bool first = true;
     std::for_each(this->concrete_relations.begin(), this->concrete_relations.end(),
         [&](const MetaRelation* rel)
@@ -176,20 +176,22 @@ SetMetaTesterNew::genOneMetaTest(std::queue<std::string> rel_chain,
     }
 }
 
-std::vector<const ApiInstruction*>
+std::vector<const ApiInstructionInterface*>
 SetMetaTesterNew::testsToApiInstrs(void) const
 {
-    std::vector<const ApiInstruction*> api_instrs;
+    std::vector<const ApiInstructionInterface*> api_instrs;
     std::for_each(this->meta_tests.begin(), this->meta_tests.end(),
         [&](const MetaTest* meta_test)
         {
-            std::vector<const ApiInstruction*> test_instrs = meta_test->getApiInstructions();
+            api_instrs.push_back(new ApiComment(fmt::format(
+                "Test for {}", meta_test->getVariantVar()->toStr())));
+            std::vector<const ApiInstructionInterface*> test_instrs = meta_test->getApiInstructions();
             api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
         });
     return api_instrs;
 }
 
-std::vector<const ApiInstruction*>
+std::vector<const ApiInstructionInterface*>
 SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
 {
     assert(!this->meta_in_vars.empty());
@@ -197,11 +199,8 @@ SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
     size_t rel_counter = 0;
     for (const ApiObject* variant : this->meta_variants)
     {
-        //this->instrs.push_back(fmt::format("// Meta test {}", rel_counter++));
         this->genOneMetaTest(rel_chain, variant);
     }
-    //return this->instrs;
-    //return this->getMetaTestStrs();
     return this->testsToApiInstrs();
 }
 
