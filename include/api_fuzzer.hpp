@@ -95,12 +95,11 @@ class ApiFuzzer {
         virtual void generateSet() = 0;
 
     protected:
-        ApiObject* generateApiObjectAndDecl(std::string, std::string,
-            std::string, std::initializer_list<std::string>);
         const ApiObject* generateNamedObject(std::string, const ApiType*,
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
         const ApiObject* generateApiObject(std::string, const ApiType*,
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
+        const ApiObject* generateApiObjectDecl(std::string, const ApiType*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
             std::vector<const ApiObject*>);

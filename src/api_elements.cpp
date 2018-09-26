@@ -427,3 +427,9 @@ ApiInstruction::toStr() const
     return instr_ss.str();
 }
 
+std::string
+ObjectDeclInstruction::toStr() const
+{
+    return this->getObject()->toStrWithType() + ";";
+}
+

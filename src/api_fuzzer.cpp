@@ -345,6 +345,17 @@ ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
     return new_obj;
 }
 
+const ApiObject*
+ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type)
+{
+    const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
+    const ApiInstructionInterface* new_instr =
+        new ObjectDeclInstruction(new_obj);
+    this->addObj(new_obj);
+    this->addInstr(new_instr);
+    return new_obj;
+}
+
 void
 ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
     const ApiObject* result_obj)
@@ -463,7 +474,8 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     size_t input_var_count = meta_test_data["input_count"].as<size_t>();
     for (int i = 1; i <= input_var_count; ++i)
     {
-        this->current_output_var = this->generateNewObject(this->meta_variant_type);
+        this->current_output_var =
+            this->generateApiObjectDecl("out", this->meta_variant_type);
         this->objs.clear();
         this->output_vars.push_back(this->current_output_var);
         this->addInstr(new ApiComment(fmt::format(
@@ -1269,7 +1281,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
             std::string::npos)
         {
             std::vector<const ApiObject*> candidate_objs =
-                this->filterObjs(&ApiObject::hasName,
+                this->filterAllObjs(&ApiObject::hasName,
                 this->getGeneratorData(instr_config["return"].as<std::string>()));
             assert(candidate_objs.size() <= 1);
             if (candidate_objs.size() == 1)

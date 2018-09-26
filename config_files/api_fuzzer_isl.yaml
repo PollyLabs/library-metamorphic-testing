@@ -291,6 +291,9 @@ set_gen:
       func_params:
           - '<new=isl::set>'
     - type: 'func'
+      func: 'dump'
+      target: '<output_var>'
+    - type: 'func'
       func: 'printStats'
       func_params:
           - '<output_var>'

@@ -308,6 +308,18 @@ class ApiInstruction : public ApiInstructionInterface
         std::string toStr() const;
 };
 
+class ObjectDeclInstruction : public ApiInstructionInterface
+{
+    private:
+        const ApiObject* obj;
+
+    public:
+        ObjectDeclInstruction(const ApiObject* _obj) : obj(_obj) {};
+
+        const ApiObject* getObject() const { return this->obj; };
+        std::string toStr() const;
+};
+
 class ApiComment : public ApiInstructionInterface
 {
     private:
