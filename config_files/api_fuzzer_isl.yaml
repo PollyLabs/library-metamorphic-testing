@@ -172,6 +172,13 @@ funcs:
       conditions: []
       special: true
       static: true
+    - name: 'empty'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::space']
+      conditions: []
+      special: true
+      static: true
     - name: 'var_on_domain'
       member_type: 'isl::pw_aff'
       return_type: 'isl::pw_aff'
@@ -184,6 +191,61 @@ funcs:
       return_type: ''
       param_types: ['isl::set']
       conditions: []
+      special: true
+    # Funcs for metamorphic relations
+    - name: 'complement'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'unite'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      conditions: []
+      special: true
+    - name: 'subtract'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      conditions: []
+      special: true
+    - name: 'intersect'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      conditions: []
+      special: true
+    - name: 'detect_equalities'
+      member_type: 'isl::set'
+      return_type: ''
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'coalesce'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'convex_hull'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'is_equal'
+      member_type: 'isl::set'
+      return_type: 'bool'
+      param_types: ['isl::set']
+      condition: []
+      special: true
+    - name: 'assert'
+      member_type: ''
+      return_type: ''
+      param_types: ['bool']
+      condition: []
       special: true
 
 constructors:
