@@ -1,6 +1,7 @@
-#pragma once
+#ifndef ISL_META_POINT_STATS_HPP
+#define ISL_META_POINT_STATS_HPP
 
-static unsigned int c_cnt;
+static size_t c_cnt;
 static unsigned int eq_cnt;
 
 isl::stat
@@ -41,12 +42,17 @@ writeBSConstraintCoeff(isl::basic_set bs)
 void
 printStats(isl::set s)
 {
-	fprintf(stderr, "DIM SET = %d\n", s.dim(isl::dim::set));
-	fprintf(stderr, "DIM PARAM = %d\n", s.dim(isl::dim::param));
-	fprintf(stderr, "SET EMPTY = %s\n", s.is_empty() ? "true" : "false");
+    c_cnt = 0;
+
+    fprintf(stderr, "DIM SET = %d\n", s.dim(isl::dim::set));
+    fprintf(stderr, "DIM PARAM = %d\n", s.dim(isl::dim::param));
+    fprintf(stderr, "SET EMPTY = %s\n", s.is_empty() ? "true" : "false");
     fprintf(stderr, "N BASIC SET = %d\n", s.n_basic_set());
     s.foreach_basic_set(getBSConstraints);
     fprintf(stderr, "N CONSTRAINTS = %d\n", c_cnt);
+
     //fprintf(stderr, "CONSTRAINT COEFF:");
     //s.foreach_basic_set(writeBSConstraintCoeff);
 }
+
+#endif
