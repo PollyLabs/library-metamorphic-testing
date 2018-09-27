@@ -268,7 +268,7 @@ def continuous_testing():
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         seed = random.randint(0, sys.maxsize)
         log_writer.write(80 * "=" + "\n")
-        log_writer.write("SEED: " + str(seed))
+        log_writer.write("SEED: " + str(seed) + "\n")
         print(date_time + " Running seed " + str(seed), end='\r')
         if not generate_test(seed, args.timeout):
             continue
