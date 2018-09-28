@@ -7,7 +7,6 @@
 
 #ifndef ISL_CPP_NOEXCEPTIONS
 #define ISL_CPP_NOEXCEPTIONS
-
 #include <isl/val.h>
 #include <isl/aff.h>
 #include <isl/set.h>
@@ -28,6 +27,7 @@
 
 #include <functional>
 #include <string>
+#include <set>
 
 namespace isl {
 inline namespace noexceptions {
@@ -110,6 +110,21 @@ enum class dim {
   div = isl_dim_div,
   all = isl_dim_all
 };
+
+std::set<std::uintptr_t> pointers;
+
+std::string
+getVar(const void* address, std::string type_name)
+{
+    const std::uintptr_t ptr = reinterpret_cast<const std::uintptr_t>(address);
+    if (pointers.count(ptr))
+    {
+        return "p_" + std::to_string(ptr);
+    }
+    pointers.insert(ptr);
+
+    return type_name + "* p_" + std::to_string(ptr);
+}
 
 }
 } // namespace isl
@@ -1877,9 +1892,9 @@ public:
   inline /* implicit */ pw_multi_aff();
   inline /* implicit */ pw_multi_aff(const isl::pw_multi_aff &obj);
   inline /* implicit */ pw_multi_aff(std::nullptr_t);
+  inline explicit pw_multi_aff(isl::ctx ctx, const std::string &str);
   inline /* implicit */ pw_multi_aff(isl::multi_aff ma);
   inline /* implicit */ pw_multi_aff(isl::pw_aff pa);
-  inline explicit pw_multi_aff(isl::ctx ctx, const std::string &str);
   inline isl::pw_multi_aff &operator=(isl::pw_multi_aff obj);
   inline ~pw_multi_aff();
   inline __isl_give isl_pw_multi_aff *copy() const &;
@@ -3227,8 +3242,8 @@ public:
   inline /* implicit */ val();
   inline /* implicit */ val(const isl::val &obj);
   inline /* implicit */ val(std::nullptr_t);
-  inline explicit val(isl::ctx ctx, const std::string &str);
   inline explicit val(isl::ctx ctx, long i);
+  inline explicit val(isl::ctx ctx, const std::string &str);
   inline isl::val &operator=(isl::val obj);
   inline ~val();
   inline __isl_give isl_val *copy() const &;
@@ -3404,19 +3419,19 @@ aff::aff(__isl_take isl_aff *ptr)
 aff::aff(isl::local_space ls)
 {
   auto res = isl_aff_zero_on_domain(ls.copy());
- printf("p_%p = zero_on_domain(p_%p)\n", res, ls.get());
+ printf("%s = isl_aff_zero_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), ls.get());
   ptr = res;
 }
 aff::aff(isl::local_space ls, isl::val val)
 {
   auto res = isl_aff_val_on_domain(ls.copy(), val.copy());
- printf("p_%p = val_on_domain(p_%p, p_%p)\n", res, ls.get(), val.get());
+ printf("%s = isl_aff_val_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), ls.get(), val.get());
   ptr = res;
 }
 aff::aff(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -3426,11 +3441,15 @@ aff &aff::operator=(isl::aff obj) {
 }
 
 aff::~aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_aff_free(p_%lu);\n", this->ptr);
     isl_aff_free(ptr);
+  }
 }
 
 __isl_give isl_aff *aff::copy() const & {
+auto temp = isl_aff_copy(ptr);
+printf("%s = isl_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_aff").c_str(), this->ptr);
   return isl_aff_copy(ptr);
 }
 
@@ -3473,175 +3492,175 @@ void aff::dump() const {
 isl::aff aff::add(isl::aff aff2) const
 {
   auto res = isl_aff_add(copy(), aff2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::add_coefficient_si(isl::dim type, int pos, int v) const
 {
   auto res = isl_aff_add_coefficient_si(copy(), static_cast<enum isl_dim_type>(type), pos, v);
- printf("p_%p = p_%p.add_coefficient_si(%d, %d, %d)\n", res, this->ptr, type, pos, v);
+ printf("%s = isl_aff_add_coefficient_si(p_%lu, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, pos, v);
   return manage(res);
 }
 
 isl::aff aff::add_coefficient_val(isl::dim type, int pos, isl::val v) const
 {
   auto res = isl_aff_add_coefficient_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.add_coefficient_val(%d, %d, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_aff_add_coefficient_val(p_%lu, %d, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::aff aff::add_constant_num_si(int v) const
 {
   auto res = isl_aff_add_constant_num_si(copy(), v);
- printf("p_%p = p_%p.add_constant_num_si(%d)\n", res, this->ptr, v);
+ printf("%s = isl_aff_add_constant_num_si(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, v);
   return manage(res);
 }
 
 isl::aff aff::add_constant_si(int v) const
 {
   auto res = isl_aff_add_constant_si(copy(), v);
- printf("p_%p = p_%p.add_constant_si(%d)\n", res, this->ptr, v);
+ printf("%s = isl_aff_add_constant_si(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, v);
   return manage(res);
 }
 
 isl::aff aff::add_constant_val(isl::val v) const
 {
   auto res = isl_aff_add_constant_val(copy(), v.copy());
- printf("p_%p = p_%p.add_constant_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_aff_add_constant_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::aff aff::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_aff_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_aff_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::aff aff::align_params(isl::space model) const
 {
   auto res = isl_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::aff aff::ceil() const
 {
   auto res = isl_aff_ceil(copy());
- printf("p_%p = p_%p.ceil()\n", res, this->ptr);
+ printf("%s = isl_aff_ceil(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 int aff::coefficient_sgn(isl::dim type, int pos) const
 {
   auto res = isl_aff_coefficient_sgn(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.coefficient_sgn(%d, %d)\n", res, this->ptr, type, pos);
+ printf("%s = isl_aff_coefficient_sgn(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, pos);
   return res;
 }
 
 int aff::dim(isl::dim type) const
 {
   auto res = isl_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::aff aff::div(isl::aff aff2) const
 {
   auto res = isl_aff_div(copy(), aff2.copy());
- printf("p_%p = p_%p.div(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_div(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set aff::eq_basic_set(isl::aff aff2) const
 {
   auto res = isl_aff_eq_basic_set(copy(), aff2.copy());
- printf("p_%p = p_%p.eq_basic_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_eq_basic_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::set aff::eq_set(isl::aff aff2) const
 {
   auto res = isl_aff_eq_set(copy(), aff2.copy());
- printf("p_%p = p_%p.eq_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_eq_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::val aff::eval(isl::point pnt) const
 {
   auto res = isl_aff_eval(copy(), pnt.copy());
- printf("p_%p = p_%p.eval(p_%p)\n", res, this->ptr, pnt.get());
+ printf("%s = isl_aff_eval(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pnt.get());
   return manage(res);
 }
 
 int aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::aff aff::floor() const
 {
   auto res = isl_aff_floor(copy());
- printf("p_%p = p_%p.floor()\n", res, this->ptr);
+ printf("%s = isl_aff_floor(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff aff::from_range() const
 {
   auto res = isl_aff_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_aff_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set aff::ge_basic_set(isl::aff aff2) const
 {
   auto res = isl_aff_ge_basic_set(copy(), aff2.copy());
- printf("p_%p = p_%p.ge_basic_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_ge_basic_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::set aff::ge_set(isl::aff aff2) const
 {
   auto res = isl_aff_ge_set(copy(), aff2.copy());
- printf("p_%p = p_%p.ge_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_ge_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::val aff::get_coefficient_val(isl::dim type, int pos) const
 {
   auto res = isl_aff_get_coefficient_val(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_coefficient_val(%d, %d)\n", res, this->ptr, type, pos);
+ printf("%s = isl_aff_get_coefficient_val(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::val aff::get_constant_val() const
 {
   auto res = isl_aff_get_constant_val(get());
- printf("p_%p = p_%p.get_constant_val()\n", res, this->ptr);
+ printf("%s = isl_aff_get_constant_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val aff::get_denominator_val() const
 {
   auto res = isl_aff_get_denominator_val(get());
- printf("p_%p = p_%p.get_denominator_val()\n", res, this->ptr);
+ printf("%s = isl_aff_get_denominator_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 std::string aff::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_aff_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_aff_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -3649,301 +3668,301 @@ std::string aff::get_dim_name(isl::dim type, unsigned int pos) const
 isl::aff aff::get_div(int pos) const
 {
   auto res = isl_aff_get_div(get(), pos);
- printf("p_%p = p_%p.get_div(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_aff_get_div(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::local_space aff::get_domain_local_space() const
 {
   auto res = isl_aff_get_domain_local_space(get());
- printf("p_%p = p_%p.get_domain_local_space()\n", res, this->ptr);
+ printf("%s = isl_aff_get_domain_local_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space aff::get_domain_space() const
 {
   auto res = isl_aff_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_aff_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 uint32_t aff::get_hash() const
 {
   auto res = isl_aff_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_aff_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 isl::local_space aff::get_local_space() const
 {
   auto res = isl_aff_get_local_space(get());
- printf("p_%p = p_%p.get_local_space()\n", res, this->ptr);
+ printf("%s = isl_aff_get_local_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space aff::get_space() const
 {
   auto res = isl_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff aff::gist(isl::set context) const
 {
   auto res = isl_aff_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::aff aff::gist_params(isl::set context) const
 {
   auto res = isl_aff_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::basic_set aff::gt_basic_set(isl::aff aff2) const
 {
   auto res = isl_aff_gt_basic_set(copy(), aff2.copy());
- printf("p_%p = p_%p.gt_basic_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_gt_basic_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::set aff::gt_set(isl::aff aff2) const
 {
   auto res = isl_aff_gt_set(copy(), aff2.copy());
- printf("p_%p = p_%p.gt_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_gt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_aff_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_aff_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean aff::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_aff_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_aff_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean aff::is_cst() const
 {
   auto res = isl_aff_is_cst(get());
- printf("p_%p = p_%p.is_cst()\n", res, this->ptr);
+ printf("%s = isl_aff_is_cst(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean aff::is_nan() const
 {
   auto res = isl_aff_is_nan(get());
- printf("p_%p = p_%p.is_nan()\n", res, this->ptr);
+ printf("%s = isl_aff_is_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set aff::le_basic_set(isl::aff aff2) const
 {
   auto res = isl_aff_le_basic_set(copy(), aff2.copy());
- printf("p_%p = p_%p.le_basic_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_le_basic_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::set aff::le_set(isl::aff aff2) const
 {
   auto res = isl_aff_le_set(copy(), aff2.copy());
- printf("p_%p = p_%p.le_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_le_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::basic_set aff::lt_basic_set(isl::aff aff2) const
 {
   auto res = isl_aff_lt_basic_set(copy(), aff2.copy());
- printf("p_%p = p_%p.lt_basic_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_lt_basic_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::set aff::lt_set(isl::aff aff2) const
 {
   auto res = isl_aff_lt_set(copy(), aff2.copy());
- printf("p_%p = p_%p.lt_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_lt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::mod(isl::val mod) const
 {
   auto res = isl_aff_mod_val(copy(), mod.copy());
- printf("p_%p = p_%p.mod(p_%p)\n", res, this->ptr, mod.get());
+ printf("%s = isl_aff_mod_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, mod.get());
   return manage(res);
 }
 
 isl::aff aff::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_aff_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_aff_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 isl::aff aff::mul(isl::aff aff2) const
 {
   auto res = isl_aff_mul(copy(), aff2.copy());
- printf("p_%p = p_%p.mul(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_mul(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::nan_on_domain(isl::local_space ls)
 {
   auto res = isl_aff_nan_on_domain(ls.copy());
- printf("p_%p = nan_on_domain(p_%p)\n", res, ls.get());
+ printf("%s = isl_aff_nan_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), ls.get());
   return manage(res);
 }
 
 isl::set aff::ne_set(isl::aff aff2) const
 {
   auto res = isl_aff_ne_set(copy(), aff2.copy());
- printf("p_%p = p_%p.ne_set(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_ne_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::neg() const
 {
   auto res = isl_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set aff::neg_basic_set() const
 {
   auto res = isl_aff_neg_basic_set(copy());
- printf("p_%p = p_%p.neg_basic_set()\n", res, this->ptr);
+ printf("%s = isl_aff_neg_basic_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff aff::param_on_domain_space_id(isl::space space, isl::id id)
 {
   auto res = isl_aff_param_on_domain_space_id(space.copy(), id.copy());
- printf("p_%p = param_on_domain_space_id(p_%p, p_%p)\n", res, space.get(), id.get());
+ printf("%s = isl_aff_param_on_domain_space_id(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), space.get(), id.get());
   return manage(res);
 }
 
 isl::boolean aff::plain_is_equal(const isl::aff &aff2) const
 {
   auto res = isl_aff_plain_is_equal(get(), aff2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::boolean aff::plain_is_zero() const
 {
   auto res = isl_aff_plain_is_zero(get());
- printf("p_%p = p_%p.plain_is_zero()\n", res, this->ptr);
+ printf("%s = isl_aff_plain_is_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff aff::project_domain_on_params() const
 {
   auto res = isl_aff_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_aff_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff aff::pullback(isl::multi_aff ma) const
 {
   auto res = isl_aff_pullback_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_aff_pullback_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::aff aff::pullback_aff(isl::aff aff2) const
 {
   auto res = isl_aff_pullback_aff(copy(), aff2.copy());
- printf("p_%p = p_%p.pullback_aff(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_pullback_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::scale(isl::val v) const
 {
   auto res = isl_aff_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::aff aff::scale_down(isl::val v) const
 {
   auto res = isl_aff_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::aff aff::scale_down_ui(unsigned int f) const
 {
   auto res = isl_aff_scale_down_ui(copy(), f);
- printf("p_%p = p_%p.scale_down_ui(%u)\n", res, this->ptr, f);
+ printf("%s = isl_aff_scale_down_ui(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, f);
   return manage(res);
 }
 
 isl::aff aff::set_coefficient_si(isl::dim type, int pos, int v) const
 {
   auto res = isl_aff_set_coefficient_si(copy(), static_cast<enum isl_dim_type>(type), pos, v);
- printf("p_%p = p_%p.set_coefficient_si(%d, %d, %d)\n", res, this->ptr, type, pos, v);
+ printf("%s = isl_aff_set_coefficient_si(p_%lu, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, pos, v);
   return manage(res);
 }
 
 isl::aff aff::set_coefficient_val(isl::dim type, int pos, isl::val v) const
 {
   auto res = isl_aff_set_coefficient_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.set_coefficient_val(%d, %d, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_aff_set_coefficient_val(p_%lu, %d, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::aff aff::set_constant_si(int v) const
 {
   auto res = isl_aff_set_constant_si(copy(), v);
- printf("p_%p = p_%p.set_constant_si(%d)\n", res, this->ptr, v);
+ printf("%s = isl_aff_set_constant_si(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, v);
   return manage(res);
 }
 
 isl::aff aff::set_constant_val(isl::val v) const
 {
   auto res = isl_aff_set_constant_val(copy(), v.copy());
- printf("p_%p = p_%p.set_constant_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_aff_set_constant_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::aff aff::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_aff_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_aff_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::aff aff::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_aff_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::aff aff::sub(isl::aff aff2) const
 {
   auto res = isl_aff_sub(copy(), aff2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, aff2.get());
+ printf("%s = isl_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, aff2.get());
   return manage(res);
 }
 
 isl::aff aff::var_on_domain(isl::local_space ls, isl::dim type, unsigned int pos)
 {
   auto res = isl_aff_var_on_domain(ls.copy(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = var_on_domain(p_%p, %d, %u)\n", res, ls.get(), type, pos);
+ printf("%s = isl_aff_var_on_domain(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), ls.get(), type, pos);
   return manage(res);
 }
 
 isl::basic_set aff::zero_basic_set() const
 {
   auto res = isl_aff_zero_basic_set(copy());
- printf("p_%p = p_%p.zero_basic_set()\n", res, this->ptr);
+ printf("%s = isl_aff_zero_basic_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -3977,11 +3996,15 @@ aff_list &aff_list::operator=(isl::aff_list obj) {
 }
 
 aff_list::~aff_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_aff_list_free(p_%lu);\n", this->ptr);
     isl_aff_list_free(ptr);
+  }
 }
 
 __isl_give isl_aff_list *aff_list::copy() const & {
+auto temp = isl_aff_list_copy(ptr);
+printf("%s = isl_aff_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_aff_list").c_str(), this->ptr);
   return isl_aff_list_copy(ptr);
 }
 
@@ -4039,7 +4062,7 @@ ast_build::ast_build(__isl_take isl_ast_build *ptr)
 ast_build::ast_build(isl::ctx ctx)
 {
   auto res = isl_ast_build_alloc(ctx.copy());
- printf("p_%p = alloc(p_%p)\n", res, ctx.get());
+ printf("%s = isl_ast_build_alloc(%s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_build").c_str(), "ctx_0");
   ptr = res;
 }
 
@@ -4049,11 +4072,15 @@ ast_build &ast_build::operator=(isl::ast_build obj) {
 }
 
 ast_build::~ast_build() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_ast_build_free(p_%lu);\n", this->ptr);
     isl_ast_build_free(ptr);
+  }
 }
 
 __isl_give isl_ast_build *ast_build::copy() const & {
+auto temp = isl_ast_build_copy(ptr);
+printf("%s = isl_ast_build_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_ast_build").c_str(), this->ptr);
   return isl_ast_build_copy(ptr);
 }
 
@@ -4083,91 +4110,91 @@ isl::ctx ast_build::get_ctx() const {
 isl::ast_expr ast_build::access_from(isl::pw_multi_aff pma) const
 {
   auto res = isl_ast_build_access_from_pw_multi_aff(get(), pma.copy());
- printf("p_%p = p_%p.access_from(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_ast_build_access_from_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::ast_expr ast_build::access_from(isl::multi_pw_aff mpa) const
 {
   auto res = isl_ast_build_access_from_multi_pw_aff(get(), mpa.copy());
- printf("p_%p = p_%p.access_from(p_%p)\n", res, this->ptr, mpa.get());
+ printf("%s = isl_ast_build_access_from_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, mpa.get());
   return manage(res);
 }
 
 isl::ast_node ast_build::ast_from_schedule(isl::union_map schedule) const
 {
   auto res = isl_ast_build_ast_from_schedule(get(), schedule.copy());
- printf("p_%p = p_%p.ast_from_schedule(p_%p)\n", res, this->ptr, schedule.get());
+ printf("%s = isl_ast_build_ast_from_schedule(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr, schedule.get());
   return manage(res);
 }
 
 isl::ast_expr ast_build::call_from(isl::pw_multi_aff pma) const
 {
   auto res = isl_ast_build_call_from_pw_multi_aff(get(), pma.copy());
- printf("p_%p = p_%p.call_from(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_ast_build_call_from_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::ast_expr ast_build::call_from(isl::multi_pw_aff mpa) const
 {
   auto res = isl_ast_build_call_from_multi_pw_aff(get(), mpa.copy());
- printf("p_%p = p_%p.call_from(p_%p)\n", res, this->ptr, mpa.get());
+ printf("%s = isl_ast_build_call_from_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, mpa.get());
   return manage(res);
 }
 
 isl::ast_expr ast_build::expr_from(isl::set set) const
 {
   auto res = isl_ast_build_expr_from_set(get(), set.copy());
- printf("p_%p = p_%p.expr_from(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_ast_build_expr_from_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::ast_expr ast_build::expr_from(isl::pw_aff pa) const
 {
   auto res = isl_ast_build_expr_from_pw_aff(get(), pa.copy());
- printf("p_%p = p_%p.expr_from(p_%p)\n", res, this->ptr, pa.get());
+ printf("%s = isl_ast_build_expr_from_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, pa.get());
   return manage(res);
 }
 
 isl::ast_build ast_build::from_context(isl::set set)
 {
   auto res = isl_ast_build_from_context(set.copy());
- printf("p_%p = from_context(p_%p)\n", res, set.get());
+ printf("%s = isl_ast_build_from_context(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_build").c_str(), set.get());
   return manage(res);
 }
 
 isl::union_map ast_build::get_schedule() const
 {
   auto res = isl_ast_build_get_schedule(get());
- printf("p_%p = p_%p.get_schedule()\n", res, this->ptr);
+ printf("%s = isl_ast_build_get_schedule(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space ast_build::get_schedule_space() const
 {
   auto res = isl_ast_build_get_schedule_space(get());
- printf("p_%p = p_%p.get_schedule_space()\n", res, this->ptr);
+ printf("%s = isl_ast_build_get_schedule_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_node ast_build::node_from_schedule(isl::schedule schedule) const
 {
   auto res = isl_ast_build_node_from_schedule(get(), schedule.copy());
- printf("p_%p = p_%p.node_from_schedule(p_%p)\n", res, this->ptr, schedule.get());
+ printf("%s = isl_ast_build_node_from_schedule(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr, schedule.get());
   return manage(res);
 }
 
 isl::ast_node ast_build::node_from_schedule_map(isl::union_map schedule) const
 {
   auto res = isl_ast_build_node_from_schedule_map(get(), schedule.copy());
- printf("p_%p = p_%p.node_from_schedule_map(p_%p)\n", res, this->ptr, schedule.get());
+ printf("%s = isl_ast_build_node_from_schedule_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr, schedule.get());
   return manage(res);
 }
 
 isl::ast_build ast_build::restrict(isl::set set) const
 {
   auto res = isl_ast_build_restrict(copy(), set.copy());
- printf("p_%p = p_%p.restrict(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_ast_build_restrict(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_build").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
@@ -4201,11 +4228,15 @@ ast_expr &ast_expr::operator=(isl::ast_expr obj) {
 }
 
 ast_expr::~ast_expr() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_ast_expr_free(p_%lu);\n", this->ptr);
     isl_ast_expr_free(ptr);
+  }
 }
 
 __isl_give isl_ast_expr *ast_expr::copy() const & {
+auto temp = isl_ast_expr_copy(ptr);
+printf("%s = isl_ast_expr_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_ast_expr").c_str(), this->ptr);
   return isl_ast_expr_copy(ptr);
 }
 
@@ -4248,175 +4279,175 @@ void ast_expr::dump() const {
 isl::ast_expr ast_expr::access(isl::ast_expr_list indices) const
 {
   auto res = isl_ast_expr_access(copy(), indices.copy());
- printf("p_%p = p_%p.access(p_%p)\n", res, this->ptr, indices.get());
+ printf("%s = isl_ast_expr_access(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, indices.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::add(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_add(copy(), expr2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::address_of() const
 {
   auto res = isl_ast_expr_address_of(copy());
- printf("p_%p = p_%p.address_of()\n", res, this->ptr);
+ printf("%s = isl_ast_expr_address_of(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_expr::call(isl::ast_expr_list arguments) const
 {
   auto res = isl_ast_expr_call(copy(), arguments.copy());
- printf("p_%p = p_%p.call(p_%p)\n", res, this->ptr, arguments.get());
+ printf("%s = isl_ast_expr_call(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, arguments.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::div(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_div(copy(), expr2.copy());
- printf("p_%p = p_%p.div(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_div(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::eq(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_eq(copy(), expr2.copy());
- printf("p_%p = p_%p.eq(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_eq(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::from_id(isl::id id)
 {
   auto res = isl_ast_expr_from_id(id.copy());
- printf("p_%p = from_id(p_%p)\n", res, id.get());
+ printf("%s = isl_ast_expr_from_id(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), id.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::from_val(isl::val v)
 {
   auto res = isl_ast_expr_from_val(v.copy());
- printf("p_%p = from_val(p_%p)\n", res, v.get());
+ printf("%s = isl_ast_expr_from_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), v.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::ge(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_ge(copy(), expr2.copy());
- printf("p_%p = p_%p.ge(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_ge(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::id ast_expr::get_id() const
 {
   auto res = isl_ast_expr_get_id(get());
- printf("p_%p = p_%p.get_id()\n", res, this->ptr);
+ printf("%s = isl_ast_expr_get_id(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_expr::get_op_arg(int pos) const
 {
   auto res = isl_ast_expr_get_op_arg(get(), pos);
- printf("p_%p = p_%p.get_op_arg(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_ast_expr_get_op_arg(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 int ast_expr::get_op_n_arg() const
 {
   auto res = isl_ast_expr_get_op_n_arg(get());
- printf("p_%p = p_%p.get_op_n_arg()\n", res, this->ptr);
+ printf("%s = isl_ast_expr_get_op_n_arg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::val ast_expr::get_val() const
 {
   auto res = isl_ast_expr_get_val(get());
- printf("p_%p = p_%p.get_val()\n", res, this->ptr);
+ printf("%s = isl_ast_expr_get_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_expr::gt(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_gt(copy(), expr2.copy());
- printf("p_%p = p_%p.gt(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_gt(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::boolean ast_expr::is_equal(const isl::ast_expr &expr2) const
 {
   auto res = isl_ast_expr_is_equal(get(), expr2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::le(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_le(copy(), expr2.copy());
- printf("p_%p = p_%p.le(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_le(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::lt(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_lt(copy(), expr2.copy());
- printf("p_%p = p_%p.lt(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_lt(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::mul(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_mul(copy(), expr2.copy());
- printf("p_%p = p_%p.mul(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_mul(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::neg() const
 {
   auto res = isl_ast_expr_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_ast_expr_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_expr::pdiv_q(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_pdiv_q(copy(), expr2.copy());
- printf("p_%p = p_%p.pdiv_q(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_pdiv_q(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::pdiv_r(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_pdiv_r(copy(), expr2.copy());
- printf("p_%p = p_%p.pdiv_r(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_pdiv_r(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::set_op_arg(int pos, isl::ast_expr arg) const
 {
   auto res = isl_ast_expr_set_op_arg(copy(), pos, arg.copy());
- printf("p_%p = p_%p.set_op_arg(%d, p_%p)\n", res, this->ptr, pos, arg.get());
+ printf("%s = isl_ast_expr_set_op_arg(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, pos, arg.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::sub(isl::ast_expr expr2) const
 {
   auto res = isl_ast_expr_sub(copy(), expr2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, expr2.get());
+ printf("%s = isl_ast_expr_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, expr2.get());
   return manage(res);
 }
 
 isl::ast_expr ast_expr::substitute_ids(isl::id_to_ast_expr id2expr) const
 {
   auto res = isl_ast_expr_substitute_ids(copy(), id2expr.copy());
- printf("p_%p = p_%p.substitute_ids(p_%p)\n", res, this->ptr, id2expr.get());
+ printf("%s = isl_ast_expr_substitute_ids(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, id2expr.get());
   return manage(res);
 }
 
 std::string ast_expr::to_C_str() const
 {
   auto res = isl_ast_expr_to_C_str(get());
- printf("p_%p = p_%p.to_C_str()\n", res, this->ptr);
+ printf("%s = isl_ast_expr_to_C_str(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr);
   std::string tmp(res);
   free(res);
   return tmp;
@@ -4452,11 +4483,15 @@ ast_expr_list &ast_expr_list::operator=(isl::ast_expr_list obj) {
 }
 
 ast_expr_list::~ast_expr_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_ast_expr_list_free(p_%lu);\n", this->ptr);
     isl_ast_expr_list_free(ptr);
+  }
 }
 
 __isl_give isl_ast_expr_list *ast_expr_list::copy() const & {
+auto temp = isl_ast_expr_list_copy(ptr);
+printf("%s = isl_ast_expr_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_ast_expr_list").c_str(), this->ptr);
   return isl_ast_expr_list_copy(ptr);
 }
 
@@ -4518,11 +4553,15 @@ ast_node &ast_node::operator=(isl::ast_node obj) {
 }
 
 ast_node::~ast_node() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_ast_node_free(p_%lu);\n", this->ptr);
     isl_ast_node_free(ptr);
+  }
 }
 
 __isl_give isl_ast_node *ast_node::copy() const & {
+auto temp = isl_ast_node_copy(ptr);
+printf("%s = isl_ast_node_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_ast_node").c_str(), this->ptr);
   return isl_ast_node_copy(ptr);
 }
 
@@ -4565,119 +4604,119 @@ void ast_node::dump() const {
 isl::ast_node ast_node::alloc_user(isl::ast_expr expr)
 {
   auto res = isl_ast_node_alloc_user(expr.copy());
- printf("p_%p = alloc_user(p_%p)\n", res, expr.get());
+ printf("%s = isl_ast_node_alloc_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), expr.get());
   return manage(res);
 }
 
 isl::ast_node_list ast_node::block_get_children() const
 {
   auto res = isl_ast_node_block_get_children(get());
- printf("p_%p = p_%p.block_get_children()\n", res, this->ptr);
+ printf("%s = isl_ast_node_block_get_children(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node_list").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_node ast_node::for_get_body() const
 {
   auto res = isl_ast_node_for_get_body(get());
- printf("p_%p = p_%p.for_get_body()\n", res, this->ptr);
+ printf("%s = isl_ast_node_for_get_body(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_node::for_get_cond() const
 {
   auto res = isl_ast_node_for_get_cond(get());
- printf("p_%p = p_%p.for_get_cond()\n", res, this->ptr);
+ printf("%s = isl_ast_node_for_get_cond(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_node::for_get_inc() const
 {
   auto res = isl_ast_node_for_get_inc(get());
- printf("p_%p = p_%p.for_get_inc()\n", res, this->ptr);
+ printf("%s = isl_ast_node_for_get_inc(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_node::for_get_init() const
 {
   auto res = isl_ast_node_for_get_init(get());
- printf("p_%p = p_%p.for_get_init()\n", res, this->ptr);
+ printf("%s = isl_ast_node_for_get_init(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_node::for_get_iterator() const
 {
   auto res = isl_ast_node_for_get_iterator(get());
- printf("p_%p = p_%p.for_get_iterator()\n", res, this->ptr);
+ printf("%s = isl_ast_node_for_get_iterator(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean ast_node::for_is_degenerate() const
 {
   auto res = isl_ast_node_for_is_degenerate(get());
- printf("p_%p = p_%p.for_is_degenerate()\n", res, this->ptr);
+ printf("%s = isl_ast_node_for_is_degenerate(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id ast_node::get_annotation() const
 {
   auto res = isl_ast_node_get_annotation(get());
- printf("p_%p = p_%p.get_annotation()\n", res, this->ptr);
+ printf("%s = isl_ast_node_get_annotation(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_expr ast_node::if_get_cond() const
 {
   auto res = isl_ast_node_if_get_cond(get());
- printf("p_%p = p_%p.if_get_cond()\n", res, this->ptr);
+ printf("%s = isl_ast_node_if_get_cond(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_node ast_node::if_get_else() const
 {
   auto res = isl_ast_node_if_get_else(get());
- printf("p_%p = p_%p.if_get_else()\n", res, this->ptr);
+ printf("%s = isl_ast_node_if_get_else(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_node ast_node::if_get_then() const
 {
   auto res = isl_ast_node_if_get_then(get());
- printf("p_%p = p_%p.if_get_then()\n", res, this->ptr);
+ printf("%s = isl_ast_node_if_get_then(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean ast_node::if_has_else() const
 {
   auto res = isl_ast_node_if_has_else(get());
- printf("p_%p = p_%p.if_has_else()\n", res, this->ptr);
+ printf("%s = isl_ast_node_if_has_else(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id ast_node::mark_get_id() const
 {
   auto res = isl_ast_node_mark_get_id(get());
- printf("p_%p = p_%p.mark_get_id()\n", res, this->ptr);
+ printf("%s = isl_ast_node_mark_get_id(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_node ast_node::mark_get_node() const
 {
   auto res = isl_ast_node_mark_get_node(get());
- printf("p_%p = p_%p.mark_get_node()\n", res, this->ptr);
+ printf("%s = isl_ast_node_mark_get_node(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::ast_node ast_node::set_annotation(isl::id annotation) const
 {
   auto res = isl_ast_node_set_annotation(copy(), annotation.copy());
- printf("p_%p = p_%p.set_annotation(p_%p)\n", res, this->ptr, annotation.get());
+ printf("%s = isl_ast_node_set_annotation(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_node").c_str(), this->ptr, annotation.get());
   return manage(res);
 }
 
 std::string ast_node::to_C_str() const
 {
   auto res = isl_ast_node_to_C_str(get());
- printf("p_%p = p_%p.to_C_str()\n", res, this->ptr);
+ printf("%s = isl_ast_node_to_C_str(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr);
   std::string tmp(res);
   free(res);
   return tmp;
@@ -4686,7 +4725,7 @@ std::string ast_node::to_C_str() const
 isl::ast_expr ast_node::user_get_expr() const
 {
   auto res = isl_ast_node_user_get_expr(get());
- printf("p_%p = p_%p.user_get_expr()\n", res, this->ptr);
+ printf("%s = isl_ast_node_user_get_expr(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -4720,11 +4759,15 @@ ast_node_list &ast_node_list::operator=(isl::ast_node_list obj) {
 }
 
 ast_node_list::~ast_node_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_ast_node_list_free(p_%lu);\n", this->ptr);
     isl_ast_node_list_free(ptr);
+  }
 }
 
 __isl_give isl_ast_node_list *ast_node_list::copy() const & {
+auto temp = isl_ast_node_list_copy(ptr);
+printf("%s = isl_ast_node_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_ast_node_list").c_str(), this->ptr);
   return isl_ast_node_list_copy(ptr);
 }
 
@@ -4782,7 +4825,7 @@ basic_map::basic_map(__isl_take isl_basic_map *ptr)
 basic_map::basic_map(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_basic_map_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_basic_map_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -4792,11 +4835,15 @@ basic_map &basic_map::operator=(isl::basic_map obj) {
 }
 
 basic_map::~basic_map() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_basic_map_free(p_%lu);\n", this->ptr);
     isl_basic_map_free(ptr);
+  }
 }
 
 __isl_give isl_basic_map *basic_map::copy() const & {
+auto temp = isl_basic_map_copy(ptr);
+printf("%s = isl_basic_map_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_basic_map").c_str(), this->ptr);
   return isl_basic_map_copy(ptr);
 }
 
@@ -4839,224 +4886,224 @@ void basic_map::dump() const {
 isl::basic_map basic_map::add_constraint(isl::constraint constraint) const
 {
   auto res = isl_basic_map_add_constraint(copy(), constraint.copy());
- printf("p_%p = p_%p.add_constraint(p_%p)\n", res, this->ptr, constraint.get());
+ printf("%s = isl_basic_map_add_constraint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, constraint.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_basic_map_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_basic_map_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::basic_map basic_map::affine_hull() const
 {
   auto res = isl_basic_map_affine_hull(copy());
- printf("p_%p = p_%p.affine_hull()\n", res, this->ptr);
+ printf("%s = isl_basic_map_affine_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::align_params(isl::space model) const
 {
   auto res = isl_basic_map_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_basic_map_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::apply_domain(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_apply_domain(copy(), bmap2.copy());
- printf("p_%p = p_%p.apply_domain(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_apply_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::apply_range(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_apply_range(copy(), bmap2.copy());
- printf("p_%p = p_%p.apply_range(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_apply_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::boolean basic_map::can_curry() const
 {
   auto res = isl_basic_map_can_curry(get());
- printf("p_%p = p_%p.can_curry()\n", res, this->ptr);
+ printf("%s = isl_basic_map_can_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_map::can_uncurry() const
 {
   auto res = isl_basic_map_can_uncurry(get());
- printf("p_%p = p_%p.can_uncurry()\n", res, this->ptr);
+ printf("%s = isl_basic_map_can_uncurry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_map::can_zip() const
 {
   auto res = isl_basic_map_can_zip(get());
- printf("p_%p = p_%p.can_zip()\n", res, this->ptr);
+ printf("%s = isl_basic_map_can_zip(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::curry() const
 {
   auto res = isl_basic_map_curry(copy());
- printf("p_%p = p_%p.curry()\n", res, this->ptr);
+ printf("%s = isl_basic_map_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_map::deltas() const
 {
   auto res = isl_basic_map_deltas(copy());
- printf("p_%p = p_%p.deltas()\n", res, this->ptr);
+ printf("%s = isl_basic_map_deltas(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::deltas_map() const
 {
   auto res = isl_basic_map_deltas_map(copy());
- printf("p_%p = p_%p.deltas_map()\n", res, this->ptr);
+ printf("%s = isl_basic_map_deltas_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::detect_equalities() const
 {
   auto res = isl_basic_map_detect_equalities(copy());
- printf("p_%p = p_%p.detect_equalities()\n", res, this->ptr);
+ printf("%s = isl_basic_map_detect_equalities(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int basic_map::dim(isl::dim type) const
 {
   auto res = isl_basic_map_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_basic_map_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::basic_set basic_map::domain() const
 {
   auto res = isl_basic_map_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_basic_map_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::domain_map() const
 {
   auto res = isl_basic_map_domain_map(copy());
- printf("p_%p = p_%p.domain_map()\n", res, this->ptr);
+ printf("%s = isl_basic_map_domain_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::domain_product(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_domain_product(copy(), bmap2.copy());
- printf("p_%p = p_%p.domain_product(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_domain_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::drop_constraints_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_map_drop_constraints_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_map_drop_constraints_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_map basic_map::drop_constraints_not_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_map_drop_constraints_not_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_not_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_map_drop_constraints_not_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_map basic_map::drop_unused_params() const
 {
   auto res = isl_basic_map_drop_unused_params(copy());
- printf("p_%p = p_%p.drop_unused_params()\n", res, this->ptr);
+ printf("%s = isl_basic_map_drop_unused_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::eliminate(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_map_eliminate(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.eliminate(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_map_eliminate(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_map basic_map::empty(isl::space space)
 {
   auto res = isl_basic_map_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_basic_map_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), space.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::equal(isl::space dim, unsigned int n_equal)
 {
   auto res = isl_basic_map_equal(dim.copy(), n_equal);
- printf("p_%p = equal(p_%p, %u)\n", res, dim.get(), n_equal);
+ printf("%s = isl_basic_map_equal(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), dim.get(), n_equal);
   return manage(res);
 }
 
 isl::basic_map basic_map::equate(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_basic_map_equate(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.equate(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_basic_map_equate(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 int basic_map::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_basic_map_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_basic_map_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::basic_map basic_map::fix_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_basic_map_fix_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.fix_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_basic_map_fix_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::basic_map basic_map::fix_val(isl::dim type, unsigned int pos, isl::val v) const
 {
   auto res = isl_basic_map_fix_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.fix_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_basic_map_fix_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::flat_product(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_flat_product(copy(), bmap2.copy());
- printf("p_%p = p_%p.flat_product(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_flat_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::flat_range_product(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_flat_range_product(copy(), bmap2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::flatten() const
 {
   auto res = isl_basic_map_flatten(copy());
- printf("p_%p = p_%p.flatten()\n", res, this->ptr);
+ printf("%s = isl_basic_map_flatten(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::flatten_domain() const
 {
   auto res = isl_basic_map_flatten_domain(copy());
- printf("p_%p = p_%p.flatten_domain()\n", res, this->ptr);
+ printf("%s = isl_basic_map_flatten_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::flatten_range() const
 {
   auto res = isl_basic_map_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_basic_map_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -5071,77 +5118,77 @@ isl::stat basic_map::foreach_constraint(const std::function<isl::stat(isl::const
     return isl_stat(ret);
   };
   auto res = isl_basic_map_foreach_constraint(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_constraint()\n", res, this->ptr, fn);
+ printf("%s = isl_basic_map_foreach_constraint(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::basic_map basic_map::from_aff(isl::aff aff)
 {
   auto res = isl_basic_map_from_aff(aff.copy());
- printf("p_%p = from_aff(p_%p)\n", res, aff.get());
+ printf("%s = isl_basic_map_from_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), aff.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::from_aff_list(isl::space domain_dim, isl::aff_list list)
 {
   auto res = isl_basic_map_from_aff_list(domain_dim.copy(), list.copy());
- printf("p_%p = from_aff_list(p_%p, p_%p)\n", res, domain_dim.get(), list.get());
+ printf("%s = isl_basic_map_from_aff_list(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), domain_dim.get(), list.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::from_constraint(isl::constraint constraint)
 {
   auto res = isl_basic_map_from_constraint(constraint.copy());
- printf("p_%p = from_constraint(p_%p)\n", res, constraint.get());
+ printf("%s = isl_basic_map_from_constraint(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), constraint.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::from_domain(isl::basic_set bset)
 {
   auto res = isl_basic_map_from_domain(bset.copy());
- printf("p_%p = from_domain(p_%p)\n", res, bset.get());
+ printf("%s = isl_basic_map_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), bset.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::from_domain_and_range(isl::basic_set domain, isl::basic_set range)
 {
   auto res = isl_basic_map_from_domain_and_range(domain.copy(), range.copy());
- printf("p_%p = from_domain_and_range(p_%p, p_%p)\n", res, domain.get(), range.get());
+ printf("%s = isl_basic_map_from_domain_and_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), domain.get(), range.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::from_multi_aff(isl::multi_aff maff)
 {
   auto res = isl_basic_map_from_multi_aff(maff.copy());
- printf("p_%p = from_multi_aff(p_%p)\n", res, maff.get());
+ printf("%s = isl_basic_map_from_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), maff.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::from_qpolynomial(isl::qpolynomial qp)
 {
   auto res = isl_basic_map_from_qpolynomial(qp.copy());
- printf("p_%p = from_qpolynomial(p_%p)\n", res, qp.get());
+ printf("%s = isl_basic_map_from_qpolynomial(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), qp.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::from_range(isl::basic_set bset)
 {
   auto res = isl_basic_map_from_range(bset.copy());
- printf("p_%p = from_range(p_%p)\n", res, bset.get());
+ printf("%s = isl_basic_map_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), bset.get());
   return manage(res);
 }
 
 isl::constraint_list basic_map::get_constraint_list() const
 {
   auto res = isl_basic_map_get_constraint_list(get());
- printf("p_%p = p_%p.get_constraint_list()\n", res, this->ptr);
+ printf("%s = isl_basic_map_get_constraint_list(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint_list").c_str(), this->ptr);
   return manage(res);
 }
 
 std::string basic_map::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_basic_map_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_basic_map_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -5149,28 +5196,28 @@ std::string basic_map::get_dim_name(isl::dim type, unsigned int pos) const
 isl::aff basic_map::get_div(int pos) const
 {
   auto res = isl_basic_map_get_div(get(), pos);
- printf("p_%p = p_%p.get_div(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_basic_map_get_div(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::local_space basic_map::get_local_space() const
 {
   auto res = isl_basic_map_get_local_space(get());
- printf("p_%p = p_%p.get_local_space()\n", res, this->ptr);
+ printf("%s = isl_basic_map_get_local_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space basic_map::get_space() const
 {
   auto res = isl_basic_map_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_basic_map_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 std::string basic_map::get_tuple_name(isl::dim type) const
 {
   auto res = isl_basic_map_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_basic_map_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -5178,385 +5225,385 @@ std::string basic_map::get_tuple_name(isl::dim type) const
 isl::basic_map basic_map::gist(isl::basic_map context) const
 {
   auto res = isl_basic_map_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_basic_map_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::gist_domain(isl::basic_set context) const
 {
   auto res = isl_basic_map_gist_domain(copy(), context.copy());
- printf("p_%p = p_%p.gist_domain(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_basic_map_gist_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::boolean basic_map::has_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_basic_map_has_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_basic_map_has_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::basic_map basic_map::identity(isl::space dim)
 {
   auto res = isl_basic_map_identity(dim.copy());
- printf("p_%p = identity(p_%p)\n", res, dim.get());
+ printf("%s = isl_basic_map_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), dim.get());
   return manage(res);
 }
 
 isl::boolean basic_map::image_is_bounded() const
 {
   auto res = isl_basic_map_image_is_bounded(get());
- printf("p_%p = p_%p.image_is_bounded()\n", res, this->ptr);
+ printf("%s = isl_basic_map_image_is_bounded(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::insert_dims(isl::dim type, unsigned int pos, unsigned int n) const
 {
   auto res = isl_basic_map_insert_dims(copy(), static_cast<enum isl_dim_type>(type), pos, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, pos, n);
+ printf("%s = isl_basic_map_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, pos, n);
   return manage(res);
 }
 
 isl::basic_map basic_map::intersect(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_intersect(copy(), bmap2.copy());
- printf("p_%p = p_%p.intersect(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_intersect(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::intersect_domain(isl::basic_set bset) const
 {
   auto res = isl_basic_map_intersect_domain(copy(), bset.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, bset.get());
+ printf("%s = isl_basic_map_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bset.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::intersect_range(isl::basic_set bset) const
 {
   auto res = isl_basic_map_intersect_range(copy(), bset.copy());
- printf("p_%p = p_%p.intersect_range(p_%p)\n", res, this->ptr, bset.get());
+ printf("%s = isl_basic_map_intersect_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bset.get());
   return manage(res);
 }
 
 isl::boolean basic_map::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_map_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_map_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean basic_map::is_disjoint(const isl::basic_map &bmap2) const
 {
   auto res = isl_basic_map_is_disjoint(get(), bmap2.get());
- printf("p_%p = p_%p.is_disjoint(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_is_disjoint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::boolean basic_map::is_empty() const
 {
   auto res = isl_basic_map_is_empty(get());
- printf("p_%p = p_%p.is_empty()\n", res, this->ptr);
+ printf("%s = isl_basic_map_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_map::is_equal(const isl::basic_map &bmap2) const
 {
   auto res = isl_basic_map_is_equal(get(), bmap2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::boolean basic_map::is_rational() const
 {
   auto res = isl_basic_map_is_rational(get());
- printf("p_%p = p_%p.is_rational()\n", res, this->ptr);
+ printf("%s = isl_basic_map_is_rational(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_map::is_single_valued() const
 {
   auto res = isl_basic_map_is_single_valued(get());
- printf("p_%p = p_%p.is_single_valued()\n", res, this->ptr);
+ printf("%s = isl_basic_map_is_single_valued(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_map::is_strict_subset(const isl::basic_map &bmap2) const
 {
   auto res = isl_basic_map_is_strict_subset(get(), bmap2.get());
- printf("p_%p = p_%p.is_strict_subset(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_is_strict_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::boolean basic_map::is_subset(const isl::basic_map &bmap2) const
 {
   auto res = isl_basic_map_is_subset(get(), bmap2.get());
- printf("p_%p = p_%p.is_subset(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_is_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::boolean basic_map::is_universe() const
 {
   auto res = isl_basic_map_is_universe(get());
- printf("p_%p = p_%p.is_universe()\n", res, this->ptr);
+ printf("%s = isl_basic_map_is_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::less_at(isl::space dim, unsigned int pos)
 {
   auto res = isl_basic_map_less_at(dim.copy(), pos);
- printf("p_%p = less_at(p_%p, %u)\n", res, dim.get(), pos);
+ printf("%s = isl_basic_map_less_at(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), dim.get(), pos);
   return manage(res);
 }
 
 isl::map basic_map::lexmax() const
 {
   auto res = isl_basic_map_lexmax(copy());
- printf("p_%p = p_%p.lexmax()\n", res, this->ptr);
+ printf("%s = isl_basic_map_lexmax(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map basic_map::lexmin() const
 {
   auto res = isl_basic_map_lexmin(copy());
- printf("p_%p = p_%p.lexmin()\n", res, this->ptr);
+ printf("%s = isl_basic_map_lexmin(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff basic_map::lexmin_pw_multi_aff() const
 {
   auto res = isl_basic_map_lexmin_pw_multi_aff(copy());
- printf("p_%p = p_%p.lexmin_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_basic_map_lexmin_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::lower_bound_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_basic_map_lower_bound_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.lower_bound_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_basic_map_lower_bound_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::basic_map basic_map::more_at(isl::space dim, unsigned int pos)
 {
   auto res = isl_basic_map_more_at(dim.copy(), pos);
- printf("p_%p = more_at(p_%p, %u)\n", res, dim.get(), pos);
+ printf("%s = isl_basic_map_more_at(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), dim.get(), pos);
   return manage(res);
 }
 
 isl::basic_map basic_map::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_basic_map_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_basic_map_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 int basic_map::n_constraint() const
 {
   auto res = isl_basic_map_n_constraint(get());
- printf("p_%p = p_%p.n_constraint()\n", res, this->ptr);
+ printf("%s = isl_basic_map_n_constraint(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::basic_map basic_map::nat_universe(isl::space dim)
 {
   auto res = isl_basic_map_nat_universe(dim.copy());
- printf("p_%p = nat_universe(p_%p)\n", res, dim.get());
+ printf("%s = isl_basic_map_nat_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), dim.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::neg() const
 {
   auto res = isl_basic_map_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_basic_map_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::order_ge(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_basic_map_order_ge(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.order_ge(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_basic_map_order_ge(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::basic_map basic_map::order_gt(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_basic_map_order_gt(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.order_gt(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_basic_map_order_gt(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::val basic_map::plain_get_val_if_fixed(isl::dim type, unsigned int pos) const
 {
   auto res = isl_basic_map_plain_get_val_if_fixed(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.plain_get_val_if_fixed(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_basic_map_plain_get_val_if_fixed(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean basic_map::plain_is_empty() const
 {
   auto res = isl_basic_map_plain_is_empty(get());
- printf("p_%p = p_%p.plain_is_empty()\n", res, this->ptr);
+ printf("%s = isl_basic_map_plain_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_map::plain_is_universe() const
 {
   auto res = isl_basic_map_plain_is_universe(get());
- printf("p_%p = p_%p.plain_is_universe()\n", res, this->ptr);
+ printf("%s = isl_basic_map_plain_is_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::preimage_domain_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_basic_map_preimage_domain_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_domain_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_basic_map_preimage_domain_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::preimage_range_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_basic_map_preimage_range_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_range_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_basic_map_preimage_range_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::product(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_product(copy(), bmap2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::project_out(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_map_project_out(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.project_out(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_map_project_out(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set basic_map::range() const
 {
   auto res = isl_basic_map_range(copy());
- printf("p_%p = p_%p.range()\n", res, this->ptr);
+ printf("%s = isl_basic_map_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::range_map() const
 {
   auto res = isl_basic_map_range_map(copy());
- printf("p_%p = p_%p.range_map()\n", res, this->ptr);
+ printf("%s = isl_basic_map_range_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::range_product(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_range_product(copy(), bmap2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::remove_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_map_remove_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_map_remove_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_map basic_map::remove_divs() const
 {
   auto res = isl_basic_map_remove_divs(copy());
- printf("p_%p = p_%p.remove_divs()\n", res, this->ptr);
+ printf("%s = isl_basic_map_remove_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::remove_divs_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_map_remove_divs_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_divs_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_map_remove_divs_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_map basic_map::remove_redundancies() const
 {
   auto res = isl_basic_map_remove_redundancies(copy());
- printf("p_%p = p_%p.remove_redundancies()\n", res, this->ptr);
+ printf("%s = isl_basic_map_remove_redundancies(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::reverse() const
 {
   auto res = isl_basic_map_reverse(copy());
- printf("p_%p = p_%p.reverse()\n", res, this->ptr);
+ printf("%s = isl_basic_map_reverse(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::sample() const
 {
   auto res = isl_basic_map_sample(copy());
- printf("p_%p = p_%p.sample()\n", res, this->ptr);
+ printf("%s = isl_basic_map_sample(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_basic_map_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_basic_map_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::set_tuple_name(isl::dim type, const std::string &s) const
 {
   auto res = isl_basic_map_set_tuple_name(copy(), static_cast<enum isl_dim_type>(type), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%d, %s)\n", res, this->ptr, type, s.c_str());
+ printf("%s = isl_basic_map_set_tuple_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, s.c_str());
   return manage(res);
 }
 
 isl::basic_map basic_map::sum(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_sum(copy(), bmap2.copy());
- printf("p_%p = p_%p.sum(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_sum(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::uncurry() const
 {
   auto res = isl_basic_map_uncurry(copy());
- printf("p_%p = p_%p.uncurry()\n", res, this->ptr);
+ printf("%s = isl_basic_map_uncurry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map basic_map::unite(isl::basic_map bmap2) const
 {
   auto res = isl_basic_map_union(copy(), bmap2.copy());
- printf("p_%p = p_%p.unite(p_%p)\n", res, this->ptr, bmap2.get());
+ printf("%s = isl_basic_map_union(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, bmap2.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::universe(isl::space space)
 {
   auto res = isl_basic_map_universe(space.copy());
- printf("p_%p = universe(p_%p)\n", res, space.get());
+ printf("%s = isl_basic_map_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), space.get());
   return manage(res);
 }
 
 isl::basic_map basic_map::upper_bound_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_basic_map_upper_bound_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.upper_bound_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_basic_map_upper_bound_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::basic_set basic_map::wrap() const
 {
   auto res = isl_basic_map_wrap(copy());
- printf("p_%p = p_%p.wrap()\n", res, this->ptr);
+ printf("%s = isl_basic_map_wrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map basic_map::zip() const
 {
   auto res = isl_basic_map_zip(copy());
- printf("p_%p = p_%p.zip()\n", res, this->ptr);
+ printf("%s = isl_basic_map_zip(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -5590,11 +5637,15 @@ basic_map_list &basic_map_list::operator=(isl::basic_map_list obj) {
 }
 
 basic_map_list::~basic_map_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_basic_map_list_free(p_%lu);\n", this->ptr);
     isl_basic_map_list_free(ptr);
+  }
 }
 
 __isl_give isl_basic_map_list *basic_map_list::copy() const & {
+auto temp = isl_basic_map_list_copy(ptr);
+printf("%s = isl_basic_map_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_basic_map_list").c_str(), this->ptr);
   return isl_basic_map_list_copy(ptr);
 }
 
@@ -5652,13 +5703,13 @@ basic_set::basic_set(__isl_take isl_basic_set *ptr)
 basic_set::basic_set(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_basic_set_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_basic_set_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 basic_set::basic_set(isl::point pnt)
 {
   auto res = isl_basic_set_from_point(pnt.copy());
- printf("p_%p = from_point(p_%p)\n", res, pnt.get());
+ printf("%s = isl_basic_set_from_point(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), pnt.get());
   ptr = res;
 }
 
@@ -5668,11 +5719,15 @@ basic_set &basic_set::operator=(isl::basic_set obj) {
 }
 
 basic_set::~basic_set() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_basic_set_free(p_%lu);\n", this->ptr);
     isl_basic_set_free(ptr);
+  }
 }
 
 __isl_give isl_basic_set *basic_set::copy() const & {
+auto temp = isl_basic_set_copy(ptr);
+printf("%s = isl_basic_set_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_basic_set").c_str(), this->ptr);
   return isl_basic_set_copy(ptr);
 }
 
@@ -5715,119 +5770,119 @@ void basic_set::dump() const {
 isl::basic_set basic_set::affine_hull() const
 {
   auto res = isl_basic_set_affine_hull(copy());
- printf("p_%p = p_%p.affine_hull()\n", res, this->ptr);
+ printf("%s = isl_basic_set_affine_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::align_params(isl::space model) const
 {
   auto res = isl_basic_set_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_basic_set_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::apply(isl::basic_map bmap) const
 {
   auto res = isl_basic_set_apply(copy(), bmap.copy());
- printf("p_%p = p_%p.apply(p_%p)\n", res, this->ptr, bmap.get());
+ printf("%s = isl_basic_set_apply(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, bmap.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::box_from_points(isl::point pnt1, isl::point pnt2)
 {
   auto res = isl_basic_set_box_from_points(pnt1.copy(), pnt2.copy());
- printf("p_%p = box_from_points(p_%p, p_%p)\n", res, pnt1.get(), pnt2.get());
+ printf("%s = isl_basic_set_box_from_points(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), pnt1.get(), pnt2.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::coefficients() const
 {
   auto res = isl_basic_set_coefficients(copy());
- printf("p_%p = p_%p.coefficients()\n", res, this->ptr);
+ printf("%s = isl_basic_set_coefficients(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::detect_equalities() const
 {
   auto res = isl_basic_set_detect_equalities(copy());
- printf("p_%p = p_%p.detect_equalities()\n", res, this->ptr);
+ printf("%s = isl_basic_set_detect_equalities(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int basic_set::dim(isl::dim type) const
 {
   auto res = isl_basic_set_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_basic_set_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::val basic_set::dim_max_val(int pos) const
 {
   auto res = isl_basic_set_dim_max_val(copy(), pos);
- printf("p_%p = p_%p.dim_max_val(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_basic_set_dim_max_val(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::basic_set basic_set::drop_constraints_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_set_drop_constraints_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_set_drop_constraints_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set basic_set::drop_constraints_not_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_set_drop_constraints_not_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_not_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_set_drop_constraints_not_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set basic_set::drop_unused_params() const
 {
   auto res = isl_basic_set_drop_unused_params(copy());
- printf("p_%p = p_%p.drop_unused_params()\n", res, this->ptr);
+ printf("%s = isl_basic_set_drop_unused_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::eliminate(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_set_eliminate(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.eliminate(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_set_eliminate(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set basic_set::empty(isl::space space)
 {
   auto res = isl_basic_set_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_basic_set_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), space.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::fix_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_basic_set_fix_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.fix_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_basic_set_fix_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::basic_set basic_set::fix_val(isl::dim type, unsigned int pos, isl::val v) const
 {
   auto res = isl_basic_set_fix_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.fix_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_basic_set_fix_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::flat_product(isl::basic_set bset2) const
 {
   auto res = isl_basic_set_flat_product(copy(), bset2.copy());
- printf("p_%p = p_%p.flat_product(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_flat_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::flatten() const
 {
   auto res = isl_basic_set_flatten(copy());
- printf("p_%p = p_%p.flatten()\n", res, this->ptr);
+ printf("%s = isl_basic_set_flatten(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -5842,7 +5897,7 @@ isl::stat basic_set::foreach_bound_pair(isl::dim type, unsigned int pos, const s
     return isl_stat(ret);
   };
   auto res = isl_basic_set_foreach_bound_pair(get(), static_cast<enum isl_dim_type>(type), pos, fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_bound_pair(%d, %u, )\n", res, this->ptr, type, pos, fn);
+ printf("%s = isl_basic_set_foreach_bound_pair(p_%lu, %d, %u, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, type, pos, fn);
   return isl::stat(res);
 }
 
@@ -5857,42 +5912,42 @@ isl::stat basic_set::foreach_constraint(const std::function<isl::stat(isl::const
     return isl_stat(ret);
   };
   auto res = isl_basic_set_foreach_constraint(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_constraint()\n", res, this->ptr, fn);
+ printf("%s = isl_basic_set_foreach_constraint(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::basic_set basic_set::from_constraint(isl::constraint constraint)
 {
   auto res = isl_basic_set_from_constraint(constraint.copy());
- printf("p_%p = from_constraint(p_%p)\n", res, constraint.get());
+ printf("%s = isl_basic_set_from_constraint(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), constraint.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::from_params() const
 {
   auto res = isl_basic_set_from_params(copy());
- printf("p_%p = p_%p.from_params()\n", res, this->ptr);
+ printf("%s = isl_basic_set_from_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::constraint_list basic_set::get_constraint_list() const
 {
   auto res = isl_basic_set_get_constraint_list(get());
- printf("p_%p = p_%p.get_constraint_list()\n", res, this->ptr);
+ printf("%s = isl_basic_set_get_constraint_list(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint_list").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id basic_set::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_basic_set_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_basic_set_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 std::string basic_set::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_basic_set_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_basic_set_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -5900,28 +5955,28 @@ std::string basic_set::get_dim_name(isl::dim type, unsigned int pos) const
 isl::aff basic_set::get_div(int pos) const
 {
   auto res = isl_basic_set_get_div(get(), pos);
- printf("p_%p = p_%p.get_div(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_basic_set_get_div(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::local_space basic_set::get_local_space() const
 {
   auto res = isl_basic_set_get_local_space(get());
- printf("p_%p = p_%p.get_local_space()\n", res, this->ptr);
+ printf("%s = isl_basic_set_get_local_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space basic_set::get_space() const
 {
   auto res = isl_basic_set_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_basic_set_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 std::string basic_set::get_tuple_name() const
 {
   auto res = isl_basic_set_get_tuple_name(get());
- printf("p_%p = p_%p.get_tuple_name()\n", res, this->ptr);
+ printf("%s = isl_basic_set_get_tuple_name(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr);
   std::string tmp(res);
   return tmp;
 }
@@ -5929,301 +5984,301 @@ std::string basic_set::get_tuple_name() const
 isl::basic_set basic_set::gist(isl::basic_set context) const
 {
   auto res = isl_basic_set_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_basic_set_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::insert_dims(isl::dim type, unsigned int pos, unsigned int n) const
 {
   auto res = isl_basic_set_insert_dims(copy(), static_cast<enum isl_dim_type>(type), pos, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, pos, n);
+ printf("%s = isl_basic_set_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, pos, n);
   return manage(res);
 }
 
 isl::basic_set basic_set::intersect(isl::basic_set bset2) const
 {
   auto res = isl_basic_set_intersect(copy(), bset2.copy());
- printf("p_%p = p_%p.intersect(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_intersect(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::intersect_params(isl::basic_set bset2) const
 {
   auto res = isl_basic_set_intersect_params(copy(), bset2.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 isl::boolean basic_set::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_set_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_set_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean basic_set::is_bounded() const
 {
   auto res = isl_basic_set_is_bounded(get());
- printf("p_%p = p_%p.is_bounded()\n", res, this->ptr);
+ printf("%s = isl_basic_set_is_bounded(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_set::is_disjoint(const isl::basic_set &bset2) const
 {
   auto res = isl_basic_set_is_disjoint(get(), bset2.get());
- printf("p_%p = p_%p.is_disjoint(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_is_disjoint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 isl::boolean basic_set::is_empty() const
 {
   auto res = isl_basic_set_is_empty(get());
- printf("p_%p = p_%p.is_empty()\n", res, this->ptr);
+ printf("%s = isl_basic_set_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_set::is_equal(const isl::basic_set &bset2) const
 {
   auto res = isl_basic_set_is_equal(get(), bset2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 int basic_set::is_rational() const
 {
   auto res = isl_basic_set_is_rational(get());
- printf("p_%p = p_%p.is_rational()\n", res, this->ptr);
+ printf("%s = isl_basic_set_is_rational(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::boolean basic_set::is_subset(const isl::basic_set &bset2) const
 {
   auto res = isl_basic_set_is_subset(get(), bset2.get());
- printf("p_%p = p_%p.is_subset(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_is_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 isl::boolean basic_set::is_universe() const
 {
   auto res = isl_basic_set_is_universe(get());
- printf("p_%p = p_%p.is_universe()\n", res, this->ptr);
+ printf("%s = isl_basic_set_is_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_set::is_wrapping() const
 {
   auto res = isl_basic_set_is_wrapping(get());
- printf("p_%p = p_%p.is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_basic_set_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set basic_set::lexmax() const
 {
   auto res = isl_basic_set_lexmax(copy());
- printf("p_%p = p_%p.lexmax()\n", res, this->ptr);
+ printf("%s = isl_basic_set_lexmax(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set basic_set::lexmin() const
 {
   auto res = isl_basic_set_lexmin(copy());
- printf("p_%p = p_%p.lexmin()\n", res, this->ptr);
+ printf("%s = isl_basic_set_lexmin(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::lower_bound_val(isl::dim type, unsigned int pos, isl::val value) const
 {
   auto res = isl_basic_set_lower_bound_val(copy(), static_cast<enum isl_dim_type>(type), pos, value.copy());
- printf("p_%p = p_%p.lower_bound_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, value.get());
+ printf("%s = isl_basic_set_lower_bound_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, pos, value.get());
   return manage(res);
 }
 
 isl::val basic_set::max_val(const isl::aff &obj) const
 {
   auto res = isl_basic_set_max_val(get(), obj.get());
- printf("p_%p = p_%p.max_val(p_%p)\n", res, this->ptr, obj.get());
+ printf("%s = isl_basic_set_max_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, obj.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_basic_set_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_basic_set_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 int basic_set::n_constraint() const
 {
   auto res = isl_basic_set_n_constraint(get());
- printf("p_%p = p_%p.n_constraint()\n", res, this->ptr);
+ printf("%s = isl_basic_set_n_constraint(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 unsigned int basic_set::n_dim() const
 {
   auto res = isl_basic_set_n_dim(get());
- printf("p_%p = p_%p.n_dim()\n", res, this->ptr);
+ printf("%s = isl_basic_set_n_dim(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr);
   return res;
 }
 
 isl::basic_set basic_set::nat_universe(isl::space dim)
 {
   auto res = isl_basic_set_nat_universe(dim.copy());
- printf("p_%p = nat_universe(p_%p)\n", res, dim.get());
+ printf("%s = isl_basic_set_nat_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), dim.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::neg() const
 {
   auto res = isl_basic_set_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_basic_set_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::params() const
 {
   auto res = isl_basic_set_params(copy());
- printf("p_%p = p_%p.params()\n", res, this->ptr);
+ printf("%s = isl_basic_set_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_set::plain_is_empty() const
 {
   auto res = isl_basic_set_plain_is_empty(get());
- printf("p_%p = p_%p.plain_is_empty()\n", res, this->ptr);
+ printf("%s = isl_basic_set_plain_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean basic_set::plain_is_equal(const isl::basic_set &bset2) const
 {
   auto res = isl_basic_set_plain_is_equal(get(), bset2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 isl::boolean basic_set::plain_is_universe() const
 {
   auto res = isl_basic_set_plain_is_universe(get());
- printf("p_%p = p_%p.plain_is_universe()\n", res, this->ptr);
+ printf("%s = isl_basic_set_plain_is_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::positive_orthant(isl::space space)
 {
   auto res = isl_basic_set_positive_orthant(space.copy());
- printf("p_%p = positive_orthant(p_%p)\n", res, space.get());
+ printf("%s = isl_basic_set_positive_orthant(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), space.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::preimage_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_basic_set_preimage_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_basic_set_preimage_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::project_out(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_set_project_out(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.project_out(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_set_project_out(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set basic_set::remove_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_set_remove_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_set_remove_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set basic_set::remove_divs() const
 {
   auto res = isl_basic_set_remove_divs(copy());
- printf("p_%p = p_%p.remove_divs()\n", res, this->ptr);
+ printf("%s = isl_basic_set_remove_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::remove_divs_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_basic_set_remove_divs_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_divs_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_basic_set_remove_divs_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::basic_set basic_set::remove_redundancies() const
 {
   auto res = isl_basic_set_remove_redundancies(copy());
- printf("p_%p = p_%p.remove_redundancies()\n", res, this->ptr);
+ printf("%s = isl_basic_set_remove_redundancies(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::remove_unknown_divs() const
 {
   auto res = isl_basic_set_remove_unknown_divs(copy());
- printf("p_%p = p_%p.remove_unknown_divs()\n", res, this->ptr);
+ printf("%s = isl_basic_set_remove_unknown_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::sample() const
 {
   auto res = isl_basic_set_sample(copy());
- printf("p_%p = p_%p.sample()\n", res, this->ptr);
+ printf("%s = isl_basic_set_sample(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::point basic_set::sample_point() const
 {
   auto res = isl_basic_set_sample_point(copy());
- printf("p_%p = p_%p.sample_point()\n", res, this->ptr);
+ printf("%s = isl_basic_set_sample_point(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_point").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::set_tuple_id(isl::id id) const
 {
   auto res = isl_basic_set_set_tuple_id(copy(), id.copy());
- printf("p_%p = p_%p.set_tuple_id(p_%p)\n", res, this->ptr, id.get());
+ printf("%s = isl_basic_set_set_tuple_id(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, id.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::set_tuple_name(const std::string &s) const
 {
   auto res = isl_basic_set_set_tuple_name(copy(), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%s)\n", res, this->ptr, s.c_str());
+ printf("%s = isl_basic_set_set_tuple_name(p_%lu, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, s.c_str());
   return manage(res);
 }
 
 isl::basic_set basic_set::solutions() const
 {
   auto res = isl_basic_set_solutions(copy());
- printf("p_%p = p_%p.solutions()\n", res, this->ptr);
+ printf("%s = isl_basic_set_solutions(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set basic_set::unite(isl::basic_set bset2) const
 {
   auto res = isl_basic_set_union(copy(), bset2.copy());
- printf("p_%p = p_%p.unite(p_%p)\n", res, this->ptr, bset2.get());
+ printf("%s = isl_basic_set_union(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, bset2.get());
   return manage(res);
 }
 
 isl::basic_set basic_set::universe(isl::space space)
 {
   auto res = isl_basic_set_universe(space.copy());
- printf("p_%p = universe(p_%p)\n", res, space.get());
+ printf("%s = isl_basic_set_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), space.get());
   return manage(res);
 }
 
 isl::basic_map basic_set::unwrap() const
 {
   auto res = isl_basic_set_unwrap(copy());
- printf("p_%p = p_%p.unwrap()\n", res, this->ptr);
+ printf("%s = isl_basic_set_unwrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set basic_set::upper_bound_val(isl::dim type, unsigned int pos, isl::val value) const
 {
   auto res = isl_basic_set_upper_bound_val(copy(), static_cast<enum isl_dim_type>(type), pos, value.copy());
- printf("p_%p = p_%p.upper_bound_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, value.get());
+ printf("%s = isl_basic_set_upper_bound_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, type, pos, value.get());
   return manage(res);
 }
 
@@ -6257,11 +6312,15 @@ basic_set_list &basic_set_list::operator=(isl::basic_set_list obj) {
 }
 
 basic_set_list::~basic_set_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_basic_set_list_free(p_%lu);\n", this->ptr);
     isl_basic_set_list_free(ptr);
+  }
 }
 
 __isl_give isl_basic_set_list *basic_set_list::copy() const & {
+auto temp = isl_basic_set_list_copy(ptr);
+printf("%s = isl_basic_set_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_basic_set_list").c_str(), this->ptr);
   return isl_basic_set_list_copy(ptr);
 }
 
@@ -6323,11 +6382,15 @@ constraint &constraint::operator=(isl::constraint obj) {
 }
 
 constraint::~constraint() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_constraint_free(p_%lu);\n", this->ptr);
     isl_constraint_free(ptr);
+  }
 }
 
 __isl_give isl_constraint *constraint::copy() const & {
+auto temp = isl_constraint_copy(ptr);
+printf("%s = isl_constraint_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_constraint").c_str(), this->ptr);
   return isl_constraint_copy(ptr);
 }
 
@@ -6361,56 +6424,56 @@ void constraint::dump() const {
 isl::constraint constraint::alloc_equality(isl::local_space ls)
 {
   auto res = isl_constraint_alloc_equality(ls.copy());
- printf("p_%p = alloc_equality(p_%p)\n", res, ls.get());
+ printf("%s = isl_constraint_alloc_equality(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint").c_str(), ls.get());
   return manage(res);
 }
 
 isl::constraint constraint::alloc_inequality(isl::local_space ls)
 {
   auto res = isl_constraint_alloc_inequality(ls.copy());
- printf("p_%p = alloc_inequality(p_%p)\n", res, ls.get());
+ printf("%s = isl_constraint_alloc_inequality(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint").c_str(), ls.get());
   return manage(res);
 }
 
 int constraint::cmp_last_non_zero(const isl::constraint &c2) const
 {
   auto res = isl_constraint_cmp_last_non_zero(get(), c2.get());
- printf("p_%p = p_%p.cmp_last_non_zero(p_%p)\n", res, this->ptr, c2.get());
+ printf("%s = isl_constraint_cmp_last_non_zero(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, c2.get());
   return res;
 }
 
 isl::aff constraint::get_aff() const
 {
   auto res = isl_constraint_get_aff(get());
- printf("p_%p = p_%p.get_aff()\n", res, this->ptr);
+ printf("%s = isl_constraint_get_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff constraint::get_bound(isl::dim type, int pos) const
 {
   auto res = isl_constraint_get_bound(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_bound(%d, %d)\n", res, this->ptr, type, pos);
+ printf("%s = isl_constraint_get_bound(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::val constraint::get_coefficient_val(isl::dim type, int pos) const
 {
   auto res = isl_constraint_get_coefficient_val(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_coefficient_val(%d, %d)\n", res, this->ptr, type, pos);
+ printf("%s = isl_constraint_get_coefficient_val(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::val constraint::get_constant_val() const
 {
   auto res = isl_constraint_get_constant_val(get());
- printf("p_%p = p_%p.get_constant_val()\n", res, this->ptr);
+ printf("%s = isl_constraint_get_constant_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 std::string constraint::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_constraint_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_constraint_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -6418,84 +6481,84 @@ std::string constraint::get_dim_name(isl::dim type, unsigned int pos) const
 isl::aff constraint::get_div(int pos) const
 {
   auto res = isl_constraint_get_div(get(), pos);
- printf("p_%p = p_%p.get_div(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_constraint_get_div(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::local_space constraint::get_local_space() const
 {
   auto res = isl_constraint_get_local_space(get());
- printf("p_%p = p_%p.get_local_space()\n", res, this->ptr);
+ printf("%s = isl_constraint_get_local_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space constraint::get_space() const
 {
   auto res = isl_constraint_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_constraint_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean constraint::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_constraint_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_constraint_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 int constraint::is_div_constraint() const
 {
   auto res = isl_constraint_is_div_constraint(get());
- printf("p_%p = p_%p.is_div_constraint()\n", res, this->ptr);
+ printf("%s = isl_constraint_is_div_constraint(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::boolean constraint::is_lower_bound(isl::dim type, unsigned int pos) const
 {
   auto res = isl_constraint_is_lower_bound(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.is_lower_bound(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_constraint_is_lower_bound(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean constraint::is_upper_bound(isl::dim type, unsigned int pos) const
 {
   auto res = isl_constraint_is_upper_bound(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.is_upper_bound(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_constraint_is_upper_bound(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 int constraint::plain_cmp(const isl::constraint &c2) const
 {
   auto res = isl_constraint_plain_cmp(get(), c2.get());
- printf("p_%p = p_%p.plain_cmp(p_%p)\n", res, this->ptr, c2.get());
+ printf("%s = isl_constraint_plain_cmp(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, c2.get());
   return res;
 }
 
 isl::constraint constraint::set_coefficient_si(isl::dim type, int pos, int v) const
 {
   auto res = isl_constraint_set_coefficient_si(copy(), static_cast<enum isl_dim_type>(type), pos, v);
- printf("p_%p = p_%p.set_coefficient_si(%d, %d, %d)\n", res, this->ptr, type, pos, v);
+ printf("%s = isl_constraint_set_coefficient_si(p_%lu, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint").c_str(), this->ptr, type, pos, v);
   return manage(res);
 }
 
 isl::constraint constraint::set_coefficient_val(isl::dim type, int pos, isl::val v) const
 {
   auto res = isl_constraint_set_coefficient_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.set_coefficient_val(%d, %d, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_constraint_set_coefficient_val(p_%lu, %d, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::constraint constraint::set_constant_si(int v) const
 {
   auto res = isl_constraint_set_constant_si(copy(), v);
- printf("p_%p = p_%p.set_constant_si(%d)\n", res, this->ptr, v);
+ printf("%s = isl_constraint_set_constant_si(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint").c_str(), this->ptr, v);
   return manage(res);
 }
 
 isl::constraint constraint::set_constant_val(isl::val v) const
 {
   auto res = isl_constraint_set_constant_val(copy(), v.copy());
- printf("p_%p = p_%p.set_constant_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_constraint_set_constant_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_constraint").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
@@ -6529,11 +6592,15 @@ constraint_list &constraint_list::operator=(isl::constraint_list obj) {
 }
 
 constraint_list::~constraint_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_constraint_list_free(p_%lu);\n", this->ptr);
     isl_constraint_list_free(ptr);
+  }
 }
 
 __isl_give isl_constraint_list *constraint_list::copy() const & {
+auto temp = isl_constraint_list_copy(ptr);
+printf("%s = isl_constraint_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_constraint_list").c_str(), this->ptr);
   return isl_constraint_list_copy(ptr);
 }
 
@@ -6595,11 +6662,15 @@ id &id::operator=(isl::id obj) {
 }
 
 id::~id() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_id_free(p_%lu);\n", this->ptr);
     isl_id_free(ptr);
+  }
 }
 
 __isl_give isl_id *id::copy() const & {
+auto temp = isl_id_copy(ptr);
+printf("%s = isl_id_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_id").c_str(), this->ptr);
   return isl_id_copy(ptr);
 }
 
@@ -6642,21 +6713,21 @@ void id::dump() const {
 isl::id id::alloc(isl::ctx ctx, const std::string &name, void * user)
 {
   auto res = isl_id_alloc(ctx.copy(), name.c_str(), user);
- printf("p_%p = alloc(p_%p, %s, )\n", res, ctx.get(), name.c_str(), user);
+ printf("%s = isl_id_alloc(%s, %s, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), "ctx_0", name.c_str(), user);
   return manage(res);
 }
 
 uint32_t id::get_hash() const
 {
   auto res = isl_id_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_id_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 std::string id::get_name() const
 {
   auto res = isl_id_get_name(get());
- printf("p_%p = p_%p.get_name()\n", res, this->ptr);
+ printf("%s = isl_id_get_name(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr);
   std::string tmp(res);
   return tmp;
 }
@@ -6664,7 +6735,7 @@ std::string id::get_name() const
 void * id::get_user() const
 {
   auto res = isl_id_get_user(get());
- printf("p_%p = p_%p.get_user()\n", res, this->ptr);
+ printf("%s = isl_id_get_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void *").c_str(), this->ptr);
   return res;
 }
 
@@ -6698,11 +6769,15 @@ id_list &id_list::operator=(isl::id_list obj) {
 }
 
 id_list::~id_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_id_list_free(p_%lu);\n", this->ptr);
     isl_id_list_free(ptr);
+  }
 }
 
 __isl_give isl_id_list *id_list::copy() const & {
+auto temp = isl_id_list_copy(ptr);
+printf("%s = isl_id_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_id_list").c_str(), this->ptr);
   return isl_id_list_copy(ptr);
 }
 
@@ -6764,11 +6839,15 @@ id_to_ast_expr &id_to_ast_expr::operator=(isl::id_to_ast_expr obj) {
 }
 
 id_to_ast_expr::~id_to_ast_expr() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_id_to_ast_expr_free(p_%lu);\n", this->ptr);
     isl_id_to_ast_expr_free(ptr);
+  }
 }
 
 __isl_give isl_id_to_ast_expr *id_to_ast_expr::copy() const & {
+auto temp = isl_id_to_ast_expr_copy(ptr);
+printf("%s = isl_id_to_ast_expr_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_id_to_ast_expr").c_str(), this->ptr);
   return isl_id_to_ast_expr_copy(ptr);
 }
 
@@ -6802,14 +6881,14 @@ void id_to_ast_expr::dump() const {
 isl::id_to_ast_expr id_to_ast_expr::alloc(isl::ctx ctx, int min_size)
 {
   auto res = isl_id_to_ast_expr_alloc(ctx.copy(), min_size);
- printf("p_%p = alloc(p_%p, %d)\n", res, ctx.get(), min_size);
+ printf("%s = isl_id_to_ast_expr_alloc(%s, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id_to_ast_expr").c_str(), "ctx_0", min_size);
   return manage(res);
 }
 
 isl::id_to_ast_expr id_to_ast_expr::drop(isl::id key) const
 {
   auto res = isl_id_to_ast_expr_drop(copy(), key.copy());
- printf("p_%p = p_%p.drop(p_%p)\n", res, this->ptr, key.get());
+ printf("%s = isl_id_to_ast_expr_drop(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id_to_ast_expr").c_str(), this->ptr, key.get());
   return manage(res);
 }
 
@@ -6824,28 +6903,28 @@ isl::stat id_to_ast_expr::foreach(const std::function<isl::stat(isl::id, isl::as
     return isl_stat(ret);
   };
   auto res = isl_id_to_ast_expr_foreach(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach()\n", res, this->ptr, fn);
+ printf("%s = isl_id_to_ast_expr_foreach(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::ast_expr id_to_ast_expr::get(isl::id key) const
 {
   auto res = isl_id_to_ast_expr_get(get(), key.copy());
- printf("p_%p = p_%p.get(p_%p)\n", res, this->ptr, key.get());
+ printf("%s = isl_id_to_ast_expr_get(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_ast_expr").c_str(), this->ptr, key.get());
   return manage(res);
 }
 
 isl::boolean id_to_ast_expr::has(const isl::id &key) const
 {
   auto res = isl_id_to_ast_expr_has(get(), key.get());
- printf("p_%p = p_%p.has(p_%p)\n", res, this->ptr, key.get());
+ printf("%s = isl_id_to_ast_expr_has(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, key.get());
   return manage(res);
 }
 
 isl::id_to_ast_expr id_to_ast_expr::set(isl::id key, isl::ast_expr val) const
 {
   auto res = isl_id_to_ast_expr_set(copy(), key.copy(), val.copy());
- printf("p_%p = p_%p.set(p_%p, p_%p)\n", res, this->ptr, key.get(), val.get());
+ printf("%s = isl_id_to_ast_expr_set(p_%lu, p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id_to_ast_expr").c_str(), this->ptr, key.get(), val.get());
   return manage(res);
 }
 
@@ -6875,7 +6954,7 @@ local_space::local_space(__isl_take isl_local_space *ptr)
 local_space::local_space(isl::space dim)
 {
   auto res = isl_local_space_from_space(dim.copy());
- printf("p_%p = from_space(p_%p)\n", res, dim.get());
+ printf("%s = isl_local_space_from_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), dim.get());
   ptr = res;
 }
 
@@ -6885,11 +6964,15 @@ local_space &local_space::operator=(isl::local_space obj) {
 }
 
 local_space::~local_space() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_local_space_free(p_%lu);\n", this->ptr);
     isl_local_space_free(ptr);
+  }
 }
 
 __isl_give isl_local_space *local_space::copy() const & {
+auto temp = isl_local_space_copy(ptr);
+printf("%s = isl_local_space_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_local_space").c_str(), this->ptr);
   return isl_local_space_copy(ptr);
 }
 
@@ -6923,70 +7006,70 @@ void local_space::dump() const {
 isl::local_space local_space::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_local_space_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_local_space_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 int local_space::dim(isl::dim type) const
 {
   auto res = isl_local_space_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_local_space_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::local_space local_space::domain() const
 {
   auto res = isl_local_space_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_local_space_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::local_space local_space::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_local_space_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_local_space_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 int local_space::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_local_space_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_local_space_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::local_space local_space::flatten_domain() const
 {
   auto res = isl_local_space_flatten_domain(copy());
- printf("p_%p = p_%p.flatten_domain()\n", res, this->ptr);
+ printf("%s = isl_local_space_flatten_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::local_space local_space::flatten_range() const
 {
   auto res = isl_local_space_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_local_space_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::local_space local_space::from_domain() const
 {
   auto res = isl_local_space_from_domain(copy());
- printf("p_%p = p_%p.from_domain()\n", res, this->ptr);
+ printf("%s = isl_local_space_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id local_space::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_local_space_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_local_space_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 std::string local_space::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_local_space_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_local_space_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -6994,98 +7077,98 @@ std::string local_space::get_dim_name(isl::dim type, unsigned int pos) const
 isl::aff local_space::get_div(int pos) const
 {
   auto res = isl_local_space_get_div(get(), pos);
- printf("p_%p = p_%p.get_div(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_local_space_get_div(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::space local_space::get_space() const
 {
   auto res = isl_local_space_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_local_space_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean local_space::has_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_local_space_has_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_local_space_has_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean local_space::has_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_local_space_has_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_local_space_has_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::local_space local_space::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_local_space_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_local_space_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::local_space local_space::intersect(isl::local_space ls2) const
 {
   auto res = isl_local_space_intersect(copy(), ls2.copy());
- printf("p_%p = p_%p.intersect(p_%p)\n", res, this->ptr, ls2.get());
+ printf("%s = isl_local_space_intersect(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr, ls2.get());
   return manage(res);
 }
 
 isl::boolean local_space::is_equal(const isl::local_space &ls2) const
 {
   auto res = isl_local_space_is_equal(get(), ls2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, ls2.get());
+ printf("%s = isl_local_space_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, ls2.get());
   return manage(res);
 }
 
 isl::boolean local_space::is_params() const
 {
   auto res = isl_local_space_is_params(get());
- printf("p_%p = p_%p.is_params()\n", res, this->ptr);
+ printf("%s = isl_local_space_is_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean local_space::is_set() const
 {
   auto res = isl_local_space_is_set(get());
- printf("p_%p = p_%p.is_set()\n", res, this->ptr);
+ printf("%s = isl_local_space_is_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::local_space local_space::range() const
 {
   auto res = isl_local_space_range(copy());
- printf("p_%p = p_%p.range()\n", res, this->ptr);
+ printf("%s = isl_local_space_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::local_space local_space::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_local_space_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_local_space_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::local_space local_space::set_from_params() const
 {
   auto res = isl_local_space_set_from_params(copy());
- printf("p_%p = p_%p.set_from_params()\n", res, this->ptr);
+ printf("%s = isl_local_space_set_from_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::local_space local_space::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_local_space_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_local_space_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::local_space local_space::wrap() const
 {
   auto res = isl_local_space_wrap(copy());
- printf("p_%p = p_%p.wrap()\n", res, this->ptr);
+ printf("%s = isl_local_space_wrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_local_space").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -7115,13 +7198,13 @@ map::map(__isl_take isl_map *ptr)
 map::map(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_map_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_map_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 map::map(isl::basic_map bmap)
 {
   auto res = isl_map_from_basic_map(bmap.copy());
- printf("p_%p = from_basic_map(p_%p)\n", res, bmap.get());
+ printf("%s = isl_map_from_basic_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), bmap.get());
   ptr = res;
 }
 
@@ -7131,11 +7214,15 @@ map &map::operator=(isl::map obj) {
 }
 
 map::~map() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_map_free(p_%lu);\n", this->ptr);
     isl_map_free(ptr);
+  }
 }
 
 __isl_give isl_map *map::copy() const & {
+auto temp = isl_map_copy(ptr);
+printf("%s = isl_map_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_map").c_str(), this->ptr);
   return isl_map_copy(ptr);
 }
 
@@ -7178,322 +7265,322 @@ void map::dump() const {
 isl::map map::add_constraint(isl::constraint constraint) const
 {
   auto res = isl_map_add_constraint(copy(), constraint.copy());
- printf("p_%p = p_%p.add_constraint(p_%p)\n", res, this->ptr, constraint.get());
+ printf("%s = isl_map_add_constraint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, constraint.get());
   return manage(res);
 }
 
 isl::map map::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_map_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_map_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::basic_map map::affine_hull() const
 {
   auto res = isl_map_affine_hull(copy());
- printf("p_%p = p_%p.affine_hull()\n", res, this->ptr);
+ printf("%s = isl_map_affine_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::align_params(isl::space model) const
 {
   auto res = isl_map_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_map_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::map map::apply_domain(isl::map map2) const
 {
   auto res = isl_map_apply_domain(copy(), map2.copy());
- printf("p_%p = p_%p.apply_domain(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_apply_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::apply_range(isl::map map2) const
 {
   auto res = isl_map_apply_range(copy(), map2.copy());
- printf("p_%p = p_%p.apply_range(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_apply_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::boolean map::can_curry() const
 {
   auto res = isl_map_can_curry(get());
- printf("p_%p = p_%p.can_curry()\n", res, this->ptr);
+ printf("%s = isl_map_can_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::can_range_curry() const
 {
   auto res = isl_map_can_range_curry(get());
- printf("p_%p = p_%p.can_range_curry()\n", res, this->ptr);
+ printf("%s = isl_map_can_range_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::can_uncurry() const
 {
   auto res = isl_map_can_uncurry(get());
- printf("p_%p = p_%p.can_uncurry()\n", res, this->ptr);
+ printf("%s = isl_map_can_uncurry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::can_zip() const
 {
   auto res = isl_map_can_zip(get());
- printf("p_%p = p_%p.can_zip()\n", res, this->ptr);
+ printf("%s = isl_map_can_zip(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::coalesce() const
 {
   auto res = isl_map_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_map_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::complement() const
 {
   auto res = isl_map_complement(copy());
- printf("p_%p = p_%p.complement()\n", res, this->ptr);
+ printf("%s = isl_map_complement(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map map::convex_hull() const
 {
   auto res = isl_map_convex_hull(copy());
- printf("p_%p = p_%p.convex_hull()\n", res, this->ptr);
+ printf("%s = isl_map_convex_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::curry() const
 {
   auto res = isl_map_curry(copy());
- printf("p_%p = p_%p.curry()\n", res, this->ptr);
+ printf("%s = isl_map_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set map::deltas() const
 {
   auto res = isl_map_deltas(copy());
- printf("p_%p = p_%p.deltas()\n", res, this->ptr);
+ printf("%s = isl_map_deltas(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::deltas_map() const
 {
   auto res = isl_map_deltas_map(copy());
- printf("p_%p = p_%p.deltas_map()\n", res, this->ptr);
+ printf("%s = isl_map_deltas_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::detect_equalities() const
 {
   auto res = isl_map_detect_equalities(copy());
- printf("p_%p = p_%p.detect_equalities()\n", res, this->ptr);
+ printf("%s = isl_map_detect_equalities(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int map::dim(isl::dim type) const
 {
   auto res = isl_map_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_map_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::pw_aff map::dim_max(int pos) const
 {
   auto res = isl_map_dim_max(copy(), pos);
- printf("p_%p = p_%p.dim_max(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_map_dim_max(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::pw_aff map::dim_min(int pos) const
 {
   auto res = isl_map_dim_min(copy(), pos);
- printf("p_%p = p_%p.dim_min(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_map_dim_min(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::set map::domain() const
 {
   auto res = isl_map_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_map_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::domain_factor_domain() const
 {
   auto res = isl_map_domain_factor_domain(copy());
- printf("p_%p = p_%p.domain_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_map_domain_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::domain_factor_range() const
 {
   auto res = isl_map_domain_factor_range(copy());
- printf("p_%p = p_%p.domain_factor_range()\n", res, this->ptr);
+ printf("%s = isl_map_domain_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::domain_is_wrapping() const
 {
   auto res = isl_map_domain_is_wrapping(get());
- printf("p_%p = p_%p.domain_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_map_domain_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::domain_map() const
 {
   auto res = isl_map_domain_map(copy());
- printf("p_%p = p_%p.domain_map()\n", res, this->ptr);
+ printf("%s = isl_map_domain_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::domain_product(isl::map map2) const
 {
   auto res = isl_map_domain_product(copy(), map2.copy());
- printf("p_%p = p_%p.domain_product(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_domain_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::drop_constraints_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_map_drop_constraints_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_map_drop_constraints_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::map map::drop_constraints_not_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_map_drop_constraints_not_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_not_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_map_drop_constraints_not_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::map map::drop_unused_params() const
 {
   auto res = isl_map_drop_unused_params(copy());
- printf("p_%p = p_%p.drop_unused_params()\n", res, this->ptr);
+ printf("%s = isl_map_drop_unused_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::eliminate(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_map_eliminate(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.eliminate(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_map_eliminate(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::map map::empty(isl::space space)
 {
   auto res = isl_map_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_map_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), space.get());
   return manage(res);
 }
 
 isl::map map::equate(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_map_equate(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.equate(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_map_equate(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::map map::factor_domain() const
 {
   auto res = isl_map_factor_domain(copy());
- printf("p_%p = p_%p.factor_domain()\n", res, this->ptr);
+ printf("%s = isl_map_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::factor_range() const
 {
   auto res = isl_map_factor_range(copy());
- printf("p_%p = p_%p.factor_range()\n", res, this->ptr);
+ printf("%s = isl_map_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 int map::find_dim_by_id(isl::dim type, const isl::id &id) const
 {
   auto res = isl_map_find_dim_by_id(get(), static_cast<enum isl_dim_type>(type), id.get());
- printf("p_%p = p_%p.find_dim_by_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_map_find_dim_by_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, id.get());
   return res;
 }
 
 int map::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_map_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_map_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::map map::fix_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_map_fix_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.fix_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_map_fix_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::map map::fix_val(isl::dim type, unsigned int pos, isl::val v) const
 {
   auto res = isl_map_fix_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.fix_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_map_fix_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::map map::fixed_power_val(isl::val exp) const
 {
   auto res = isl_map_fixed_power_val(copy(), exp.copy());
- printf("p_%p = p_%p.fixed_power_val(p_%p)\n", res, this->ptr, exp.get());
+ printf("%s = isl_map_fixed_power_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, exp.get());
   return manage(res);
 }
 
 isl::map map::flat_domain_product(isl::map map2) const
 {
   auto res = isl_map_flat_domain_product(copy(), map2.copy());
- printf("p_%p = p_%p.flat_domain_product(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_flat_domain_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::flat_product(isl::map map2) const
 {
   auto res = isl_map_flat_product(copy(), map2.copy());
- printf("p_%p = p_%p.flat_product(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_flat_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::flat_range_product(isl::map map2) const
 {
   auto res = isl_map_flat_range_product(copy(), map2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::flatten() const
 {
   auto res = isl_map_flatten(copy());
- printf("p_%p = p_%p.flatten()\n", res, this->ptr);
+ printf("%s = isl_map_flatten(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::flatten_domain() const
 {
   auto res = isl_map_flatten_domain(copy());
- printf("p_%p = p_%p.flatten_domain()\n", res, this->ptr);
+ printf("%s = isl_map_flatten_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::flatten_range() const
 {
   auto res = isl_map_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_map_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::floordiv_val(isl::val d) const
 {
   auto res = isl_map_floordiv_val(copy(), d.copy());
- printf("p_%p = p_%p.floordiv_val(p_%p)\n", res, this->ptr, d.get());
+ printf("%s = isl_map_floordiv_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, d.get());
   return manage(res);
 }
 
@@ -7508,84 +7595,84 @@ isl::stat map::foreach_basic_map(const std::function<isl::stat(isl::basic_map)> 
     return isl_stat(ret);
   };
   auto res = isl_map_foreach_basic_map(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_basic_map()\n", res, this->ptr, fn);
+ printf("%s = isl_map_foreach_basic_map(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::map map::from_aff(isl::aff aff)
 {
   auto res = isl_map_from_aff(aff.copy());
- printf("p_%p = from_aff(p_%p)\n", res, aff.get());
+ printf("%s = isl_map_from_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), aff.get());
   return manage(res);
 }
 
 isl::map map::from_domain(isl::set set)
 {
   auto res = isl_map_from_domain(set.copy());
- printf("p_%p = from_domain(p_%p)\n", res, set.get());
+ printf("%s = isl_map_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), set.get());
   return manage(res);
 }
 
 isl::map map::from_domain_and_range(isl::set domain, isl::set range)
 {
   auto res = isl_map_from_domain_and_range(domain.copy(), range.copy());
- printf("p_%p = from_domain_and_range(p_%p, p_%p)\n", res, domain.get(), range.get());
+ printf("%s = isl_map_from_domain_and_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), domain.get(), range.get());
   return manage(res);
 }
 
 isl::map map::from_multi_aff(isl::multi_aff maff)
 {
   auto res = isl_map_from_multi_aff(maff.copy());
- printf("p_%p = from_multi_aff(p_%p)\n", res, maff.get());
+ printf("%s = isl_map_from_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), maff.get());
   return manage(res);
 }
 
 isl::map map::from_multi_pw_aff(isl::multi_pw_aff mpa)
 {
   auto res = isl_map_from_multi_pw_aff(mpa.copy());
- printf("p_%p = from_multi_pw_aff(p_%p)\n", res, mpa.get());
+ printf("%s = isl_map_from_multi_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), mpa.get());
   return manage(res);
 }
 
 isl::map map::from_pw_aff(isl::pw_aff pwaff)
 {
   auto res = isl_map_from_pw_aff(pwaff.copy());
- printf("p_%p = from_pw_aff(p_%p)\n", res, pwaff.get());
+ printf("%s = isl_map_from_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), pwaff.get());
   return manage(res);
 }
 
 isl::map map::from_pw_multi_aff(isl::pw_multi_aff pma)
 {
   auto res = isl_map_from_pw_multi_aff(pma.copy());
- printf("p_%p = from_pw_multi_aff(p_%p)\n", res, pma.get());
+ printf("%s = isl_map_from_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), pma.get());
   return manage(res);
 }
 
 isl::map map::from_range(isl::set set)
 {
   auto res = isl_map_from_range(set.copy());
- printf("p_%p = from_range(p_%p)\n", res, set.get());
+ printf("%s = isl_map_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), set.get());
   return manage(res);
 }
 
 isl::map map::from_union_map(isl::union_map umap)
 {
   auto res = isl_map_from_union_map(umap.copy());
- printf("p_%p = from_union_map(p_%p)\n", res, umap.get());
+ printf("%s = isl_map_from_union_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), umap.get());
   return manage(res);
 }
 
 isl::id map::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_map_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_map_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 std::string map::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_map_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_map_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -7593,28 +7680,28 @@ std::string map::get_dim_name(isl::dim type, unsigned int pos) const
 uint32_t map::get_hash() const
 {
   auto res = isl_map_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_map_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 isl::space map::get_space() const
 {
   auto res = isl_map_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_map_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id map::get_tuple_id(isl::dim type) const
 {
   auto res = isl_map_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_map_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 std::string map::get_tuple_name(isl::dim type) const
 {
   auto res = isl_map_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_map_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -7622,728 +7709,728 @@ std::string map::get_tuple_name(isl::dim type) const
 isl::map map::gist(isl::map context) const
 {
   auto res = isl_map_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_map_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::map map::gist_basic_map(isl::basic_map context) const
 {
   auto res = isl_map_gist_basic_map(copy(), context.copy());
- printf("p_%p = p_%p.gist_basic_map(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_map_gist_basic_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::map map::gist_domain(isl::set context) const
 {
   auto res = isl_map_gist_domain(copy(), context.copy());
- printf("p_%p = p_%p.gist_domain(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_map_gist_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::map map::gist_params(isl::set context) const
 {
   auto res = isl_map_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_map_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::map map::gist_range(isl::set context) const
 {
   auto res = isl_map_gist_range(copy(), context.copy());
- printf("p_%p = p_%p.gist_range(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_map_gist_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::boolean map::has_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_map_has_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_map_has_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean map::has_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_map_has_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_map_has_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean map::has_equal_space(const isl::map &map2) const
 {
   auto res = isl_map_has_equal_space(get(), map2.get());
- printf("p_%p = p_%p.has_equal_space(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_has_equal_space(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::boolean map::has_tuple_id(isl::dim type) const
 {
   auto res = isl_map_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_map_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::boolean map::has_tuple_name(isl::dim type) const
 {
   auto res = isl_map_has_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_map_has_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::map map::identity(isl::space dim)
 {
   auto res = isl_map_identity(dim.copy());
- printf("p_%p = identity(p_%p)\n", res, dim.get());
+ printf("%s = isl_map_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), dim.get());
   return manage(res);
 }
 
 isl::map map::insert_dims(isl::dim type, unsigned int pos, unsigned int n) const
 {
   auto res = isl_map_insert_dims(copy(), static_cast<enum isl_dim_type>(type), pos, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, pos, n);
+ printf("%s = isl_map_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, pos, n);
   return manage(res);
 }
 
 isl::map map::intersect(isl::map map2) const
 {
   auto res = isl_map_intersect(copy(), map2.copy());
- printf("p_%p = p_%p.intersect(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_intersect(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::intersect_domain(isl::set set) const
 {
   auto res = isl_map_intersect_domain(copy(), set.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_map_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::map map::intersect_domain_factor_range(isl::map factor) const
 {
   auto res = isl_map_intersect_domain_factor_range(copy(), factor.copy());
- printf("p_%p = p_%p.intersect_domain_factor_range(p_%p)\n", res, this->ptr, factor.get());
+ printf("%s = isl_map_intersect_domain_factor_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, factor.get());
   return manage(res);
 }
 
 isl::map map::intersect_params(isl::set params) const
 {
   auto res = isl_map_intersect_params(copy(), params.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, params.get());
+ printf("%s = isl_map_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, params.get());
   return manage(res);
 }
 
 isl::map map::intersect_range(isl::set set) const
 {
   auto res = isl_map_intersect_range(copy(), set.copy());
- printf("p_%p = p_%p.intersect_range(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_map_intersect_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::map map::intersect_range_factor_range(isl::map factor) const
 {
   auto res = isl_map_intersect_range_factor_range(copy(), factor.copy());
- printf("p_%p = p_%p.intersect_range_factor_range(p_%p)\n", res, this->ptr, factor.get());
+ printf("%s = isl_map_intersect_range_factor_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, factor.get());
   return manage(res);
 }
 
 isl::boolean map::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_map_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_map_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean map::is_bijective() const
 {
   auto res = isl_map_is_bijective(get());
- printf("p_%p = p_%p.is_bijective()\n", res, this->ptr);
+ printf("%s = isl_map_is_bijective(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::is_disjoint(const isl::map &map2) const
 {
   auto res = isl_map_is_disjoint(get(), map2.get());
- printf("p_%p = p_%p.is_disjoint(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_is_disjoint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::boolean map::is_empty() const
 {
   auto res = isl_map_is_empty(get());
- printf("p_%p = p_%p.is_empty()\n", res, this->ptr);
+ printf("%s = isl_map_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::is_equal(const isl::map &map2) const
 {
   auto res = isl_map_is_equal(get(), map2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::boolean map::is_identity() const
 {
   auto res = isl_map_is_identity(get());
- printf("p_%p = p_%p.is_identity()\n", res, this->ptr);
+ printf("%s = isl_map_is_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::is_injective() const
 {
   auto res = isl_map_is_injective(get());
- printf("p_%p = p_%p.is_injective()\n", res, this->ptr);
+ printf("%s = isl_map_is_injective(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::is_product() const
 {
   auto res = isl_map_is_product(get());
- printf("p_%p = p_%p.is_product()\n", res, this->ptr);
+ printf("%s = isl_map_is_product(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::is_single_valued() const
 {
   auto res = isl_map_is_single_valued(get());
- printf("p_%p = p_%p.is_single_valued()\n", res, this->ptr);
+ printf("%s = isl_map_is_single_valued(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::is_strict_subset(const isl::map &map2) const
 {
   auto res = isl_map_is_strict_subset(get(), map2.get());
- printf("p_%p = p_%p.is_strict_subset(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_is_strict_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::boolean map::is_subset(const isl::map &map2) const
 {
   auto res = isl_map_is_subset(get(), map2.get());
- printf("p_%p = p_%p.is_subset(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_is_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 int map::is_translation() const
 {
   auto res = isl_map_is_translation(get());
- printf("p_%p = p_%p.is_translation()\n", res, this->ptr);
+ printf("%s = isl_map_is_translation(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::map map::lex_ge(isl::space set_dim)
 {
   auto res = isl_map_lex_ge(set_dim.copy());
- printf("p_%p = lex_ge(p_%p)\n", res, set_dim.get());
+ printf("%s = isl_map_lex_ge(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), set_dim.get());
   return manage(res);
 }
 
 isl::map map::lex_ge_first(isl::space dim, unsigned int n)
 {
   auto res = isl_map_lex_ge_first(dim.copy(), n);
- printf("p_%p = lex_ge_first(p_%p, %u)\n", res, dim.get(), n);
+ printf("%s = isl_map_lex_ge_first(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), dim.get(), n);
   return manage(res);
 }
 
 isl::map map::lex_ge_map(isl::map map2) const
 {
   auto res = isl_map_lex_ge_map(copy(), map2.copy());
- printf("p_%p = p_%p.lex_ge_map(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_lex_ge_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::lex_gt(isl::space set_dim)
 {
   auto res = isl_map_lex_gt(set_dim.copy());
- printf("p_%p = lex_gt(p_%p)\n", res, set_dim.get());
+ printf("%s = isl_map_lex_gt(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), set_dim.get());
   return manage(res);
 }
 
 isl::map map::lex_gt_first(isl::space dim, unsigned int n)
 {
   auto res = isl_map_lex_gt_first(dim.copy(), n);
- printf("p_%p = lex_gt_first(p_%p, %u)\n", res, dim.get(), n);
+ printf("%s = isl_map_lex_gt_first(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), dim.get(), n);
   return manage(res);
 }
 
 isl::map map::lex_gt_map(isl::map map2) const
 {
   auto res = isl_map_lex_gt_map(copy(), map2.copy());
- printf("p_%p = p_%p.lex_gt_map(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_lex_gt_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::lex_le(isl::space set_dim)
 {
   auto res = isl_map_lex_le(set_dim.copy());
- printf("p_%p = lex_le(p_%p)\n", res, set_dim.get());
+ printf("%s = isl_map_lex_le(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), set_dim.get());
   return manage(res);
 }
 
 isl::map map::lex_le_first(isl::space dim, unsigned int n)
 {
   auto res = isl_map_lex_le_first(dim.copy(), n);
- printf("p_%p = lex_le_first(p_%p, %u)\n", res, dim.get(), n);
+ printf("%s = isl_map_lex_le_first(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), dim.get(), n);
   return manage(res);
 }
 
 isl::map map::lex_le_map(isl::map map2) const
 {
   auto res = isl_map_lex_le_map(copy(), map2.copy());
- printf("p_%p = p_%p.lex_le_map(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_lex_le_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::lex_lt(isl::space set_dim)
 {
   auto res = isl_map_lex_lt(set_dim.copy());
- printf("p_%p = lex_lt(p_%p)\n", res, set_dim.get());
+ printf("%s = isl_map_lex_lt(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), set_dim.get());
   return manage(res);
 }
 
 isl::map map::lex_lt_first(isl::space dim, unsigned int n)
 {
   auto res = isl_map_lex_lt_first(dim.copy(), n);
- printf("p_%p = lex_lt_first(p_%p, %u)\n", res, dim.get(), n);
+ printf("%s = isl_map_lex_lt_first(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), dim.get(), n);
   return manage(res);
 }
 
 isl::map map::lex_lt_map(isl::map map2) const
 {
   auto res = isl_map_lex_lt_map(copy(), map2.copy());
- printf("p_%p = p_%p.lex_lt_map(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_lex_lt_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::lexmax() const
 {
   auto res = isl_map_lexmax(copy());
- printf("p_%p = p_%p.lexmax()\n", res, this->ptr);
+ printf("%s = isl_map_lexmax(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff map::lexmax_pw_multi_aff() const
 {
   auto res = isl_map_lexmax_pw_multi_aff(copy());
- printf("p_%p = p_%p.lexmax_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_map_lexmax_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::lexmin() const
 {
   auto res = isl_map_lexmin(copy());
- printf("p_%p = p_%p.lexmin()\n", res, this->ptr);
+ printf("%s = isl_map_lexmin(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff map::lexmin_pw_multi_aff() const
 {
   auto res = isl_map_lexmin_pw_multi_aff(copy());
- printf("p_%p = p_%p.lexmin_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_map_lexmin_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::lower_bound_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_map_lower_bound_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.lower_bound_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_map_lower_bound_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::map map::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_map_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_map_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 int map::n_basic_map() const
 {
   auto res = isl_map_n_basic_map(get());
- printf("p_%p = p_%p.n_basic_map()\n", res, this->ptr);
+ printf("%s = isl_map_n_basic_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::map map::nat_universe(isl::space dim)
 {
   auto res = isl_map_nat_universe(dim.copy());
- printf("p_%p = nat_universe(p_%p)\n", res, dim.get());
+ printf("%s = isl_map_nat_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), dim.get());
   return manage(res);
 }
 
 isl::map map::neg() const
 {
   auto res = isl_map_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_map_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::oppose(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_map_oppose(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.oppose(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_map_oppose(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::map map::order_ge(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_map_order_ge(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.order_ge(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_map_order_ge(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::map map::order_gt(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_map_order_gt(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.order_gt(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_map_order_gt(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::map map::order_le(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_map_order_le(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.order_le(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_map_order_le(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::map map::order_lt(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_map_order_lt(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.order_lt(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_map_order_lt(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 isl::set map::params() const
 {
   auto res = isl_map_params(copy());
- printf("p_%p = p_%p.params()\n", res, this->ptr);
+ printf("%s = isl_map_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val map::plain_get_val_if_fixed(isl::dim type, unsigned int pos) const
 {
   auto res = isl_map_plain_get_val_if_fixed(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.plain_get_val_if_fixed(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_map_plain_get_val_if_fixed(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean map::plain_is_empty() const
 {
   auto res = isl_map_plain_is_empty(get());
- printf("p_%p = p_%p.plain_is_empty()\n", res, this->ptr);
+ printf("%s = isl_map_plain_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::plain_is_equal(const isl::map &map2) const
 {
   auto res = isl_map_plain_is_equal(get(), map2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::boolean map::plain_is_injective() const
 {
   auto res = isl_map_plain_is_injective(get());
- printf("p_%p = p_%p.plain_is_injective()\n", res, this->ptr);
+ printf("%s = isl_map_plain_is_injective(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::plain_is_single_valued() const
 {
   auto res = isl_map_plain_is_single_valued(get());
- printf("p_%p = p_%p.plain_is_single_valued()\n", res, this->ptr);
+ printf("%s = isl_map_plain_is_single_valued(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::plain_is_universe() const
 {
   auto res = isl_map_plain_is_universe(get());
- printf("p_%p = p_%p.plain_is_universe()\n", res, this->ptr);
+ printf("%s = isl_map_plain_is_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map map::plain_unshifted_simple_hull() const
 {
   auto res = isl_map_plain_unshifted_simple_hull(copy());
- printf("p_%p = p_%p.plain_unshifted_simple_hull()\n", res, this->ptr);
+ printf("%s = isl_map_plain_unshifted_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map map::polyhedral_hull() const
 {
   auto res = isl_map_polyhedral_hull(copy());
- printf("p_%p = p_%p.polyhedral_hull()\n", res, this->ptr);
+ printf("%s = isl_map_polyhedral_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::preimage_domain_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_map_preimage_domain_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_domain_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_map_preimage_domain_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::map map::preimage_domain_multi_pw_aff(isl::multi_pw_aff mpa) const
 {
   auto res = isl_map_preimage_domain_multi_pw_aff(copy(), mpa.copy());
- printf("p_%p = p_%p.preimage_domain_multi_pw_aff(p_%p)\n", res, this->ptr, mpa.get());
+ printf("%s = isl_map_preimage_domain_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, mpa.get());
   return manage(res);
 }
 
 isl::map map::preimage_domain_pw_multi_aff(isl::pw_multi_aff pma) const
 {
   auto res = isl_map_preimage_domain_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.preimage_domain_pw_multi_aff(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_map_preimage_domain_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::map map::preimage_range_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_map_preimage_range_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_range_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_map_preimage_range_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::map map::preimage_range_pw_multi_aff(isl::pw_multi_aff pma) const
 {
   auto res = isl_map_preimage_range_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.preimage_range_pw_multi_aff(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_map_preimage_range_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::map map::product(isl::map map2) const
 {
   auto res = isl_map_product(copy(), map2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::project_out(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_map_project_out(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.project_out(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_map_project_out(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set map::range() const
 {
   auto res = isl_map_range(copy());
- printf("p_%p = p_%p.range()\n", res, this->ptr);
+ printf("%s = isl_map_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::range_curry() const
 {
   auto res = isl_map_range_curry(copy());
- printf("p_%p = p_%p.range_curry()\n", res, this->ptr);
+ printf("%s = isl_map_range_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::range_factor_domain() const
 {
   auto res = isl_map_range_factor_domain(copy());
- printf("p_%p = p_%p.range_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_map_range_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::range_factor_range() const
 {
   auto res = isl_map_range_factor_range(copy());
- printf("p_%p = p_%p.range_factor_range()\n", res, this->ptr);
+ printf("%s = isl_map_range_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean map::range_is_wrapping() const
 {
   auto res = isl_map_range_is_wrapping(get());
- printf("p_%p = p_%p.range_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_map_range_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::range_map() const
 {
   auto res = isl_map_range_map(copy());
- printf("p_%p = p_%p.range_map()\n", res, this->ptr);
+ printf("%s = isl_map_range_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::range_product(isl::map map2) const
 {
   auto res = isl_map_range_product(copy(), map2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::remove_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_map_remove_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_map_remove_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::map map::remove_divs() const
 {
   auto res = isl_map_remove_divs(copy());
- printf("p_%p = p_%p.remove_divs()\n", res, this->ptr);
+ printf("%s = isl_map_remove_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::remove_divs_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_map_remove_divs_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_divs_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_map_remove_divs_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::map map::remove_redundancies() const
 {
   auto res = isl_map_remove_redundancies(copy());
- printf("p_%p = p_%p.remove_redundancies()\n", res, this->ptr);
+ printf("%s = isl_map_remove_redundancies(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::remove_unknown_divs() const
 {
   auto res = isl_map_remove_unknown_divs(copy());
- printf("p_%p = p_%p.remove_unknown_divs()\n", res, this->ptr);
+ printf("%s = isl_map_remove_unknown_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_map_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_map_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::map map::reset_user() const
 {
   auto res = isl_map_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_map_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::reverse() const
 {
   auto res = isl_map_reverse(copy());
- printf("p_%p = p_%p.reverse()\n", res, this->ptr);
+ printf("%s = isl_map_reverse(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map map::sample() const
 {
   auto res = isl_map_sample(copy());
- printf("p_%p = p_%p.sample()\n", res, this->ptr);
+ printf("%s = isl_map_sample(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_map_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_map_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::map map::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_map_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_map_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::map map::set_tuple_name(isl::dim type, const std::string &s) const
 {
   auto res = isl_map_set_tuple_name(copy(), static_cast<enum isl_dim_type>(type), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%d, %s)\n", res, this->ptr, type, s.c_str());
+ printf("%s = isl_map_set_tuple_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, s.c_str());
   return manage(res);
 }
 
 isl::basic_map map::simple_hull() const
 {
   auto res = isl_map_simple_hull(copy());
- printf("p_%p = p_%p.simple_hull()\n", res, this->ptr);
+ printf("%s = isl_map_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::subtract(isl::map map2) const
 {
   auto res = isl_map_subtract(copy(), map2.copy());
- printf("p_%p = p_%p.subtract(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_subtract(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::subtract_domain(isl::set dom) const
 {
   auto res = isl_map_subtract_domain(copy(), dom.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, dom.get());
+ printf("%s = isl_map_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, dom.get());
   return manage(res);
 }
 
 isl::map map::subtract_range(isl::set dom) const
 {
   auto res = isl_map_subtract_range(copy(), dom.copy());
- printf("p_%p = p_%p.subtract_range(p_%p)\n", res, this->ptr, dom.get());
+ printf("%s = isl_map_subtract_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, dom.get());
   return manage(res);
 }
 
 isl::map map::sum(isl::map map2) const
 {
   auto res = isl_map_sum(copy(), map2.copy());
- printf("p_%p = p_%p.sum(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_sum(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::uncurry() const
 {
   auto res = isl_map_uncurry(copy());
- printf("p_%p = p_%p.uncurry()\n", res, this->ptr);
+ printf("%s = isl_map_uncurry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::unite(isl::map map2) const
 {
   auto res = isl_map_union(copy(), map2.copy());
- printf("p_%p = p_%p.unite(p_%p)\n", res, this->ptr, map2.get());
+ printf("%s = isl_map_union(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, map2.get());
   return manage(res);
 }
 
 isl::map map::universe(isl::space space)
 {
   auto res = isl_map_universe(space.copy());
- printf("p_%p = universe(p_%p)\n", res, space.get());
+ printf("%s = isl_map_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), space.get());
   return manage(res);
 }
 
 isl::basic_map map::unshifted_simple_hull() const
 {
   auto res = isl_map_unshifted_simple_hull(copy());
- printf("p_%p = p_%p.unshifted_simple_hull()\n", res, this->ptr);
+ printf("%s = isl_map_unshifted_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map map::unshifted_simple_hull_from_map_list(isl::map_list list) const
 {
   auto res = isl_map_unshifted_simple_hull_from_map_list(copy(), list.copy());
- printf("p_%p = p_%p.unshifted_simple_hull_from_map_list(p_%p)\n", res, this->ptr, list.get());
+ printf("%s = isl_map_unshifted_simple_hull_from_map_list(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr, list.get());
   return manage(res);
 }
 
 isl::map map::upper_bound_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_map_upper_bound_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.upper_bound_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_map_upper_bound_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::set map::wrap() const
 {
   auto res = isl_map_wrap(copy());
- printf("p_%p = p_%p.wrap()\n", res, this->ptr);
+ printf("%s = isl_map_wrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map map::zip() const
 {
   auto res = isl_map_zip(copy());
- printf("p_%p = p_%p.zip()\n", res, this->ptr);
+ printf("%s = isl_map_zip(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -8377,11 +8464,15 @@ map_list &map_list::operator=(isl::map_list obj) {
 }
 
 map_list::~map_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_map_list_free(p_%lu);\n", this->ptr);
     isl_map_list_free(ptr);
+  }
 }
 
 __isl_give isl_map_list *map_list::copy() const & {
+auto temp = isl_map_list_copy(ptr);
+printf("%s = isl_map_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_map_list").c_str(), this->ptr);
   return isl_map_list_copy(ptr);
 }
 
@@ -8443,11 +8534,15 @@ mat &mat::operator=(isl::mat obj) {
 }
 
 mat::~mat() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_mat_free(p_%lu);\n", this->ptr);
     isl_mat_free(ptr);
+  }
 }
 
 __isl_give isl_mat *mat::copy() const & {
+auto temp = isl_mat_copy(ptr);
+printf("%s = isl_mat_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_mat").c_str(), this->ptr);
   return isl_mat_copy(ptr);
 }
 
@@ -8481,280 +8576,280 @@ void mat::dump() const {
 isl::mat mat::add_rows(unsigned int n) const
 {
   auto res = isl_mat_add_rows(copy(), n);
- printf("p_%p = p_%p.add_rows(%u)\n", res, this->ptr, n);
+ printf("%s = isl_mat_add_rows(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, n);
   return manage(res);
 }
 
 isl::mat mat::add_zero_cols(unsigned int n) const
 {
   auto res = isl_mat_add_zero_cols(copy(), n);
- printf("p_%p = p_%p.add_zero_cols(%u)\n", res, this->ptr, n);
+ printf("%s = isl_mat_add_zero_cols(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, n);
   return manage(res);
 }
 
 isl::mat mat::add_zero_rows(unsigned int n) const
 {
   auto res = isl_mat_add_zero_rows(copy(), n);
- printf("p_%p = p_%p.add_zero_rows(%u)\n", res, this->ptr, n);
+ printf("%s = isl_mat_add_zero_rows(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, n);
   return manage(res);
 }
 
 isl::mat mat::aff_direct_sum(isl::mat right) const
 {
   auto res = isl_mat_aff_direct_sum(copy(), right.copy());
- printf("p_%p = p_%p.aff_direct_sum(p_%p)\n", res, this->ptr, right.get());
+ printf("%s = isl_mat_aff_direct_sum(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, right.get());
   return manage(res);
 }
 
 isl::mat mat::alloc(isl::ctx ctx, unsigned int n_row, unsigned int n_col)
 {
   auto res = isl_mat_alloc(ctx.copy(), n_row, n_col);
- printf("p_%p = alloc(p_%p, %u, %u)\n", res, ctx.get(), n_row, n_col);
+ printf("%s = isl_mat_alloc(%s, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), "ctx_0", n_row, n_col);
   return manage(res);
 }
 
 int mat::cols() const
 {
   auto res = isl_mat_cols(get());
- printf("p_%p = p_%p.cols()\n", res, this->ptr);
+ printf("%s = isl_mat_cols(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::mat mat::concat(isl::mat bot) const
 {
   auto res = isl_mat_concat(copy(), bot.copy());
- printf("p_%p = p_%p.concat(p_%p)\n", res, this->ptr, bot.get());
+ printf("%s = isl_mat_concat(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, bot.get());
   return manage(res);
 }
 
 isl::mat mat::diagonal(isl::mat mat2) const
 {
   auto res = isl_mat_diagonal(copy(), mat2.copy());
- printf("p_%p = p_%p.diagonal(p_%p)\n", res, this->ptr, mat2.get());
+ printf("%s = isl_mat_diagonal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, mat2.get());
   return manage(res);
 }
 
 isl::mat mat::drop_cols(unsigned int col, unsigned int n) const
 {
   auto res = isl_mat_drop_cols(copy(), col, n);
- printf("p_%p = p_%p.drop_cols(%u, %u)\n", res, this->ptr, col, n);
+ printf("%s = isl_mat_drop_cols(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, col, n);
   return manage(res);
 }
 
 isl::mat mat::drop_rows(unsigned int row, unsigned int n) const
 {
   auto res = isl_mat_drop_rows(copy(), row, n);
- printf("p_%p = p_%p.drop_rows(%u, %u)\n", res, this->ptr, row, n);
+ printf("%s = isl_mat_drop_rows(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, row, n);
   return manage(res);
 }
 
 isl::mat mat::from_row_vec(isl::vec vec)
 {
   auto res = isl_mat_from_row_vec(vec.copy());
- printf("p_%p = from_row_vec(p_%p)\n", res, vec.get());
+ printf("%s = isl_mat_from_row_vec(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), vec.get());
   return manage(res);
 }
 
 isl::val mat::get_element_val(int row, int col) const
 {
   auto res = isl_mat_get_element_val(get(), row, col);
- printf("p_%p = p_%p.get_element_val(%d, %d)\n", res, this->ptr, row, col);
+ printf("%s = isl_mat_get_element_val(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, row, col);
   return manage(res);
 }
 
 isl::boolean mat::has_linearly_independent_rows(const isl::mat &mat2) const
 {
   auto res = isl_mat_has_linearly_independent_rows(get(), mat2.get());
- printf("p_%p = p_%p.has_linearly_independent_rows(p_%p)\n", res, this->ptr, mat2.get());
+ printf("%s = isl_mat_has_linearly_independent_rows(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, mat2.get());
   return manage(res);
 }
 
 int mat::initial_non_zero_cols() const
 {
   auto res = isl_mat_initial_non_zero_cols(get());
- printf("p_%p = p_%p.initial_non_zero_cols()\n", res, this->ptr);
+ printf("%s = isl_mat_initial_non_zero_cols(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::mat mat::insert_cols(unsigned int col, unsigned int n) const
 {
   auto res = isl_mat_insert_cols(copy(), col, n);
- printf("p_%p = p_%p.insert_cols(%u, %u)\n", res, this->ptr, col, n);
+ printf("%s = isl_mat_insert_cols(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, col, n);
   return manage(res);
 }
 
 isl::mat mat::insert_rows(unsigned int row, unsigned int n) const
 {
   auto res = isl_mat_insert_rows(copy(), row, n);
- printf("p_%p = p_%p.insert_rows(%u, %u)\n", res, this->ptr, row, n);
+ printf("%s = isl_mat_insert_rows(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, row, n);
   return manage(res);
 }
 
 isl::mat mat::insert_zero_cols(unsigned int first, unsigned int n) const
 {
   auto res = isl_mat_insert_zero_cols(copy(), first, n);
- printf("p_%p = p_%p.insert_zero_cols(%u, %u)\n", res, this->ptr, first, n);
+ printf("%s = isl_mat_insert_zero_cols(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, first, n);
   return manage(res);
 }
 
 isl::mat mat::insert_zero_rows(unsigned int row, unsigned int n) const
 {
   auto res = isl_mat_insert_zero_rows(copy(), row, n);
- printf("p_%p = p_%p.insert_zero_rows(%u, %u)\n", res, this->ptr, row, n);
+ printf("%s = isl_mat_insert_zero_rows(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, row, n);
   return manage(res);
 }
 
 isl::mat mat::inverse_product(isl::mat right) const
 {
   auto res = isl_mat_inverse_product(copy(), right.copy());
- printf("p_%p = p_%p.inverse_product(p_%p)\n", res, this->ptr, right.get());
+ printf("%s = isl_mat_inverse_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, right.get());
   return manage(res);
 }
 
 isl::boolean mat::is_equal(const isl::mat &mat2) const
 {
   auto res = isl_mat_is_equal(get(), mat2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, mat2.get());
+ printf("%s = isl_mat_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, mat2.get());
   return manage(res);
 }
 
 isl::mat mat::lin_to_aff() const
 {
   auto res = isl_mat_lin_to_aff(copy());
- printf("p_%p = p_%p.lin_to_aff()\n", res, this->ptr);
+ printf("%s = isl_mat_lin_to_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::mat mat::move_cols(unsigned int dst_col, unsigned int src_col, unsigned int n) const
 {
   auto res = isl_mat_move_cols(copy(), dst_col, src_col, n);
- printf("p_%p = p_%p.move_cols(%u, %u, %u)\n", res, this->ptr, dst_col, src_col, n);
+ printf("%s = isl_mat_move_cols(p_%lu, %u, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, dst_col, src_col, n);
   return manage(res);
 }
 
 isl::mat mat::normalize() const
 {
   auto res = isl_mat_normalize(copy());
- printf("p_%p = p_%p.normalize()\n", res, this->ptr);
+ printf("%s = isl_mat_normalize(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::mat mat::normalize_row(int row) const
 {
   auto res = isl_mat_normalize_row(copy(), row);
- printf("p_%p = p_%p.normalize_row(%d)\n", res, this->ptr, row);
+ printf("%s = isl_mat_normalize_row(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, row);
   return manage(res);
 }
 
 isl::mat mat::product(isl::mat right) const
 {
   auto res = isl_mat_product(copy(), right.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, right.get());
+ printf("%s = isl_mat_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, right.get());
   return manage(res);
 }
 
 int mat::rank() const
 {
   auto res = isl_mat_rank(get());
- printf("p_%p = p_%p.rank()\n", res, this->ptr);
+ printf("%s = isl_mat_rank(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::mat mat::right_inverse() const
 {
   auto res = isl_mat_right_inverse(copy());
- printf("p_%p = p_%p.right_inverse()\n", res, this->ptr);
+ printf("%s = isl_mat_right_inverse(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::mat mat::right_kernel() const
 {
   auto res = isl_mat_right_kernel(copy());
- printf("p_%p = p_%p.right_kernel()\n", res, this->ptr);
+ printf("%s = isl_mat_right_kernel(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::mat mat::row_basis() const
 {
   auto res = isl_mat_row_basis(copy());
- printf("p_%p = p_%p.row_basis()\n", res, this->ptr);
+ printf("%s = isl_mat_row_basis(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::mat mat::row_basis_extension(isl::mat mat2) const
 {
   auto res = isl_mat_row_basis_extension(copy(), mat2.copy());
- printf("p_%p = p_%p.row_basis_extension(p_%p)\n", res, this->ptr, mat2.get());
+ printf("%s = isl_mat_row_basis_extension(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, mat2.get());
   return manage(res);
 }
 
 int mat::rows() const
 {
   auto res = isl_mat_rows(get());
- printf("p_%p = p_%p.rows()\n", res, this->ptr);
+ printf("%s = isl_mat_rows(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::mat mat::set_element_si(int row, int col, int v) const
 {
   auto res = isl_mat_set_element_si(copy(), row, col, v);
- printf("p_%p = p_%p.set_element_si(%d, %d, %d)\n", res, this->ptr, row, col, v);
+ printf("%s = isl_mat_set_element_si(p_%lu, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, row, col, v);
   return manage(res);
 }
 
 isl::mat mat::set_element_val(int row, int col, isl::val v) const
 {
   auto res = isl_mat_set_element_val(copy(), row, col, v.copy());
- printf("p_%p = p_%p.set_element_val(%d, %d, p_%p)\n", res, this->ptr, row, col, v.get());
+ printf("%s = isl_mat_set_element_val(p_%lu, %d, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, row, col, v.get());
   return manage(res);
 }
 
 isl::mat mat::swap_cols(unsigned int i, unsigned int j) const
 {
   auto res = isl_mat_swap_cols(copy(), i, j);
- printf("p_%p = p_%p.swap_cols(%u, %u)\n", res, this->ptr, i, j);
+ printf("%s = isl_mat_swap_cols(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, i, j);
   return manage(res);
 }
 
 isl::mat mat::swap_rows(unsigned int i, unsigned int j) const
 {
   auto res = isl_mat_swap_rows(copy(), i, j);
- printf("p_%p = p_%p.swap_rows(%u, %u)\n", res, this->ptr, i, j);
+ printf("%s = isl_mat_swap_rows(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, i, j);
   return manage(res);
 }
 
 isl::mat mat::transpose() const
 {
   auto res = isl_mat_transpose(copy());
- printf("p_%p = p_%p.transpose()\n", res, this->ptr);
+ printf("%s = isl_mat_transpose(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::mat mat::unimodular_complete(int row) const
 {
   auto res = isl_mat_unimodular_complete(copy(), row);
- printf("p_%p = p_%p.unimodular_complete(%d)\n", res, this->ptr, row);
+ printf("%s = isl_mat_unimodular_complete(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, row);
   return manage(res);
 }
 
 isl::mat mat::vec_concat(isl::vec bot) const
 {
   auto res = isl_mat_vec_concat(copy(), bot.copy());
- printf("p_%p = p_%p.vec_concat(p_%p)\n", res, this->ptr, bot.get());
+ printf("%s = isl_mat_vec_concat(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_mat").c_str(), this->ptr, bot.get());
   return manage(res);
 }
 
 isl::vec mat::vec_inverse_product(isl::vec vec) const
 {
   auto res = isl_mat_vec_inverse_product(copy(), vec.copy());
- printf("p_%p = p_%p.vec_inverse_product(p_%p)\n", res, this->ptr, vec.get());
+ printf("%s = isl_mat_vec_inverse_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, vec.get());
   return manage(res);
 }
 
 isl::vec mat::vec_product(isl::vec vec) const
 {
   auto res = isl_mat_vec_product(copy(), vec.copy());
- printf("p_%p = p_%p.vec_product(p_%p)\n", res, this->ptr, vec.get());
+ printf("%s = isl_mat_vec_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, vec.get());
   return manage(res);
 }
 
@@ -8784,13 +8879,13 @@ multi_aff::multi_aff(__isl_take isl_multi_aff *ptr)
 multi_aff::multi_aff(isl::aff aff)
 {
   auto res = isl_multi_aff_from_aff(aff.copy());
- printf("p_%p = from_aff(p_%p)\n", res, aff.get());
+ printf("%s = isl_multi_aff_from_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), aff.get());
   ptr = res;
 }
 multi_aff::multi_aff(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_multi_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_multi_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -8800,11 +8895,15 @@ multi_aff &multi_aff::operator=(isl::multi_aff obj) {
 }
 
 multi_aff::~multi_aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_multi_aff_free(p_%lu);\n", this->ptr);
     isl_multi_aff_free(ptr);
+  }
 }
 
 __isl_give isl_multi_aff *multi_aff::copy() const & {
+auto temp = isl_multi_aff_copy(ptr);
+printf("%s = isl_multi_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_multi_aff").c_str(), this->ptr);
   return isl_multi_aff_copy(ptr);
 }
 
@@ -8847,147 +8946,147 @@ void multi_aff::dump() const {
 isl::multi_aff multi_aff::add(isl::multi_aff multi2) const
 {
   auto res = isl_multi_aff_add(copy(), multi2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_multi_aff_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_multi_aff_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::align_params(isl::space model) const
 {
   auto res = isl_multi_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_multi_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 unsigned int multi_aff::dim(isl::dim type) const
 {
   auto res = isl_multi_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::multi_aff multi_aff::domain_map(isl::space space)
 {
   auto res = isl_multi_aff_domain_map(space.copy());
- printf("p_%p = domain_map(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_aff_domain_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::factor_range() const
 {
   auto res = isl_multi_aff_factor_range(copy());
- printf("p_%p = p_%p.factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 int multi_aff::find_dim_by_id(isl::dim type, const isl::id &id) const
 {
   auto res = isl_multi_aff_find_dim_by_id(get(), static_cast<enum isl_dim_type>(type), id.get());
- printf("p_%p = p_%p.find_dim_by_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_aff_find_dim_by_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, id.get());
   return res;
 }
 
 int multi_aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_multi_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_multi_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::multi_aff multi_aff::flat_range_product(isl::multi_aff multi2) const
 {
   auto res = isl_multi_aff_flat_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_aff_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::flatten_domain() const
 {
   auto res = isl_multi_aff_flatten_domain(copy());
- printf("p_%p = p_%p.flatten_domain()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_flatten_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::flatten_range() const
 {
   auto res = isl_multi_aff_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::floor() const
 {
   auto res = isl_multi_aff_floor(copy());
- printf("p_%p = p_%p.floor()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_floor(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::from_aff_list(isl::space space, isl::aff_list list)
 {
   auto res = isl_multi_aff_from_aff_list(space.copy(), list.copy());
- printf("p_%p = from_aff_list(p_%p, p_%p)\n", res, space.get(), list.get());
+ printf("%s = isl_multi_aff_from_aff_list(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), space.get(), list.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::from_range() const
 {
   auto res = isl_multi_aff_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff multi_aff::get_aff(int pos) const
 {
   auto res = isl_multi_aff_get_aff(get(), pos);
- printf("p_%p = p_%p.get_aff(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_multi_aff_get_aff(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::id multi_aff::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_multi_aff_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_multi_aff_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::space multi_aff::get_domain_space() const
 {
   auto res = isl_multi_aff_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space multi_aff::get_space() const
 {
   auto res = isl_multi_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id multi_aff::get_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_aff_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 std::string multi_aff::get_tuple_name(isl::dim type) const
 {
   auto res = isl_multi_aff_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_aff_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -8995,280 +9094,280 @@ std::string multi_aff::get_tuple_name(isl::dim type) const
 isl::multi_aff multi_aff::gist(isl::set context) const
 {
   auto res = isl_multi_aff_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_multi_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::gist_params(isl::set context) const
 {
   auto res = isl_multi_aff_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_multi_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::boolean multi_aff::has_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_aff_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_aff_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::identity(isl::space space)
 {
   auto res = isl_multi_aff_identity(space.copy());
- printf("p_%p = identity(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_aff_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_aff_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_aff_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean multi_aff::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_aff_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_aff_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean multi_aff::involves_nan() const
 {
   auto res = isl_multi_aff_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set multi_aff::lex_ge_set(isl::multi_aff ma2) const
 {
   auto res = isl_multi_aff_lex_ge_set(copy(), ma2.copy());
- printf("p_%p = p_%p.lex_ge_set(p_%p)\n", res, this->ptr, ma2.get());
+ printf("%s = isl_multi_aff_lex_ge_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, ma2.get());
   return manage(res);
 }
 
 isl::set multi_aff::lex_gt_set(isl::multi_aff ma2) const
 {
   auto res = isl_multi_aff_lex_gt_set(copy(), ma2.copy());
- printf("p_%p = p_%p.lex_gt_set(p_%p)\n", res, this->ptr, ma2.get());
+ printf("%s = isl_multi_aff_lex_gt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, ma2.get());
   return manage(res);
 }
 
 isl::set multi_aff::lex_le_set(isl::multi_aff ma2) const
 {
   auto res = isl_multi_aff_lex_le_set(copy(), ma2.copy());
- printf("p_%p = p_%p.lex_le_set(p_%p)\n", res, this->ptr, ma2.get());
+ printf("%s = isl_multi_aff_lex_le_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, ma2.get());
   return manage(res);
 }
 
 isl::set multi_aff::lex_lt_set(isl::multi_aff ma2) const
 {
   auto res = isl_multi_aff_lex_lt_set(copy(), ma2.copy());
- printf("p_%p = p_%p.lex_lt_set(p_%p)\n", res, this->ptr, ma2.get());
+ printf("%s = isl_multi_aff_lex_lt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, ma2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::mod_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_aff_mod_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.mod_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_aff_mod_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_multi_aff_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_multi_aff_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::multi_val_on_space(isl::space space, isl::multi_val mv)
 {
   auto res = isl_multi_aff_multi_val_on_space(space.copy(), mv.copy());
- printf("p_%p = multi_val_on_space(p_%p, p_%p)\n", res, space.get(), mv.get());
+ printf("%s = isl_multi_aff_multi_val_on_space(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), space.get(), mv.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::neg() const
 {
   auto res = isl_multi_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 int multi_aff::plain_cmp(const isl::multi_aff &multi2) const
 {
   auto res = isl_multi_aff_plain_cmp(get(), multi2.get());
- printf("p_%p = p_%p.plain_cmp(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_aff_plain_cmp(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, multi2.get());
   return res;
 }
 
 isl::boolean multi_aff::plain_is_equal(const isl::multi_aff &multi2) const
 {
   auto res = isl_multi_aff_plain_is_equal(get(), multi2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::product(isl::multi_aff multi2) const
 {
   auto res = isl_multi_aff_product(copy(), multi2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_aff_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::project_domain_on_params() const
 {
   auto res = isl_multi_aff_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::project_out_map(isl::space space, isl::dim type, unsigned int first, unsigned int n)
 {
   auto res = isl_multi_aff_project_out_map(space.copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = project_out_map(p_%p, %d, %u, %u)\n", res, space.get(), type, first, n);
+ printf("%s = isl_multi_aff_project_out_map(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), space.get(), type, first, n);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::pullback(isl::multi_aff ma2) const
 {
   auto res = isl_multi_aff_pullback_multi_aff(copy(), ma2.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, ma2.get());
+ printf("%s = isl_multi_aff_pullback_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, ma2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::range_factor_domain() const
 {
   auto res = isl_multi_aff_range_factor_domain(copy());
- printf("p_%p = p_%p.range_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_range_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::range_factor_range() const
 {
   auto res = isl_multi_aff_range_factor_range(copy());
- printf("p_%p = p_%p.range_factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_range_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_aff::range_is_wrapping() const
 {
   auto res = isl_multi_aff_range_is_wrapping(get());
- printf("p_%p = p_%p.range_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_range_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::range_map(isl::space space)
 {
   auto res = isl_multi_aff_range_map(space.copy());
- printf("p_%p = range_map(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_aff_range_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::range_product(isl::multi_aff multi2) const
 {
   auto res = isl_multi_aff_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_aff_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::range_splice(unsigned int pos, isl::multi_aff multi2) const
 {
   auto res = isl_multi_aff_range_splice(copy(), pos, multi2.copy());
- printf("p_%p = p_%p.range_splice(%u, p_%p)\n", res, this->ptr, pos, multi2.get());
+ printf("%s = isl_multi_aff_range_splice(p_%lu, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, pos, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_aff_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_aff_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::reset_user() const
 {
   auto res = isl_multi_aff_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_multi_aff_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_aff multi_aff::scale_down_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_aff_scale_down_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_down_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_aff_scale_down_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::scale_down_val(isl::val v) const
 {
   auto res = isl_multi_aff_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::scale_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_aff_scale_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_aff_scale_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::scale_val(isl::val v) const
 {
   auto res = isl_multi_aff_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::set_aff(int pos, isl::aff el) const
 {
   auto res = isl_multi_aff_set_aff(copy(), pos, el.copy());
- printf("p_%p = p_%p.set_aff(%d, p_%p)\n", res, this->ptr, pos, el.get());
+ printf("%s = isl_multi_aff_set_aff(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, pos, el.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_multi_aff_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_multi_aff_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_multi_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_aff_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::set_tuple_name(isl::dim type, const std::string &s) const
 {
   auto res = isl_multi_aff_set_tuple_name(copy(), static_cast<enum isl_dim_type>(type), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%d, %s)\n", res, this->ptr, type, s.c_str());
+ printf("%s = isl_multi_aff_set_tuple_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, type, s.c_str());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::splice(unsigned int in_pos, unsigned int out_pos, isl::multi_aff multi2) const
 {
   auto res = isl_multi_aff_splice(copy(), in_pos, out_pos, multi2.copy());
- printf("p_%p = p_%p.splice(%u, %u, p_%p)\n", res, this->ptr, in_pos, out_pos, multi2.get());
+ printf("%s = isl_multi_aff_splice(p_%lu, %u, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, in_pos, out_pos, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::sub(isl::multi_aff multi2) const
 {
   auto res = isl_multi_aff_sub(copy(), multi2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_aff multi_aff::zero(isl::space space)
 {
   auto res = isl_multi_aff_zero(space.copy());
- printf("p_%p = zero(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_aff_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
@@ -9298,25 +9397,25 @@ multi_pw_aff::multi_pw_aff(__isl_take isl_multi_pw_aff *ptr)
 multi_pw_aff::multi_pw_aff(isl::multi_aff ma)
 {
   auto res = isl_multi_pw_aff_from_multi_aff(ma.copy());
- printf("p_%p = from_multi_aff(p_%p)\n", res, ma.get());
+ printf("%s = isl_multi_pw_aff_from_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), ma.get());
   ptr = res;
 }
 multi_pw_aff::multi_pw_aff(isl::pw_aff pa)
 {
   auto res = isl_multi_pw_aff_from_pw_aff(pa.copy());
- printf("p_%p = from_pw_aff(p_%p)\n", res, pa.get());
+ printf("%s = isl_multi_pw_aff_from_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), pa.get());
   ptr = res;
 }
 multi_pw_aff::multi_pw_aff(isl::pw_multi_aff pma)
 {
   auto res = isl_multi_pw_aff_from_pw_multi_aff(pma.copy());
- printf("p_%p = from_pw_multi_aff(p_%p)\n", res, pma.get());
+ printf("%s = isl_multi_pw_aff_from_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), pma.get());
   ptr = res;
 }
 multi_pw_aff::multi_pw_aff(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_multi_pw_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_multi_pw_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -9326,11 +9425,15 @@ multi_pw_aff &multi_pw_aff::operator=(isl::multi_pw_aff obj) {
 }
 
 multi_pw_aff::~multi_pw_aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_multi_pw_aff_free(p_%lu);\n", this->ptr);
     isl_multi_pw_aff_free(ptr);
+  }
 }
 
 __isl_give isl_multi_pw_aff *multi_pw_aff::copy() const & {
+auto temp = isl_multi_pw_aff_copy(ptr);
+printf("%s = isl_multi_pw_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_multi_pw_aff").c_str(), this->ptr);
   return isl_multi_pw_aff_copy(ptr);
 }
 
@@ -9373,154 +9476,154 @@ void multi_pw_aff::dump() const {
 isl::multi_pw_aff multi_pw_aff::add(isl::multi_pw_aff multi2) const
 {
   auto res = isl_multi_pw_aff_add(copy(), multi2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_pw_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_multi_pw_aff_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_multi_pw_aff_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::align_params(isl::space model) const
 {
   auto res = isl_multi_pw_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_multi_pw_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::coalesce() const
 {
   auto res = isl_multi_pw_aff_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int multi_pw_aff::dim(isl::dim type) const
 {
   auto res = isl_multi_pw_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_pw_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::set multi_pw_aff::domain() const
 {
   auto res = isl_multi_pw_aff_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_pw_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_pw_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::map multi_pw_aff::eq_map(isl::multi_pw_aff mpa2) const
 {
   auto res = isl_multi_pw_aff_eq_map(copy(), mpa2.copy());
- printf("p_%p = p_%p.eq_map(p_%p)\n", res, this->ptr, mpa2.get());
+ printf("%s = isl_multi_pw_aff_eq_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, mpa2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::factor_range() const
 {
   auto res = isl_multi_pw_aff_factor_range(copy());
- printf("p_%p = p_%p.factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 int multi_pw_aff::find_dim_by_id(isl::dim type, const isl::id &id) const
 {
   auto res = isl_multi_pw_aff_find_dim_by_id(get(), static_cast<enum isl_dim_type>(type), id.get());
- printf("p_%p = p_%p.find_dim_by_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_pw_aff_find_dim_by_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, id.get());
   return res;
 }
 
 int multi_pw_aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_multi_pw_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_multi_pw_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::multi_pw_aff multi_pw_aff::flat_range_product(isl::multi_pw_aff multi2) const
 {
   auto res = isl_multi_pw_aff_flat_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_pw_aff_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::flatten_range() const
 {
   auto res = isl_multi_pw_aff_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::from_pw_aff_list(isl::space space, isl::pw_aff_list list)
 {
   auto res = isl_multi_pw_aff_from_pw_aff_list(space.copy(), list.copy());
- printf("p_%p = from_pw_aff_list(p_%p, p_%p)\n", res, space.get(), list.get());
+ printf("%s = isl_multi_pw_aff_from_pw_aff_list(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), space.get(), list.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::from_range() const
 {
   auto res = isl_multi_pw_aff_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id multi_pw_aff::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_multi_pw_aff_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_multi_pw_aff_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::space multi_pw_aff::get_domain_space() const
 {
   auto res = isl_multi_pw_aff_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 uint32_t multi_pw_aff::get_hash() const
 {
   auto res = isl_multi_pw_aff_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 isl::pw_aff multi_pw_aff::get_pw_aff(int pos) const
 {
   auto res = isl_multi_pw_aff_get_pw_aff(get(), pos);
- printf("p_%p = p_%p.get_pw_aff(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_multi_pw_aff_get_pw_aff(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::space multi_pw_aff::get_space() const
 {
   auto res = isl_multi_pw_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id multi_pw_aff::get_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_pw_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_pw_aff_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 std::string multi_pw_aff::get_tuple_name(isl::dim type) const
 {
   auto res = isl_multi_pw_aff_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_pw_aff_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -9528,280 +9631,280 @@ std::string multi_pw_aff::get_tuple_name(isl::dim type) const
 isl::multi_pw_aff multi_pw_aff::gist(isl::set set) const
 {
   auto res = isl_multi_pw_aff_gist(copy(), set.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_multi_pw_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::gist_params(isl::set set) const
 {
   auto res = isl_multi_pw_aff_gist_params(copy(), set.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_multi_pw_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean multi_pw_aff::has_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_pw_aff_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_pw_aff_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::identity(isl::space space)
 {
   auto res = isl_multi_pw_aff_identity(space.copy());
- printf("p_%p = identity(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_pw_aff_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_pw_aff_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_pw_aff_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::intersect_domain(isl::set domain) const
 {
   auto res = isl_multi_pw_aff_intersect_domain(copy(), domain.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, domain.get());
+ printf("%s = isl_multi_pw_aff_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, domain.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::intersect_params(isl::set set) const
 {
   auto res = isl_multi_pw_aff_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_multi_pw_aff_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean multi_pw_aff::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_pw_aff_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_pw_aff_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean multi_pw_aff::involves_nan() const
 {
   auto res = isl_multi_pw_aff_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_pw_aff::is_cst() const
 {
   auto res = isl_multi_pw_aff_is_cst(get());
- printf("p_%p = p_%p.is_cst()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_is_cst(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_pw_aff::is_equal(const isl::multi_pw_aff &mpa2) const
 {
   auto res = isl_multi_pw_aff_is_equal(get(), mpa2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, mpa2.get());
+ printf("%s = isl_multi_pw_aff_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, mpa2.get());
   return manage(res);
 }
 
 isl::map multi_pw_aff::lex_gt_map(isl::multi_pw_aff mpa2) const
 {
   auto res = isl_multi_pw_aff_lex_gt_map(copy(), mpa2.copy());
- printf("p_%p = p_%p.lex_gt_map(p_%p)\n", res, this->ptr, mpa2.get());
+ printf("%s = isl_multi_pw_aff_lex_gt_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, mpa2.get());
   return manage(res);
 }
 
 isl::map multi_pw_aff::lex_lt_map(isl::multi_pw_aff mpa2) const
 {
   auto res = isl_multi_pw_aff_lex_lt_map(copy(), mpa2.copy());
- printf("p_%p = p_%p.lex_lt_map(p_%p)\n", res, this->ptr, mpa2.get());
+ printf("%s = isl_multi_pw_aff_lex_lt_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, mpa2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::mod_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_pw_aff_mod_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.mod_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_pw_aff_mod_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_multi_pw_aff_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_multi_pw_aff_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::neg() const
 {
   auto res = isl_multi_pw_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_pw_aff::plain_is_equal(const isl::multi_pw_aff &multi2) const
 {
   auto res = isl_multi_pw_aff_plain_is_equal(get(), multi2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_pw_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::product(isl::multi_pw_aff multi2) const
 {
   auto res = isl_multi_pw_aff_product(copy(), multi2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_pw_aff_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::project_domain_on_params() const
 {
   auto res = isl_multi_pw_aff_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::pullback(isl::multi_aff ma) const
 {
   auto res = isl_multi_pw_aff_pullback_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_multi_pw_aff_pullback_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::pullback(isl::pw_multi_aff pma) const
 {
   auto res = isl_multi_pw_aff_pullback_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_multi_pw_aff_pullback_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::pullback(isl::multi_pw_aff mpa2) const
 {
   auto res = isl_multi_pw_aff_pullback_multi_pw_aff(copy(), mpa2.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, mpa2.get());
+ printf("%s = isl_multi_pw_aff_pullback_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, mpa2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::range_factor_domain() const
 {
   auto res = isl_multi_pw_aff_range_factor_domain(copy());
- printf("p_%p = p_%p.range_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_range_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::range_factor_range() const
 {
   auto res = isl_multi_pw_aff_range_factor_range(copy());
- printf("p_%p = p_%p.range_factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_range_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_pw_aff::range_is_wrapping() const
 {
   auto res = isl_multi_pw_aff_range_is_wrapping(get());
- printf("p_%p = p_%p.range_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_range_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::range_product(isl::multi_pw_aff multi2) const
 {
   auto res = isl_multi_pw_aff_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_pw_aff_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::range_splice(unsigned int pos, isl::multi_pw_aff multi2) const
 {
   auto res = isl_multi_pw_aff_range_splice(copy(), pos, multi2.copy());
- printf("p_%p = p_%p.range_splice(%u, p_%p)\n", res, this->ptr, pos, multi2.get());
+ printf("%s = isl_multi_pw_aff_range_splice(p_%lu, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, pos, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_pw_aff_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_pw_aff_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::reset_user() const
 {
   auto res = isl_multi_pw_aff_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_multi_pw_aff_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::scale_down_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_pw_aff_scale_down_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_down_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_pw_aff_scale_down_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::scale_down_val(isl::val v) const
 {
   auto res = isl_multi_pw_aff_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_pw_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::scale_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_pw_aff_scale_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_pw_aff_scale_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::scale_val(isl::val v) const
 {
   auto res = isl_multi_pw_aff_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_pw_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_multi_pw_aff_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_multi_pw_aff_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::set_pw_aff(int pos, isl::pw_aff el) const
 {
   auto res = isl_multi_pw_aff_set_pw_aff(copy(), pos, el.copy());
- printf("p_%p = p_%p.set_pw_aff(%d, p_%p)\n", res, this->ptr, pos, el.get());
+ printf("%s = isl_multi_pw_aff_set_pw_aff(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, pos, el.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_multi_pw_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_pw_aff_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::set_tuple_name(isl::dim type, const std::string &s) const
 {
   auto res = isl_multi_pw_aff_set_tuple_name(copy(), static_cast<enum isl_dim_type>(type), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%d, %s)\n", res, this->ptr, type, s.c_str());
+ printf("%s = isl_multi_pw_aff_set_tuple_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, type, s.c_str());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::splice(unsigned int in_pos, unsigned int out_pos, isl::multi_pw_aff multi2) const
 {
   auto res = isl_multi_pw_aff_splice(copy(), in_pos, out_pos, multi2.copy());
- printf("p_%p = p_%p.splice(%u, %u, p_%p)\n", res, this->ptr, in_pos, out_pos, multi2.get());
+ printf("%s = isl_multi_pw_aff_splice(p_%lu, %u, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, in_pos, out_pos, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::sub(isl::multi_pw_aff multi2) const
 {
   auto res = isl_multi_pw_aff_sub(copy(), multi2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_pw_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::zero(isl::space space)
 {
   auto res = isl_multi_pw_aff_zero(space.copy());
- printf("p_%p = zero(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_pw_aff_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), space.get());
   return manage(res);
 }
 
@@ -9831,25 +9934,25 @@ multi_union_pw_aff::multi_union_pw_aff(__isl_take isl_multi_union_pw_aff *ptr)
 multi_union_pw_aff::multi_union_pw_aff(isl::union_pw_aff upa)
 {
   auto res = isl_multi_union_pw_aff_from_union_pw_aff(upa.copy());
- printf("p_%p = from_union_pw_aff(p_%p)\n", res, upa.get());
+ printf("%s = isl_multi_union_pw_aff_from_union_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), upa.get());
   ptr = res;
 }
 multi_union_pw_aff::multi_union_pw_aff(isl::multi_pw_aff mpa)
 {
   auto res = isl_multi_union_pw_aff_from_multi_pw_aff(mpa.copy());
- printf("p_%p = from_multi_pw_aff(p_%p)\n", res, mpa.get());
+ printf("%s = isl_multi_union_pw_aff_from_multi_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), mpa.get());
   ptr = res;
 }
 multi_union_pw_aff::multi_union_pw_aff(isl::union_pw_multi_aff upma)
 {
   auto res = isl_multi_union_pw_aff_from_union_pw_multi_aff(upma.copy());
- printf("p_%p = from_union_pw_multi_aff(p_%p)\n", res, upma.get());
+ printf("%s = isl_multi_union_pw_aff_from_union_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), upma.get());
   ptr = res;
 }
 multi_union_pw_aff::multi_union_pw_aff(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_multi_union_pw_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_multi_union_pw_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -9859,11 +9962,15 @@ multi_union_pw_aff &multi_union_pw_aff::operator=(isl::multi_union_pw_aff obj) {
 }
 
 multi_union_pw_aff::~multi_union_pw_aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_multi_union_pw_aff_free(p_%lu);\n", this->ptr);
     isl_multi_union_pw_aff_free(ptr);
+  }
 }
 
 __isl_give isl_multi_union_pw_aff *multi_union_pw_aff::copy() const & {
+auto temp = isl_multi_union_pw_aff_copy(ptr);
+printf("%s = isl_multi_union_pw_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return isl_multi_union_pw_aff_copy(ptr);
 }
 
@@ -9906,175 +10013,175 @@ void multi_union_pw_aff::dump() const {
 isl::multi_union_pw_aff multi_union_pw_aff::add(isl::multi_union_pw_aff multi2) const
 {
   auto res = isl_multi_union_pw_aff_add(copy(), multi2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_union_pw_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::align_params(isl::space model) const
 {
   auto res = isl_multi_union_pw_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_multi_union_pw_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::union_pw_aff multi_union_pw_aff::apply_aff(isl::aff aff) const
 {
   auto res = isl_multi_union_pw_aff_apply_aff(copy(), aff.copy());
- printf("p_%p = p_%p.apply_aff(p_%p)\n", res, this->ptr, aff.get());
+ printf("%s = isl_multi_union_pw_aff_apply_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, aff.get());
   return manage(res);
 }
 
 isl::union_pw_aff multi_union_pw_aff::apply_pw_aff(isl::pw_aff pa) const
 {
   auto res = isl_multi_union_pw_aff_apply_pw_aff(copy(), pa.copy());
- printf("p_%p = p_%p.apply_pw_aff(p_%p)\n", res, this->ptr, pa.get());
+ printf("%s = isl_multi_union_pw_aff_apply_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, pa.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::apply_pw_multi_aff(isl::pw_multi_aff pma) const
 {
   auto res = isl_multi_union_pw_aff_apply_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.apply_pw_multi_aff(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_multi_union_pw_aff_apply_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::coalesce() const
 {
   auto res = isl_multi_union_pw_aff_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int multi_union_pw_aff::dim(isl::dim type) const
 {
   auto res = isl_multi_union_pw_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_union_pw_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::union_set multi_union_pw_aff::domain() const
 {
   auto res = isl_multi_union_pw_aff_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_union_pw_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_union_pw_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::multi_pw_aff multi_union_pw_aff::extract_multi_pw_aff(isl::space space) const
 {
   auto res = isl_multi_union_pw_aff_extract_multi_pw_aff(get(), space.copy());
- printf("p_%p = p_%p.extract_multi_pw_aff(p_%p)\n", res, this->ptr, space.get());
+ printf("%s = isl_multi_union_pw_aff_extract_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_pw_aff").c_str(), this->ptr, space.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::factor_range() const
 {
   auto res = isl_multi_union_pw_aff_factor_range(copy());
- printf("p_%p = p_%p.factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 int multi_union_pw_aff::find_dim_by_id(isl::dim type, const isl::id &id) const
 {
   auto res = isl_multi_union_pw_aff_find_dim_by_id(get(), static_cast<enum isl_dim_type>(type), id.get());
- printf("p_%p = p_%p.find_dim_by_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_union_pw_aff_find_dim_by_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, id.get());
   return res;
 }
 
 int multi_union_pw_aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_multi_union_pw_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_multi_union_pw_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::flat_range_product(isl::multi_union_pw_aff multi2) const
 {
   auto res = isl_multi_union_pw_aff_flat_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_union_pw_aff_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::flatten_range() const
 {
   auto res = isl_multi_union_pw_aff_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::floor() const
 {
   auto res = isl_multi_union_pw_aff_floor(copy());
- printf("p_%p = p_%p.floor()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_floor(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::from_multi_aff(isl::multi_aff ma)
 {
   auto res = isl_multi_union_pw_aff_from_multi_aff(ma.copy());
- printf("p_%p = from_multi_aff(p_%p)\n", res, ma.get());
+ printf("%s = isl_multi_union_pw_aff_from_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), ma.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::from_range() const
 {
   auto res = isl_multi_union_pw_aff_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::from_union_map(isl::union_map umap)
 {
   auto res = isl_multi_union_pw_aff_from_union_map(umap.copy());
- printf("p_%p = from_union_map(p_%p)\n", res, umap.get());
+ printf("%s = isl_multi_union_pw_aff_from_union_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), umap.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::from_union_pw_aff_list(isl::space space, isl::union_pw_aff_list list)
 {
   auto res = isl_multi_union_pw_aff_from_union_pw_aff_list(space.copy(), list.copy());
- printf("p_%p = from_union_pw_aff_list(p_%p, p_%p)\n", res, space.get(), list.get());
+ printf("%s = isl_multi_union_pw_aff_from_union_pw_aff_list(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), space.get(), list.get());
   return manage(res);
 }
 
 isl::id multi_union_pw_aff::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_multi_union_pw_aff_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_multi_union_pw_aff_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::space multi_union_pw_aff::get_domain_space() const
 {
   auto res = isl_multi_union_pw_aff_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space multi_union_pw_aff::get_space() const
 {
   auto res = isl_multi_union_pw_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id multi_union_pw_aff::get_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_union_pw_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_union_pw_aff_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 std::string multi_union_pw_aff::get_tuple_name(isl::dim type) const
 {
   auto res = isl_multi_union_pw_aff_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_union_pw_aff_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -10082,238 +10189,238 @@ std::string multi_union_pw_aff::get_tuple_name(isl::dim type) const
 isl::union_pw_aff multi_union_pw_aff::get_union_pw_aff(int pos) const
 {
   auto res = isl_multi_union_pw_aff_get_union_pw_aff(get(), pos);
- printf("p_%p = p_%p.get_union_pw_aff(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_multi_union_pw_aff_get_union_pw_aff(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::gist(isl::union_set context) const
 {
   auto res = isl_multi_union_pw_aff_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_multi_union_pw_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::gist_params(isl::set context) const
 {
   auto res = isl_multi_union_pw_aff_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_multi_union_pw_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::boolean multi_union_pw_aff::has_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_union_pw_aff_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_union_pw_aff_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::intersect_domain(isl::union_set uset) const
 {
   auto res = isl_multi_union_pw_aff_intersect_domain(copy(), uset.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_multi_union_pw_aff_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::intersect_params(isl::set params) const
 {
   auto res = isl_multi_union_pw_aff_intersect_params(copy(), params.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, params.get());
+ printf("%s = isl_multi_union_pw_aff_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, params.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::intersect_range(isl::set set) const
 {
   auto res = isl_multi_union_pw_aff_intersect_range(copy(), set.copy());
- printf("p_%p = p_%p.intersect_range(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_multi_union_pw_aff_intersect_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean multi_union_pw_aff::involves_nan() const
 {
   auto res = isl_multi_union_pw_aff_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::mod_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_union_pw_aff_mod_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.mod_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_union_pw_aff_mod_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::multi_aff_on_domain(isl::union_set domain, isl::multi_aff ma)
 {
   auto res = isl_multi_union_pw_aff_multi_aff_on_domain(domain.copy(), ma.copy());
- printf("p_%p = multi_aff_on_domain(p_%p, p_%p)\n", res, domain.get(), ma.get());
+ printf("%s = isl_multi_union_pw_aff_multi_aff_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), domain.get(), ma.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::multi_val_on_domain(isl::union_set domain, isl::multi_val mv)
 {
   auto res = isl_multi_union_pw_aff_multi_val_on_domain(domain.copy(), mv.copy());
- printf("p_%p = multi_val_on_domain(p_%p, p_%p)\n", res, domain.get(), mv.get());
+ printf("%s = isl_multi_union_pw_aff_multi_val_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), domain.get(), mv.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::neg() const
 {
   auto res = isl_multi_union_pw_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_union_pw_aff::plain_is_equal(const isl::multi_union_pw_aff &multi2) const
 {
   auto res = isl_multi_union_pw_aff_plain_is_equal(get(), multi2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_union_pw_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::pullback(isl::union_pw_multi_aff upma) const
 {
   auto res = isl_multi_union_pw_aff_pullback_union_pw_multi_aff(copy(), upma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, upma.get());
+ printf("%s = isl_multi_union_pw_aff_pullback_union_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, upma.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::pw_multi_aff_on_domain(isl::union_set domain, isl::pw_multi_aff pma)
 {
   auto res = isl_multi_union_pw_aff_pw_multi_aff_on_domain(domain.copy(), pma.copy());
- printf("p_%p = pw_multi_aff_on_domain(p_%p, p_%p)\n", res, domain.get(), pma.get());
+ printf("%s = isl_multi_union_pw_aff_pw_multi_aff_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), domain.get(), pma.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::range_factor_domain() const
 {
   auto res = isl_multi_union_pw_aff_range_factor_domain(copy());
- printf("p_%p = p_%p.range_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_range_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::range_factor_range() const
 {
   auto res = isl_multi_union_pw_aff_range_factor_range(copy());
- printf("p_%p = p_%p.range_factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_range_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_union_pw_aff::range_is_wrapping() const
 {
   auto res = isl_multi_union_pw_aff_range_is_wrapping(get());
- printf("p_%p = p_%p.range_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_range_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::range_product(isl::multi_union_pw_aff multi2) const
 {
   auto res = isl_multi_union_pw_aff_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_union_pw_aff_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::range_splice(unsigned int pos, isl::multi_union_pw_aff multi2) const
 {
   auto res = isl_multi_union_pw_aff_range_splice(copy(), pos, multi2.copy());
- printf("p_%p = p_%p.range_splice(%u, p_%p)\n", res, this->ptr, pos, multi2.get());
+ printf("%s = isl_multi_union_pw_aff_range_splice(p_%lu, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, pos, multi2.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_union_pw_aff_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_union_pw_aff_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::reset_user() const
 {
   auto res = isl_multi_union_pw_aff_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::scale_down_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_union_pw_aff_scale_down_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_down_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_union_pw_aff_scale_down_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::scale_down_val(isl::val v) const
 {
   auto res = isl_multi_union_pw_aff_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_union_pw_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::scale_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_union_pw_aff_scale_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_union_pw_aff_scale_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::scale_val(isl::val v) const
 {
   auto res = isl_multi_union_pw_aff_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_union_pw_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_multi_union_pw_aff_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_multi_union_pw_aff_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_multi_union_pw_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_union_pw_aff_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::set_tuple_name(isl::dim type, const std::string &s) const
 {
   auto res = isl_multi_union_pw_aff_set_tuple_name(copy(), static_cast<enum isl_dim_type>(type), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%d, %s)\n", res, this->ptr, type, s.c_str());
+ printf("%s = isl_multi_union_pw_aff_set_tuple_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, type, s.c_str());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::set_union_pw_aff(int pos, isl::union_pw_aff el) const
 {
   auto res = isl_multi_union_pw_aff_set_union_pw_aff(copy(), pos, el.copy());
- printf("p_%p = p_%p.set_union_pw_aff(%d, p_%p)\n", res, this->ptr, pos, el.get());
+ printf("%s = isl_multi_union_pw_aff_set_union_pw_aff(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, pos, el.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::sub(isl::multi_union_pw_aff multi2) const
 {
   auto res = isl_multi_union_pw_aff_sub(copy(), multi2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_union_pw_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::union_add(isl::multi_union_pw_aff mupa2) const
 {
   auto res = isl_multi_union_pw_aff_union_add(copy(), mupa2.copy());
- printf("p_%p = p_%p.union_add(p_%p)\n", res, this->ptr, mupa2.get());
+ printf("%s = isl_multi_union_pw_aff_union_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr, mupa2.get());
   return manage(res);
 }
 
 isl::multi_union_pw_aff multi_union_pw_aff::zero(isl::space space)
 {
   auto res = isl_multi_union_pw_aff_zero(space.copy());
- printf("p_%p = zero(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_union_pw_aff_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::union_set multi_union_pw_aff::zero_union_set() const
 {
   auto res = isl_multi_union_pw_aff_zero_union_set(copy());
- printf("p_%p = p_%p.zero_union_set()\n", res, this->ptr);
+ printf("%s = isl_multi_union_pw_aff_zero_union_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -10343,7 +10450,7 @@ multi_val::multi_val(__isl_take isl_multi_val *ptr)
 multi_val::multi_val(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_multi_val_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_multi_val_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -10353,11 +10460,15 @@ multi_val &multi_val::operator=(isl::multi_val obj) {
 }
 
 multi_val::~multi_val() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_multi_val_free(p_%lu);\n", this->ptr);
     isl_multi_val_free(ptr);
+  }
 }
 
 __isl_give isl_multi_val *multi_val::copy() const & {
+auto temp = isl_multi_val_copy(ptr);
+printf("%s = isl_multi_val_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_multi_val").c_str(), this->ptr);
   return isl_multi_val_copy(ptr);
 }
 
@@ -10400,126 +10511,126 @@ void multi_val::dump() const {
 isl::multi_val multi_val::add(isl::multi_val multi2) const
 {
   auto res = isl_multi_val_add(copy(), multi2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_val_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_multi_val_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_multi_val_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::multi_val multi_val::add_val(isl::val v) const
 {
   auto res = isl_multi_val_add_val(copy(), v.copy());
- printf("p_%p = p_%p.add_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_val_add_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::align_params(isl::space model) const
 {
   auto res = isl_multi_val_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_multi_val_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 unsigned int multi_val::dim(isl::dim type) const
 {
   auto res = isl_multi_val_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_val_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::multi_val multi_val::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_val_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_val_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::multi_val multi_val::factor_range() const
 {
   auto res = isl_multi_val_factor_range(copy());
- printf("p_%p = p_%p.factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_val_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 int multi_val::find_dim_by_id(isl::dim type, const isl::id &id) const
 {
   auto res = isl_multi_val_find_dim_by_id(get(), static_cast<enum isl_dim_type>(type), id.get());
- printf("p_%p = p_%p.find_dim_by_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_val_find_dim_by_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, id.get());
   return res;
 }
 
 int multi_val::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_multi_val_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_multi_val_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::multi_val multi_val::flat_range_product(isl::multi_val multi2) const
 {
   auto res = isl_multi_val_flat_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_val_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::flatten_range() const
 {
   auto res = isl_multi_val_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_multi_val_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val multi_val::from_range() const
 {
   auto res = isl_multi_val_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_multi_val_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val multi_val::from_val_list(isl::space space, isl::val_list list)
 {
   auto res = isl_multi_val_from_val_list(space.copy(), list.copy());
- printf("p_%p = from_val_list(p_%p, p_%p)\n", res, space.get(), list.get());
+ printf("%s = isl_multi_val_from_val_list(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), space.get(), list.get());
   return manage(res);
 }
 
 isl::id multi_val::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_multi_val_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_multi_val_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::space multi_val::get_domain_space() const
 {
   auto res = isl_multi_val_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_multi_val_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space multi_val::get_space() const
 {
   auto res = isl_multi_val_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_multi_val_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id multi_val::get_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_val_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_val_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 std::string multi_val::get_tuple_name(isl::dim type) const
 {
   auto res = isl_multi_val_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_val_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -10527,203 +10638,203 @@ std::string multi_val::get_tuple_name(isl::dim type) const
 isl::val multi_val::get_val(int pos) const
 {
   auto res = isl_multi_val_get_val(get(), pos);
- printf("p_%p = p_%p.get_val(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_multi_val_get_val(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::boolean multi_val::has_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_val_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_val_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_val multi_val::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_val_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_val_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean multi_val::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_multi_val_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_multi_val_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean multi_val::involves_nan() const
 {
   auto res = isl_multi_val_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_multi_val_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val multi_val::mod_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_val_mod_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.mod_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_val_mod_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::mod_val(isl::val v) const
 {
   auto res = isl_multi_val_mod_val(copy(), v.copy());
- printf("p_%p = p_%p.mod_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_val_mod_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::neg() const
 {
   auto res = isl_multi_val_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_multi_val_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_val::plain_is_equal(const isl::multi_val &multi2) const
 {
   auto res = isl_multi_val_plain_is_equal(get(), multi2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_val_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::product(isl::multi_val multi2) const
 {
   auto res = isl_multi_val_product(copy(), multi2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_val_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::project_domain_on_params() const
 {
   auto res = isl_multi_val_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_multi_val_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val multi_val::range_factor_domain() const
 {
   auto res = isl_multi_val_range_factor_domain(copy());
- printf("p_%p = p_%p.range_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_multi_val_range_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val multi_val::range_factor_range() const
 {
   auto res = isl_multi_val_range_factor_range(copy());
- printf("p_%p = p_%p.range_factor_range()\n", res, this->ptr);
+ printf("%s = isl_multi_val_range_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean multi_val::range_is_wrapping() const
 {
   auto res = isl_multi_val_range_is_wrapping(get());
- printf("p_%p = p_%p.range_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_multi_val_range_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val multi_val::range_product(isl::multi_val multi2) const
 {
   auto res = isl_multi_val_range_product(copy(), multi2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_val_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::range_splice(unsigned int pos, isl::multi_val multi2) const
 {
   auto res = isl_multi_val_range_splice(copy(), pos, multi2.copy());
- printf("p_%p = p_%p.range_splice(%u, p_%p)\n", res, this->ptr, pos, multi2.get());
+ printf("%s = isl_multi_val_range_splice(p_%lu, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, pos, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_multi_val_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_multi_val_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::multi_val multi_val::reset_user() const
 {
   auto res = isl_multi_val_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_multi_val_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val multi_val::scale_down_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_val_scale_down_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_down_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_val_scale_down_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::scale_down_val(isl::val v) const
 {
   auto res = isl_multi_val_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_val_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::scale_multi_val(isl::multi_val mv) const
 {
   auto res = isl_multi_val_scale_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_multi_val_scale_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::scale_val(isl::val v) const
 {
   auto res = isl_multi_val_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_multi_val_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_multi_val_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_multi_val_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_multi_val_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_multi_val_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::set_tuple_name(isl::dim type, const std::string &s) const
 {
   auto res = isl_multi_val_set_tuple_name(copy(), static_cast<enum isl_dim_type>(type), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%d, %s)\n", res, this->ptr, type, s.c_str());
+ printf("%s = isl_multi_val_set_tuple_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, type, s.c_str());
   return manage(res);
 }
 
 isl::multi_val multi_val::set_val(int pos, isl::val el) const
 {
   auto res = isl_multi_val_set_val(copy(), pos, el.copy());
- printf("p_%p = p_%p.set_val(%d, p_%p)\n", res, this->ptr, pos, el.get());
+ printf("%s = isl_multi_val_set_val(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, pos, el.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::splice(unsigned int in_pos, unsigned int out_pos, isl::multi_val multi2) const
 {
   auto res = isl_multi_val_splice(copy(), in_pos, out_pos, multi2.copy());
- printf("p_%p = p_%p.splice(%u, %u, p_%p)\n", res, this->ptr, in_pos, out_pos, multi2.get());
+ printf("%s = isl_multi_val_splice(p_%lu, %u, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, in_pos, out_pos, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::sub(isl::multi_val multi2) const
 {
   auto res = isl_multi_val_sub(copy(), multi2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, multi2.get());
+ printf("%s = isl_multi_val_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, multi2.get());
   return manage(res);
 }
 
 isl::multi_val multi_val::zero(isl::space space)
 {
   auto res = isl_multi_val_zero(space.copy());
- printf("p_%p = zero(p_%p)\n", res, space.get());
+ printf("%s = isl_multi_val_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), space.get());
   return manage(res);
 }
 
@@ -10753,7 +10864,7 @@ point::point(__isl_take isl_point *ptr)
 point::point(isl::space dim)
 {
   auto res = isl_point_zero(dim.copy());
- printf("p_%p = zero(p_%p)\n", res, dim.get());
+ printf("%s = isl_point_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_point").c_str(), dim.get());
   ptr = res;
 }
 
@@ -10763,11 +10874,15 @@ point &point::operator=(isl::point obj) {
 }
 
 point::~point() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_point_free(p_%lu);\n", this->ptr);
     isl_point_free(ptr);
+  }
 }
 
 __isl_give isl_point *point::copy() const & {
+auto temp = isl_point_copy(ptr);
+printf("%s = isl_point_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_point").c_str(), this->ptr);
   return isl_point_copy(ptr);
 }
 
@@ -10810,35 +10925,35 @@ void point::dump() const {
 isl::point point::add_ui(isl::dim type, int pos, unsigned int val) const
 {
   auto res = isl_point_add_ui(copy(), static_cast<enum isl_dim_type>(type), pos, val);
- printf("p_%p = p_%p.add_ui(%d, %d, %u)\n", res, this->ptr, type, pos, val);
+ printf("%s = isl_point_add_ui(p_%lu, %d, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_point").c_str(), this->ptr, type, pos, val);
   return manage(res);
 }
 
 isl::val point::get_coordinate_val(isl::dim type, int pos) const
 {
   auto res = isl_point_get_coordinate_val(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_coordinate_val(%d, %d)\n", res, this->ptr, type, pos);
+ printf("%s = isl_point_get_coordinate_val(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::space point::get_space() const
 {
   auto res = isl_point_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_point_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::point point::set_coordinate_val(isl::dim type, int pos, isl::val v) const
 {
   auto res = isl_point_set_coordinate_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.set_coordinate_val(%d, %d, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_point_set_coordinate_val(p_%lu, %d, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_point").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::point point::sub_ui(isl::dim type, int pos, unsigned int val) const
 {
   auto res = isl_point_sub_ui(copy(), static_cast<enum isl_dim_type>(type), pos, val);
- printf("p_%p = p_%p.sub_ui(%d, %d, %u)\n", res, this->ptr, type, pos, val);
+ printf("%s = isl_point_sub_ui(p_%lu, %d, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_point").c_str(), this->ptr, type, pos, val);
   return manage(res);
 }
 
@@ -10868,25 +10983,25 @@ pw_aff::pw_aff(__isl_take isl_pw_aff *ptr)
 pw_aff::pw_aff(isl::aff aff)
 {
   auto res = isl_pw_aff_from_aff(aff.copy());
- printf("p_%p = from_aff(p_%p)\n", res, aff.get());
+ printf("%s = isl_pw_aff_from_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), aff.get());
   ptr = res;
 }
 pw_aff::pw_aff(isl::local_space ls)
 {
   auto res = isl_pw_aff_zero_on_domain(ls.copy());
- printf("p_%p = zero_on_domain(p_%p)\n", res, ls.get());
+ printf("%s = isl_pw_aff_zero_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), ls.get());
   ptr = res;
 }
 pw_aff::pw_aff(isl::set domain, isl::val v)
 {
   auto res = isl_pw_aff_val_on_domain(domain.copy(), v.copy());
- printf("p_%p = val_on_domain(p_%p, p_%p)\n", res, domain.get(), v.get());
+ printf("%s = isl_pw_aff_val_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), domain.get(), v.get());
   ptr = res;
 }
 pw_aff::pw_aff(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_pw_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_pw_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -10896,11 +11011,15 @@ pw_aff &pw_aff::operator=(isl::pw_aff obj) {
 }
 
 pw_aff::~pw_aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_pw_aff_free(p_%lu);\n", this->ptr);
     isl_pw_aff_free(ptr);
+  }
 }
 
 __isl_give isl_pw_aff *pw_aff::copy() const & {
+auto temp = isl_pw_aff_copy(ptr);
+printf("%s = isl_pw_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_pw_aff").c_str(), this->ptr);
   return isl_pw_aff_copy(ptr);
 }
 
@@ -10943,126 +11062,126 @@ void pw_aff::dump() const {
 isl::pw_aff pw_aff::add(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_add(copy(), pwaff2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_pw_aff_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_pw_aff_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::align_params(isl::space model) const
 {
   auto res = isl_pw_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_pw_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::alloc(isl::set set, isl::aff aff)
 {
   auto res = isl_pw_aff_alloc(set.copy(), aff.copy());
- printf("p_%p = alloc(p_%p, p_%p)\n", res, set.get(), aff.get());
+ printf("%s = isl_pw_aff_alloc(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), set.get(), aff.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::ceil() const
 {
   auto res = isl_pw_aff_ceil(copy());
- printf("p_%p = p_%p.ceil()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_ceil(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::coalesce() const
 {
   auto res = isl_pw_aff_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::cond(isl::pw_aff pwaff_true, isl::pw_aff pwaff_false) const
 {
   auto res = isl_pw_aff_cond(copy(), pwaff_true.copy(), pwaff_false.copy());
- printf("p_%p = p_%p.cond(p_%p, p_%p)\n", res, this->ptr, pwaff_true.get(), pwaff_false.get());
+ printf("%s = isl_pw_aff_cond(p_%lu, p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff_true.get(), pwaff_false.get());
   return manage(res);
 }
 
 unsigned int pw_aff::dim(isl::dim type) const
 {
   auto res = isl_pw_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::pw_aff pw_aff::div(isl::pw_aff pa2) const
 {
   auto res = isl_pw_aff_div(copy(), pa2.copy());
- printf("p_%p = p_%p.div(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_div(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pa2.get());
   return manage(res);
 }
 
 isl::set pw_aff::domain() const
 {
   auto res = isl_pw_aff_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::drop_unused_params() const
 {
   auto res = isl_pw_aff_drop_unused_params(copy());
- printf("p_%p = p_%p.drop_unused_params()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_drop_unused_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::empty(isl::space dim)
 {
   auto res = isl_pw_aff_empty(dim.copy());
- printf("p_%p = empty(p_%p)\n", res, dim.get());
+ printf("%s = isl_pw_aff_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), dim.get());
   return manage(res);
 }
 
 isl::map pw_aff::eq_map(isl::pw_aff pa2) const
 {
   auto res = isl_pw_aff_eq_map(copy(), pa2.copy());
- printf("p_%p = p_%p.eq_map(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_eq_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, pa2.get());
   return manage(res);
 }
 
 isl::set pw_aff::eq_set(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_eq_set(copy(), pwaff2.copy());
- printf("p_%p = p_%p.eq_set(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_eq_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::val pw_aff::eval(isl::point pnt) const
 {
   auto res = isl_pw_aff_eval(copy(), pnt.copy());
- printf("p_%p = p_%p.eval(p_%p)\n", res, this->ptr, pnt.get());
+ printf("%s = isl_pw_aff_eval(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pnt.get());
   return manage(res);
 }
 
 int pw_aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_pw_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_pw_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::pw_aff pw_aff::floor() const
 {
   auto res = isl_pw_aff_floor(copy());
- printf("p_%p = p_%p.floor()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_floor(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -11077,35 +11196,35 @@ isl::stat pw_aff::foreach_piece(const std::function<isl::stat(isl::set, isl::aff
     return isl_stat(ret);
   };
   auto res = isl_pw_aff_foreach_piece(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_piece()\n", res, this->ptr, fn);
+ printf("%s = isl_pw_aff_foreach_piece(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::pw_aff pw_aff::from_range() const
 {
   auto res = isl_pw_aff_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set pw_aff::ge_set(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_ge_set(copy(), pwaff2.copy());
- printf("p_%p = p_%p.ge_set(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_ge_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::id pw_aff::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_pw_aff_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_pw_aff_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 std::string pw_aff::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_pw_aff_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_pw_aff_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -11113,385 +11232,385 @@ std::string pw_aff::get_dim_name(isl::dim type, unsigned int pos) const
 isl::space pw_aff::get_domain_space() const
 {
   auto res = isl_pw_aff_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 uint32_t pw_aff::get_hash() const
 {
   auto res = isl_pw_aff_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 isl::space pw_aff::get_space() const
 {
   auto res = isl_pw_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id pw_aff::get_tuple_id(isl::dim type) const
 {
   auto res = isl_pw_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_aff_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::gist(isl::set context) const
 {
   auto res = isl_pw_aff_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_pw_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::gist_params(isl::set context) const
 {
   auto res = isl_pw_aff_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_pw_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::map pw_aff::gt_map(isl::pw_aff pa2) const
 {
   auto res = isl_pw_aff_gt_map(copy(), pa2.copy());
- printf("p_%p = p_%p.gt_map(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_gt_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, pa2.get());
   return manage(res);
 }
 
 isl::set pw_aff::gt_set(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_gt_set(copy(), pwaff2.copy());
- printf("p_%p = p_%p.gt_set(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_gt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::boolean pw_aff::has_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_pw_aff_has_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_pw_aff_has_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean pw_aff::has_tuple_id(isl::dim type) const
 {
   auto res = isl_pw_aff_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_aff_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_aff_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_aff_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::intersect_domain(isl::set set) const
 {
   auto res = isl_pw_aff_intersect_domain(copy(), set.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_aff_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::intersect_params(isl::set set) const
 {
   auto res = isl_pw_aff_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_aff_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean pw_aff::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_aff_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_aff_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean pw_aff::involves_nan() const
 {
   auto res = isl_pw_aff_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean pw_aff::is_cst() const
 {
   auto res = isl_pw_aff_is_cst(get());
- printf("p_%p = p_%p.is_cst()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_is_cst(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean pw_aff::is_empty() const
 {
   auto res = isl_pw_aff_is_empty(get());
- printf("p_%p = p_%p.is_empty()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean pw_aff::is_equal(const isl::pw_aff &pa2) const
 {
   auto res = isl_pw_aff_is_equal(get(), pa2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, pa2.get());
   return manage(res);
 }
 
 isl::set pw_aff::le_set(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_le_set(copy(), pwaff2.copy());
- printf("p_%p = p_%p.le_set(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_le_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::map pw_aff::lt_map(isl::pw_aff pa2) const
 {
   auto res = isl_pw_aff_lt_map(copy(), pa2.copy());
- printf("p_%p = p_%p.lt_map(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_lt_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, pa2.get());
   return manage(res);
 }
 
 isl::set pw_aff::lt_set(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_lt_set(copy(), pwaff2.copy());
- printf("p_%p = p_%p.lt_set(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_lt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::max(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_max(copy(), pwaff2.copy());
- printf("p_%p = p_%p.max(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_max(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::min(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_min(copy(), pwaff2.copy());
- printf("p_%p = p_%p.min(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_min(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::mod(isl::val mod) const
 {
   auto res = isl_pw_aff_mod_val(copy(), mod.copy());
- printf("p_%p = p_%p.mod(p_%p)\n", res, this->ptr, mod.get());
+ printf("%s = isl_pw_aff_mod_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, mod.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_pw_aff_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_pw_aff_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::mul(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_mul(copy(), pwaff2.copy());
- printf("p_%p = p_%p.mul(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_mul(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 int pw_aff::n_piece() const
 {
   auto res = isl_pw_aff_n_piece(get());
- printf("p_%p = p_%p.n_piece()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_n_piece(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::pw_aff pw_aff::nan_on_domain(isl::local_space ls)
 {
   auto res = isl_pw_aff_nan_on_domain(ls.copy());
- printf("p_%p = nan_on_domain(p_%p)\n", res, ls.get());
+ printf("%s = isl_pw_aff_nan_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), ls.get());
   return manage(res);
 }
 
 isl::set pw_aff::ne_set(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_ne_set(copy(), pwaff2.copy());
- printf("p_%p = p_%p.ne_set(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_ne_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::neg() const
 {
   auto res = isl_pw_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set pw_aff::non_zero_set() const
 {
   auto res = isl_pw_aff_non_zero_set(copy());
- printf("p_%p = p_%p.non_zero_set()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_non_zero_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set pw_aff::nonneg_set() const
 {
   auto res = isl_pw_aff_nonneg_set(copy());
- printf("p_%p = p_%p.nonneg_set()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_nonneg_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set pw_aff::params() const
 {
   auto res = isl_pw_aff_params(copy());
- printf("p_%p = p_%p.params()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 int pw_aff::plain_cmp(const isl::pw_aff &pa2) const
 {
   auto res = isl_pw_aff_plain_cmp(get(), pa2.get());
- printf("p_%p = p_%p.plain_cmp(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_plain_cmp(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, pa2.get());
   return res;
 }
 
 isl::boolean pw_aff::plain_is_equal(const isl::pw_aff &pwaff2) const
 {
   auto res = isl_pw_aff_plain_is_equal(get(), pwaff2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::set pw_aff::pos_set() const
 {
   auto res = isl_pw_aff_pos_set(copy());
- printf("p_%p = p_%p.pos_set()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_pos_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::project_domain_on_params() const
 {
   auto res = isl_pw_aff_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::pullback(isl::multi_aff ma) const
 {
   auto res = isl_pw_aff_pullback_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_pw_aff_pullback_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::pullback(isl::pw_multi_aff pma) const
 {
   auto res = isl_pw_aff_pullback_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_pw_aff_pullback_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::pullback(isl::multi_pw_aff mpa) const
 {
   auto res = isl_pw_aff_pullback_multi_pw_aff(copy(), mpa.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, mpa.get());
+ printf("%s = isl_pw_aff_pullback_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, mpa.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_pw_aff_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_aff_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::reset_user() const
 {
   auto res = isl_pw_aff_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_aff::scale(isl::val v) const
 {
   auto res = isl_pw_aff_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_pw_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::scale_down(isl::val f) const
 {
   auto res = isl_pw_aff_scale_down_val(copy(), f.copy());
- printf("p_%p = p_%p.scale_down(p_%p)\n", res, this->ptr, f.get());
+ printf("%s = isl_pw_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, f.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_pw_aff_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_pw_aff_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_pw_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_pw_aff_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::sub(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_sub(copy(), pwaff2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::subtract_domain(isl::set set) const
 {
   auto res = isl_pw_aff_subtract_domain(copy(), set.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_aff_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::tdiv_q(isl::pw_aff pa2) const
 {
   auto res = isl_pw_aff_tdiv_q(copy(), pa2.copy());
- printf("p_%p = p_%p.tdiv_q(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_tdiv_q(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pa2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::tdiv_r(isl::pw_aff pa2) const
 {
   auto res = isl_pw_aff_tdiv_r(copy(), pa2.copy());
- printf("p_%p = p_%p.tdiv_r(p_%p)\n", res, this->ptr, pa2.get());
+ printf("%s = isl_pw_aff_tdiv_r(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pa2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::union_add(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_union_add(copy(), pwaff2.copy());
- printf("p_%p = p_%p.union_add(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_union_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::union_max(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_union_max(copy(), pwaff2.copy());
- printf("p_%p = p_%p.union_max(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_union_max(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::union_min(isl::pw_aff pwaff2) const
 {
   auto res = isl_pw_aff_union_min(copy(), pwaff2.copy());
- printf("p_%p = p_%p.union_min(p_%p)\n", res, this->ptr, pwaff2.get());
+ printf("%s = isl_pw_aff_union_min(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pwaff2.get());
   return manage(res);
 }
 
 isl::pw_aff pw_aff::var_on_domain(isl::local_space ls, isl::dim type, unsigned int pos)
 {
   auto res = isl_pw_aff_var_on_domain(ls.copy(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = var_on_domain(p_%p, %d, %u)\n", res, ls.get(), type, pos);
+ printf("%s = isl_pw_aff_var_on_domain(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), ls.get(), type, pos);
   return manage(res);
 }
 
 isl::set pw_aff::zero_set() const
 {
   auto res = isl_pw_aff_zero_set(copy());
- printf("p_%p = p_%p.zero_set()\n", res, this->ptr);
+ printf("%s = isl_pw_aff_zero_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -11525,11 +11644,15 @@ pw_aff_list &pw_aff_list::operator=(isl::pw_aff_list obj) {
 }
 
 pw_aff_list::~pw_aff_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_pw_aff_list_free(p_%lu);\n", this->ptr);
     isl_pw_aff_list_free(ptr);
+  }
 }
 
 __isl_give isl_pw_aff_list *pw_aff_list::copy() const & {
+auto temp = isl_pw_aff_list_copy(ptr);
+printf("%s = isl_pw_aff_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_pw_aff_list").c_str(), this->ptr);
   return isl_pw_aff_list_copy(ptr);
 }
 
@@ -11584,22 +11707,22 @@ pw_multi_aff::pw_multi_aff(std::nullptr_t)
 pw_multi_aff::pw_multi_aff(__isl_take isl_pw_multi_aff *ptr)
     : ptr(ptr) {}
 
+pw_multi_aff::pw_multi_aff(isl::ctx ctx, const std::string &str)
+{
+  auto res = isl_pw_multi_aff_read_from_str(ctx.copy(), str.c_str());
+ printf("%s = isl_pw_multi_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), "ctx_0", str.c_str());
+  ptr = res;
+}
 pw_multi_aff::pw_multi_aff(isl::multi_aff ma)
 {
   auto res = isl_pw_multi_aff_from_multi_aff(ma.copy());
- printf("p_%p = from_multi_aff(p_%p)\n", res, ma.get());
+ printf("%s = isl_pw_multi_aff_from_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), ma.get());
   ptr = res;
 }
 pw_multi_aff::pw_multi_aff(isl::pw_aff pa)
 {
   auto res = isl_pw_multi_aff_from_pw_aff(pa.copy());
- printf("p_%p = from_pw_aff(p_%p)\n", res, pa.get());
-  ptr = res;
-}
-pw_multi_aff::pw_multi_aff(isl::ctx ctx, const std::string &str)
-{
-  auto res = isl_pw_multi_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_pw_multi_aff_from_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), pa.get());
   ptr = res;
 }
 
@@ -11609,11 +11732,15 @@ pw_multi_aff &pw_multi_aff::operator=(isl::pw_multi_aff obj) {
 }
 
 pw_multi_aff::~pw_multi_aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_pw_multi_aff_free(p_%lu);\n", this->ptr);
     isl_pw_multi_aff_free(ptr);
+  }
 }
 
 __isl_give isl_pw_multi_aff *pw_multi_aff::copy() const & {
+auto temp = isl_pw_multi_aff_copy(ptr);
+printf("%s = isl_pw_multi_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_pw_multi_aff").c_str(), this->ptr);
   return isl_pw_multi_aff_copy(ptr);
 }
 
@@ -11656,84 +11783,84 @@ void pw_multi_aff::dump() const {
 isl::pw_multi_aff pw_multi_aff::add(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_add(copy(), pma2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::align_params(isl::space model) const
 {
   auto res = isl_pw_multi_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_pw_multi_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::alloc(isl::set set, isl::multi_aff maff)
 {
   auto res = isl_pw_multi_aff_alloc(set.copy(), maff.copy());
- printf("p_%p = alloc(p_%p, p_%p)\n", res, set.get(), maff.get());
+ printf("%s = isl_pw_multi_aff_alloc(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), set.get(), maff.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::coalesce() const
 {
   auto res = isl_pw_multi_aff_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int pw_multi_aff::dim(isl::dim type) const
 {
   auto res = isl_pw_multi_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_multi_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::set pw_multi_aff::domain() const
 {
   auto res = isl_pw_multi_aff_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_multi_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_multi_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::drop_unused_params() const
 {
   auto res = isl_pw_multi_aff_drop_unused_params(copy());
- printf("p_%p = p_%p.drop_unused_params()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_drop_unused_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::empty(isl::space space)
 {
   auto res = isl_pw_multi_aff_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_pw_multi_aff_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
 int pw_multi_aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_pw_multi_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_pw_multi_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::pw_multi_aff pw_multi_aff::fix_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_pw_multi_aff_fix_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.fix_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_pw_multi_aff_fix_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::flat_range_product(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_flat_range_product(copy(), pma2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
@@ -11748,49 +11875,49 @@ isl::stat pw_multi_aff::foreach_piece(const std::function<isl::stat(isl::set, is
     return isl_stat(ret);
   };
   auto res = isl_pw_multi_aff_foreach_piece(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_piece()\n", res, this->ptr, fn);
+ printf("%s = isl_pw_multi_aff_foreach_piece(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::from_domain(isl::set set)
 {
   auto res = isl_pw_multi_aff_from_domain(set.copy());
- printf("p_%p = from_domain(p_%p)\n", res, set.get());
+ printf("%s = isl_pw_multi_aff_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), set.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::from_map(isl::map map)
 {
   auto res = isl_pw_multi_aff_from_map(map.copy());
- printf("p_%p = from_map(p_%p)\n", res, map.get());
+ printf("%s = isl_pw_multi_aff_from_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), map.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::from_multi_pw_aff(isl::multi_pw_aff mpa)
 {
   auto res = isl_pw_multi_aff_from_multi_pw_aff(mpa.copy());
- printf("p_%p = from_multi_pw_aff(p_%p)\n", res, mpa.get());
+ printf("%s = isl_pw_multi_aff_from_multi_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), mpa.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::from_set(isl::set set)
 {
   auto res = isl_pw_multi_aff_from_set(set.copy());
- printf("p_%p = from_set(p_%p)\n", res, set.get());
+ printf("%s = isl_pw_multi_aff_from_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), set.get());
   return manage(res);
 }
 
 isl::id pw_multi_aff::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_pw_multi_aff_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_pw_multi_aff_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 std::string pw_multi_aff::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_pw_multi_aff_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_pw_multi_aff_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -11798,35 +11925,35 @@ std::string pw_multi_aff::get_dim_name(isl::dim type, unsigned int pos) const
 isl::space pw_multi_aff::get_domain_space() const
 {
   auto res = isl_pw_multi_aff_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff pw_multi_aff::get_pw_aff(int pos) const
 {
   auto res = isl_pw_multi_aff_get_pw_aff(get(), pos);
- printf("p_%p = p_%p.get_pw_aff(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_pw_multi_aff_get_pw_aff(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::space pw_multi_aff::get_space() const
 {
   auto res = isl_pw_multi_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id pw_multi_aff::get_tuple_id(isl::dim type) const
 {
   auto res = isl_pw_multi_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_multi_aff_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 std::string pw_multi_aff::get_tuple_name(isl::dim type) const
 {
   auto res = isl_pw_multi_aff_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_multi_aff_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -11834,245 +11961,245 @@ std::string pw_multi_aff::get_tuple_name(isl::dim type) const
 isl::pw_multi_aff pw_multi_aff::gist(isl::set set) const
 {
   auto res = isl_pw_multi_aff_gist(copy(), set.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_multi_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::gist_params(isl::set set) const
 {
   auto res = isl_pw_multi_aff_gist_params(copy(), set.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_multi_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean pw_multi_aff::has_tuple_id(isl::dim type) const
 {
   auto res = isl_pw_multi_aff_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_multi_aff_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::boolean pw_multi_aff::has_tuple_name(isl::dim type) const
 {
   auto res = isl_pw_multi_aff_has_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_multi_aff_has_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::identity(isl::space space)
 {
   auto res = isl_pw_multi_aff_identity(space.copy());
- printf("p_%p = identity(p_%p)\n", res, space.get());
+ printf("%s = isl_pw_multi_aff_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::intersect_domain(isl::set set) const
 {
   auto res = isl_pw_multi_aff_intersect_domain(copy(), set.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_multi_aff_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::intersect_params(isl::set set) const
 {
   auto res = isl_pw_multi_aff_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_multi_aff_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean pw_multi_aff::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_multi_aff_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_multi_aff_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean pw_multi_aff::involves_nan() const
 {
   auto res = isl_pw_multi_aff_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean pw_multi_aff::is_equal(const isl::pw_multi_aff &pma2) const
 {
   auto res = isl_pw_multi_aff_is_equal(get(), pma2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::multi_val_on_domain(isl::set domain, isl::multi_val mv)
 {
   auto res = isl_pw_multi_aff_multi_val_on_domain(domain.copy(), mv.copy());
- printf("p_%p = multi_val_on_domain(p_%p, p_%p)\n", res, domain.get(), mv.get());
+ printf("%s = isl_pw_multi_aff_multi_val_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), domain.get(), mv.get());
   return manage(res);
 }
 
 int pw_multi_aff::n_piece() const
 {
   auto res = isl_pw_multi_aff_n_piece(get());
- printf("p_%p = p_%p.n_piece()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_n_piece(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::pw_multi_aff pw_multi_aff::neg() const
 {
   auto res = isl_pw_multi_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean pw_multi_aff::plain_is_equal(const isl::pw_multi_aff &pma2) const
 {
   auto res = isl_pw_multi_aff_plain_is_equal(get(), pma2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::product(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_product(copy(), pma2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::project_domain_on_params() const
 {
   auto res = isl_pw_multi_aff_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::project_out_map(isl::space space, isl::dim type, unsigned int first, unsigned int n)
 {
   auto res = isl_pw_multi_aff_project_out_map(space.copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = project_out_map(p_%p, %d, %u, %u)\n", res, space.get(), type, first, n);
+ printf("%s = isl_pw_multi_aff_project_out_map(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), space.get(), type, first, n);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::pullback(isl::multi_aff ma) const
 {
   auto res = isl_pw_multi_aff_pullback_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_pw_multi_aff_pullback_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::pullback(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_pullback_pw_multi_aff(copy(), pma2.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_pullback_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::range_map(isl::space space)
 {
   auto res = isl_pw_multi_aff_range_map(space.copy());
- printf("p_%p = range_map(p_%p)\n", res, space.get());
+ printf("%s = isl_pw_multi_aff_range_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::range_product(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_range_product(copy(), pma2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_pw_multi_aff_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_multi_aff_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::reset_user() const
 {
   auto res = isl_pw_multi_aff_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_pw_multi_aff_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::scale_down_val(isl::val v) const
 {
   auto res = isl_pw_multi_aff_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_pw_multi_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::scale_multi_val(isl::multi_val mv) const
 {
   auto res = isl_pw_multi_aff_scale_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_pw_multi_aff_scale_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::scale_val(isl::val v) const
 {
   auto res = isl_pw_multi_aff_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_pw_multi_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_pw_multi_aff_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_pw_multi_aff_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::set_pw_aff(unsigned int pos, isl::pw_aff pa) const
 {
   auto res = isl_pw_multi_aff_set_pw_aff(copy(), pos, pa.copy());
- printf("p_%p = p_%p.set_pw_aff(%u, p_%p)\n", res, this->ptr, pos, pa.get());
+ printf("%s = isl_pw_multi_aff_set_pw_aff(p_%lu, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pos, pa.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_pw_multi_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_pw_multi_aff_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::sub(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_sub(copy(), pma2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::subtract_domain(isl::set set) const
 {
   auto res = isl_pw_multi_aff_subtract_domain(copy(), set.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_multi_aff_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::union_add(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_union_add(copy(), pma2.copy());
- printf("p_%p = p_%p.union_add(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_union_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::union_lexmax(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_union_lexmax(copy(), pma2.copy());
- printf("p_%p = p_%p.union_lexmax(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_union_lexmax(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::union_lexmin(isl::pw_multi_aff pma2) const
 {
   auto res = isl_pw_multi_aff_union_lexmin(copy(), pma2.copy());
- printf("p_%p = p_%p.union_lexmin(p_%p)\n", res, this->ptr, pma2.get());
+ printf("%s = isl_pw_multi_aff_union_lexmin(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, pma2.get());
   return manage(res);
 }
 
 isl::pw_multi_aff pw_multi_aff::zero(isl::space space)
 {
   auto res = isl_pw_multi_aff_zero(space.copy());
- printf("p_%p = zero(p_%p)\n", res, space.get());
+ printf("%s = isl_pw_multi_aff_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
@@ -12102,7 +12229,7 @@ pw_qpolynomial::pw_qpolynomial(__isl_take isl_pw_qpolynomial *ptr)
 pw_qpolynomial::pw_qpolynomial(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_pw_qpolynomial_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_pw_qpolynomial_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -12112,11 +12239,15 @@ pw_qpolynomial &pw_qpolynomial::operator=(isl::pw_qpolynomial obj) {
 }
 
 pw_qpolynomial::~pw_qpolynomial() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_pw_qpolynomial_free(p_%lu);\n", this->ptr);
     isl_pw_qpolynomial_free(ptr);
+  }
 }
 
 __isl_give isl_pw_qpolynomial *pw_qpolynomial::copy() const & {
+auto temp = isl_pw_qpolynomial_copy(ptr);
+printf("%s = isl_pw_qpolynomial_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_pw_qpolynomial").c_str(), this->ptr);
   return isl_pw_qpolynomial_copy(ptr);
 }
 
@@ -12159,77 +12290,77 @@ void pw_qpolynomial::dump() const {
 isl::pw_qpolynomial pw_qpolynomial::add(isl::pw_qpolynomial pwqp2) const
 {
   auto res = isl_pw_qpolynomial_add(copy(), pwqp2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, pwqp2.get());
+ printf("%s = isl_pw_qpolynomial_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, pwqp2.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_pw_qpolynomial_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_pw_qpolynomial_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::alloc(isl::set set, isl::qpolynomial qp)
 {
   auto res = isl_pw_qpolynomial_alloc(set.copy(), qp.copy());
- printf("p_%p = alloc(p_%p, p_%p)\n", res, set.get(), qp.get());
+ printf("%s = isl_pw_qpolynomial_alloc(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), set.get(), qp.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::coalesce() const
 {
   auto res = isl_pw_qpolynomial_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int pw_qpolynomial::dim(isl::dim type) const
 {
   auto res = isl_pw_qpolynomial_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_pw_qpolynomial_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::set pw_qpolynomial::domain() const
 {
   auto res = isl_pw_qpolynomial_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_qpolynomial_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_qpolynomial_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::drop_unused_params() const
 {
   auto res = isl_pw_qpolynomial_drop_unused_params(copy());
- printf("p_%p = p_%p.drop_unused_params()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_drop_unused_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val pw_qpolynomial::eval(isl::point pnt) const
 {
   auto res = isl_pw_qpolynomial_eval(copy(), pnt.copy());
- printf("p_%p = p_%p.eval(p_%p)\n", res, this->ptr, pnt.get());
+ printf("%s = isl_pw_qpolynomial_eval(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pnt.get());
   return manage(res);
 }
 
 int pw_qpolynomial::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_pw_qpolynomial_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_pw_qpolynomial_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::pw_qpolynomial pw_qpolynomial::fix_val(isl::dim type, unsigned int n, isl::val v) const
 {
   auto res = isl_pw_qpolynomial_fix_val(copy(), static_cast<enum isl_dim_type>(type), n, v.copy());
- printf("p_%p = p_%p.fix_val(%d, %u, p_%p)\n", res, this->ptr, type, n, v.get());
+ printf("%s = isl_pw_qpolynomial_fix_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, type, n, v.get());
   return manage(res);
 }
 
@@ -12244,238 +12375,238 @@ isl::stat pw_qpolynomial::foreach_piece(const std::function<isl::stat(isl::set, 
     return isl_stat(ret);
   };
   auto res = isl_pw_qpolynomial_foreach_piece(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_piece()\n", res, this->ptr, fn);
+ printf("%s = isl_pw_qpolynomial_foreach_piece(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::from_pw_aff(isl::pw_aff pwaff)
 {
   auto res = isl_pw_qpolynomial_from_pw_aff(pwaff.copy());
- printf("p_%p = from_pw_aff(p_%p)\n", res, pwaff.get());
+ printf("%s = isl_pw_qpolynomial_from_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), pwaff.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::from_qpolynomial(isl::qpolynomial qp)
 {
   auto res = isl_pw_qpolynomial_from_qpolynomial(qp.copy());
- printf("p_%p = from_qpolynomial(p_%p)\n", res, qp.get());
+ printf("%s = isl_pw_qpolynomial_from_qpolynomial(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), qp.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::from_range() const
 {
   auto res = isl_pw_qpolynomial_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space pw_qpolynomial::get_domain_space() const
 {
   auto res = isl_pw_qpolynomial_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space pw_qpolynomial::get_space() const
 {
   auto res = isl_pw_qpolynomial_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::gist(isl::set context) const
 {
   auto res = isl_pw_qpolynomial_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_pw_qpolynomial_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::gist_params(isl::set context) const
 {
   auto res = isl_pw_qpolynomial_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_pw_qpolynomial_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::boolean pw_qpolynomial::has_equal_space(const isl::pw_qpolynomial &pwqp2) const
 {
   auto res = isl_pw_qpolynomial_has_equal_space(get(), pwqp2.get());
- printf("p_%p = p_%p.has_equal_space(p_%p)\n", res, this->ptr, pwqp2.get());
+ printf("%s = isl_pw_qpolynomial_has_equal_space(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, pwqp2.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_qpolynomial_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_qpolynomial_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::intersect_domain(isl::set set) const
 {
   auto res = isl_pw_qpolynomial_intersect_domain(copy(), set.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_qpolynomial_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::intersect_params(isl::set set) const
 {
   auto res = isl_pw_qpolynomial_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_qpolynomial_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean pw_qpolynomial::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_qpolynomial_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_qpolynomial_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean pw_qpolynomial::involves_nan() const
 {
   auto res = isl_pw_qpolynomial_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean pw_qpolynomial::is_zero() const
 {
   auto res = isl_pw_qpolynomial_is_zero(get());
- printf("p_%p = p_%p.is_zero()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_is_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val pw_qpolynomial::max() const
 {
   auto res = isl_pw_qpolynomial_max(copy());
- printf("p_%p = p_%p.max()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_max(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val pw_qpolynomial::min() const
 {
   auto res = isl_pw_qpolynomial_min(copy());
- printf("p_%p = p_%p.min()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_min(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_pw_qpolynomial_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_pw_qpolynomial_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::mul(isl::pw_qpolynomial pwqp2) const
 {
   auto res = isl_pw_qpolynomial_mul(copy(), pwqp2.copy());
- printf("p_%p = p_%p.mul(p_%p)\n", res, this->ptr, pwqp2.get());
+ printf("%s = isl_pw_qpolynomial_mul(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, pwqp2.get());
   return manage(res);
 }
 
 int pw_qpolynomial::n_piece() const
 {
   auto res = isl_pw_qpolynomial_n_piece(get());
- printf("p_%p = p_%p.n_piece()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_n_piece(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::pw_qpolynomial pw_qpolynomial::neg() const
 {
   auto res = isl_pw_qpolynomial_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean pw_qpolynomial::plain_is_equal(const isl::pw_qpolynomial &pwqp2) const
 {
   auto res = isl_pw_qpolynomial_plain_is_equal(get(), pwqp2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, pwqp2.get());
+ printf("%s = isl_pw_qpolynomial_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, pwqp2.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::pow(unsigned int exponent) const
 {
   auto res = isl_pw_qpolynomial_pow(copy(), exponent);
- printf("p_%p = p_%p.pow(%u)\n", res, this->ptr, exponent);
+ printf("%s = isl_pw_qpolynomial_pow(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, exponent);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::project_domain_on_params() const
 {
   auto res = isl_pw_qpolynomial_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::reset_domain_space(isl::space dim) const
 {
   auto res = isl_pw_qpolynomial_reset_domain_space(copy(), dim.copy());
- printf("p_%p = p_%p.reset_domain_space(p_%p)\n", res, this->ptr, dim.get());
+ printf("%s = isl_pw_qpolynomial_reset_domain_space(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, dim.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::reset_user() const
 {
   auto res = isl_pw_qpolynomial_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_pw_qpolynomial_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::scale_down_val(isl::val v) const
 {
   auto res = isl_pw_qpolynomial_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_pw_qpolynomial_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::scale_val(isl::val v) const
 {
   auto res = isl_pw_qpolynomial_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_pw_qpolynomial_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::split_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_pw_qpolynomial_split_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.split_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_pw_qpolynomial_split_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::split_periods(int max_periods) const
 {
   auto res = isl_pw_qpolynomial_split_periods(copy(), max_periods);
- printf("p_%p = p_%p.split_periods(%d)\n", res, this->ptr, max_periods);
+ printf("%s = isl_pw_qpolynomial_split_periods(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, max_periods);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::sub(isl::pw_qpolynomial pwqp2) const
 {
   auto res = isl_pw_qpolynomial_sub(copy(), pwqp2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, pwqp2.get());
+ printf("%s = isl_pw_qpolynomial_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, pwqp2.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::subtract_domain(isl::set set) const
 {
   auto res = isl_pw_qpolynomial_subtract_domain(copy(), set.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_pw_qpolynomial_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::to_polynomial(int sign) const
 {
   auto res = isl_pw_qpolynomial_to_polynomial(copy(), sign);
- printf("p_%p = p_%p.to_polynomial(%d)\n", res, this->ptr, sign);
+ printf("%s = isl_pw_qpolynomial_to_polynomial(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, sign);
   return manage(res);
 }
 
 isl::pw_qpolynomial pw_qpolynomial::zero(isl::space dim)
 {
   auto res = isl_pw_qpolynomial_zero(dim.copy());
- printf("p_%p = zero(p_%p)\n", res, dim.get());
+ printf("%s = isl_pw_qpolynomial_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), dim.get());
   return manage(res);
 }
 
@@ -12509,11 +12640,15 @@ qpolynomial &qpolynomial::operator=(isl::qpolynomial obj) {
 }
 
 qpolynomial::~qpolynomial() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_qpolynomial_free(p_%lu);\n", this->ptr);
     isl_qpolynomial_free(ptr);
+  }
 }
 
 __isl_give isl_qpolynomial *qpolynomial::copy() const & {
+auto temp = isl_qpolynomial_copy(ptr);
+printf("%s = isl_qpolynomial_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_qpolynomial").c_str(), this->ptr);
   return isl_qpolynomial_copy(ptr);
 }
 
@@ -12547,21 +12682,21 @@ void qpolynomial::dump() const {
 isl::qpolynomial qpolynomial::add(isl::qpolynomial qp2) const
 {
   auto res = isl_qpolynomial_add(copy(), qp2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, qp2.get());
+ printf("%s = isl_qpolynomial_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, qp2.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_qpolynomial_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_qpolynomial_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::align_params(isl::space model) const
 {
   auto res = isl_qpolynomial_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_qpolynomial_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
@@ -12576,28 +12711,28 @@ isl::stat qpolynomial::as_polynomial_on_domain(const isl::basic_set &bset, const
     return isl_stat(ret);
   };
   auto res = isl_qpolynomial_as_polynomial_on_domain(get(), bset.get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.as_polynomial_on_domain(p_%p, )\n", res, this->ptr, bset.get(), fn);
+ printf("%s = isl_qpolynomial_as_polynomial_on_domain(p_%lu, p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, bset.get(), fn);
   return isl::stat(res);
 }
 
 unsigned int qpolynomial::dim(isl::dim type) const
 {
   auto res = isl_qpolynomial_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_qpolynomial_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::qpolynomial qpolynomial::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_qpolynomial_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_qpolynomial_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::val qpolynomial::eval(isl::point pnt) const
 {
   auto res = isl_qpolynomial_eval(copy(), pnt.copy());
- printf("p_%p = p_%p.eval(p_%p)\n", res, this->ptr, pnt.get());
+ printf("%s = isl_qpolynomial_eval(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pnt.get());
   return manage(res);
 }
 
@@ -12612,231 +12747,231 @@ isl::stat qpolynomial::foreach_term(const std::function<isl::stat(isl::term)> &f
     return isl_stat(ret);
   };
   auto res = isl_qpolynomial_foreach_term(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_term()\n", res, this->ptr, fn);
+ printf("%s = isl_qpolynomial_foreach_term(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::qpolynomial qpolynomial::from_aff(isl::aff aff)
 {
   auto res = isl_qpolynomial_from_aff(aff.copy());
- printf("p_%p = from_aff(p_%p)\n", res, aff.get());
+ printf("%s = isl_qpolynomial_from_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), aff.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::from_constraint(isl::constraint c, isl::dim type, unsigned int pos)
 {
   auto res = isl_qpolynomial_from_constraint(c.copy(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = from_constraint(p_%p, %d, %u)\n", res, c.get(), type, pos);
+ printf("%s = isl_qpolynomial_from_constraint(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), c.get(), type, pos);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::from_term(isl::term term)
 {
   auto res = isl_qpolynomial_from_term(term.copy());
- printf("p_%p = from_term(p_%p)\n", res, term.get());
+ printf("%s = isl_qpolynomial_from_term(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), term.get());
   return manage(res);
 }
 
 isl::val qpolynomial::get_constant_val() const
 {
   auto res = isl_qpolynomial_get_constant_val(get());
- printf("p_%p = p_%p.get_constant_val()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_get_constant_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space qpolynomial::get_domain_space() const
 {
   auto res = isl_qpolynomial_get_domain_space(get());
- printf("p_%p = p_%p.get_domain_space()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_get_domain_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space qpolynomial::get_space() const
 {
   auto res = isl_qpolynomial_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::gist(isl::set context) const
 {
   auto res = isl_qpolynomial_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_qpolynomial_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::gist_params(isl::set context) const
 {
   auto res = isl_qpolynomial_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_qpolynomial_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::homogenize() const
 {
   auto res = isl_qpolynomial_homogenize(copy());
- printf("p_%p = p_%p.homogenize()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_homogenize(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::infty_on_domain(isl::space dim)
 {
   auto res = isl_qpolynomial_infty_on_domain(dim.copy());
- printf("p_%p = infty_on_domain(p_%p)\n", res, dim.get());
+ printf("%s = isl_qpolynomial_infty_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), dim.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::insert_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_qpolynomial_insert_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_qpolynomial_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean qpolynomial::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_qpolynomial_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_qpolynomial_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean qpolynomial::is_infty() const
 {
   auto res = isl_qpolynomial_is_infty(get());
- printf("p_%p = p_%p.is_infty()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_is_infty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean qpolynomial::is_nan() const
 {
   auto res = isl_qpolynomial_is_nan(get());
- printf("p_%p = p_%p.is_nan()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_is_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean qpolynomial::is_neginfty() const
 {
   auto res = isl_qpolynomial_is_neginfty(get());
- printf("p_%p = p_%p.is_neginfty()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_is_neginfty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean qpolynomial::is_zero() const
 {
   auto res = isl_qpolynomial_is_zero(get());
- printf("p_%p = p_%p.is_zero()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_is_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_qpolynomial_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_qpolynomial_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::mul(isl::qpolynomial qp2) const
 {
   auto res = isl_qpolynomial_mul(copy(), qp2.copy());
- printf("p_%p = p_%p.mul(p_%p)\n", res, this->ptr, qp2.get());
+ printf("%s = isl_qpolynomial_mul(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, qp2.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::nan_on_domain(isl::space dim)
 {
   auto res = isl_qpolynomial_nan_on_domain(dim.copy());
- printf("p_%p = nan_on_domain(p_%p)\n", res, dim.get());
+ printf("%s = isl_qpolynomial_nan_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), dim.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::neg() const
 {
   auto res = isl_qpolynomial_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::neginfty_on_domain(isl::space dim)
 {
   auto res = isl_qpolynomial_neginfty_on_domain(dim.copy());
- printf("p_%p = neginfty_on_domain(p_%p)\n", res, dim.get());
+ printf("%s = isl_qpolynomial_neginfty_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), dim.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::one_on_domain(isl::space dim)
 {
   auto res = isl_qpolynomial_one_on_domain(dim.copy());
- printf("p_%p = one_on_domain(p_%p)\n", res, dim.get());
+ printf("%s = isl_qpolynomial_one_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), dim.get());
   return manage(res);
 }
 
 isl::boolean qpolynomial::plain_is_equal(const isl::qpolynomial &qp2) const
 {
   auto res = isl_qpolynomial_plain_is_equal(get(), qp2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, qp2.get());
+ printf("%s = isl_qpolynomial_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, qp2.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::pow(unsigned int power) const
 {
   auto res = isl_qpolynomial_pow(copy(), power);
- printf("p_%p = p_%p.pow(%u)\n", res, this->ptr, power);
+ printf("%s = isl_qpolynomial_pow(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, power);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::project_domain_on_params() const
 {
   auto res = isl_qpolynomial_project_domain_on_params(copy());
- printf("p_%p = p_%p.project_domain_on_params()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_project_domain_on_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::scale_down_val(isl::val v) const
 {
   auto res = isl_qpolynomial_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_qpolynomial_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::scale_val(isl::val v) const
 {
   auto res = isl_qpolynomial_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_qpolynomial_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 int qpolynomial::sgn() const
 {
   auto res = isl_qpolynomial_sgn(get());
- printf("p_%p = p_%p.sgn()\n", res, this->ptr);
+ printf("%s = isl_qpolynomial_sgn(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::qpolynomial qpolynomial::sub(isl::qpolynomial qp2) const
 {
   auto res = isl_qpolynomial_sub(copy(), qp2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, qp2.get());
+ printf("%s = isl_qpolynomial_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), this->ptr, qp2.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::val_on_domain(isl::space space, isl::val val)
 {
   auto res = isl_qpolynomial_val_on_domain(space.copy(), val.copy());
- printf("p_%p = val_on_domain(p_%p, p_%p)\n", res, space.get(), val.get());
+ printf("%s = isl_qpolynomial_val_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), space.get(), val.get());
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::var_on_domain(isl::space dim, isl::dim type, unsigned int pos)
 {
   auto res = isl_qpolynomial_var_on_domain(dim.copy(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = var_on_domain(p_%p, %d, %u)\n", res, dim.get(), type, pos);
+ printf("%s = isl_qpolynomial_var_on_domain(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), dim.get(), type, pos);
   return manage(res);
 }
 
 isl::qpolynomial qpolynomial::zero_on_domain(isl::space dim)
 {
   auto res = isl_qpolynomial_zero_on_domain(dim.copy());
- printf("p_%p = zero_on_domain(p_%p)\n", res, dim.get());
+ printf("%s = isl_qpolynomial_zero_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_qpolynomial").c_str(), dim.get());
   return manage(res);
 }
 
@@ -12866,7 +13001,7 @@ schedule::schedule(__isl_take isl_schedule *ptr)
 schedule::schedule(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_schedule_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_schedule_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -12876,11 +13011,15 @@ schedule &schedule::operator=(isl::schedule obj) {
 }
 
 schedule::~schedule() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_schedule_free(p_%lu);\n", this->ptr);
     isl_schedule_free(ptr);
+  }
 }
 
 __isl_give isl_schedule *schedule::copy() const & {
+auto temp = isl_schedule_copy(ptr);
+printf("%s = isl_schedule_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_schedule").c_str(), this->ptr);
   return isl_schedule_copy(ptr);
 }
 
@@ -12923,112 +13062,112 @@ void schedule::dump() const {
 isl::schedule schedule::align_params(isl::space space) const
 {
   auto res = isl_schedule_align_params(copy(), space.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, space.get());
+ printf("%s = isl_schedule_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, space.get());
   return manage(res);
 }
 
 isl::schedule schedule::empty(isl::space space)
 {
   auto res = isl_schedule_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_schedule_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), space.get());
   return manage(res);
 }
 
 isl::schedule schedule::from_domain(isl::union_set domain)
 {
   auto res = isl_schedule_from_domain(domain.copy());
- printf("p_%p = from_domain(p_%p)\n", res, domain.get());
+ printf("%s = isl_schedule_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), domain.get());
   return manage(res);
 }
 
 isl::union_set schedule::get_domain() const
 {
   auto res = isl_schedule_get_domain(get());
- printf("p_%p = p_%p.get_domain()\n", res, this->ptr);
+ printf("%s = isl_schedule_get_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule::get_map() const
 {
   auto res = isl_schedule_get_map(get());
- printf("p_%p = p_%p.get_map()\n", res, this->ptr);
+ printf("%s = isl_schedule_get_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule::get_root() const
 {
   auto res = isl_schedule_get_root(get());
- printf("p_%p = p_%p.get_root()\n", res, this->ptr);
+ printf("%s = isl_schedule_get_root(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule schedule::gist_domain_params(isl::set context) const
 {
   auto res = isl_schedule_gist_domain_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_domain_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_schedule_gist_domain_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::schedule schedule::insert_context(isl::set context) const
 {
   auto res = isl_schedule_insert_context(copy(), context.copy());
- printf("p_%p = p_%p.insert_context(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_schedule_insert_context(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::schedule schedule::insert_guard(isl::set guard) const
 {
   auto res = isl_schedule_insert_guard(copy(), guard.copy());
- printf("p_%p = p_%p.insert_guard(p_%p)\n", res, this->ptr, guard.get());
+ printf("%s = isl_schedule_insert_guard(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, guard.get());
   return manage(res);
 }
 
 isl::schedule schedule::insert_partial_schedule(isl::multi_union_pw_aff partial) const
 {
   auto res = isl_schedule_insert_partial_schedule(copy(), partial.copy());
- printf("p_%p = p_%p.insert_partial_schedule(p_%p)\n", res, this->ptr, partial.get());
+ printf("%s = isl_schedule_insert_partial_schedule(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, partial.get());
   return manage(res);
 }
 
 isl::schedule schedule::intersect_domain(isl::union_set domain) const
 {
   auto res = isl_schedule_intersect_domain(copy(), domain.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, domain.get());
+ printf("%s = isl_schedule_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, domain.get());
   return manage(res);
 }
 
 isl::boolean schedule::plain_is_equal(const isl::schedule &schedule2) const
 {
   auto res = isl_schedule_plain_is_equal(get(), schedule2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, schedule2.get());
+ printf("%s = isl_schedule_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, schedule2.get());
   return manage(res);
 }
 
 isl::schedule schedule::pullback(isl::union_pw_multi_aff upma) const
 {
   auto res = isl_schedule_pullback_union_pw_multi_aff(copy(), upma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, upma.get());
+ printf("%s = isl_schedule_pullback_union_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, upma.get());
   return manage(res);
 }
 
 isl::schedule schedule::reset_user() const
 {
   auto res = isl_schedule_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_schedule_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule schedule::sequence(isl::schedule schedule2) const
 {
   auto res = isl_schedule_sequence(copy(), schedule2.copy());
- printf("p_%p = p_%p.sequence(p_%p)\n", res, this->ptr, schedule2.get());
+ printf("%s = isl_schedule_sequence(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, schedule2.get());
   return manage(res);
 }
 
 isl::schedule schedule::set(isl::schedule schedule2) const
 {
   auto res = isl_schedule_set(copy(), schedule2.copy());
- printf("p_%p = p_%p.set(p_%p)\n", res, this->ptr, schedule2.get());
+ printf("%s = isl_schedule_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, schedule2.get());
   return manage(res);
 }
 
@@ -13058,7 +13197,7 @@ schedule_constraints::schedule_constraints(__isl_take isl_schedule_constraints *
 schedule_constraints::schedule_constraints(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_schedule_constraints_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_schedule_constraints_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -13068,11 +13207,15 @@ schedule_constraints &schedule_constraints::operator=(isl::schedule_constraints 
 }
 
 schedule_constraints::~schedule_constraints() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_schedule_constraints_free(p_%lu);\n", this->ptr);
     isl_schedule_constraints_free(ptr);
+  }
 }
 
 __isl_give isl_schedule_constraints *schedule_constraints::copy() const & {
+auto temp = isl_schedule_constraints_copy(ptr);
+printf("%s = isl_schedule_constraints_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_schedule_constraints").c_str(), this->ptr);
   return isl_schedule_constraints_copy(ptr);
 }
 
@@ -13115,105 +13258,105 @@ void schedule_constraints::dump() const {
 isl::schedule_constraints schedule_constraints::apply(isl::union_map umap) const
 {
   auto res = isl_schedule_constraints_apply(copy(), umap.copy());
- printf("p_%p = p_%p.apply(p_%p)\n", res, this->ptr, umap.get());
+ printf("%s = isl_schedule_constraints_apply(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), this->ptr, umap.get());
   return manage(res);
 }
 
 isl::schedule schedule_constraints::compute_schedule() const
 {
   auto res = isl_schedule_constraints_compute_schedule(copy());
- printf("p_%p = p_%p.compute_schedule()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_compute_schedule(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_constraints::get_coincidence() const
 {
   auto res = isl_schedule_constraints_get_coincidence(get());
- printf("p_%p = p_%p.get_coincidence()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_get_coincidence(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_constraints::get_conditional_validity() const
 {
   auto res = isl_schedule_constraints_get_conditional_validity(get());
- printf("p_%p = p_%p.get_conditional_validity()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_get_conditional_validity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_constraints::get_conditional_validity_condition() const
 {
   auto res = isl_schedule_constraints_get_conditional_validity_condition(get());
- printf("p_%p = p_%p.get_conditional_validity_condition()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_get_conditional_validity_condition(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set schedule_constraints::get_context() const
 {
   auto res = isl_schedule_constraints_get_context(get());
- printf("p_%p = p_%p.get_context()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_get_context(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set schedule_constraints::get_domain() const
 {
   auto res = isl_schedule_constraints_get_domain(get());
- printf("p_%p = p_%p.get_domain()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_get_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_constraints::get_proximity() const
 {
   auto res = isl_schedule_constraints_get_proximity(get());
- printf("p_%p = p_%p.get_proximity()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_get_proximity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_constraints::get_validity() const
 {
   auto res = isl_schedule_constraints_get_validity(get());
- printf("p_%p = p_%p.get_validity()\n", res, this->ptr);
+ printf("%s = isl_schedule_constraints_get_validity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_constraints schedule_constraints::on_domain(isl::union_set domain)
 {
   auto res = isl_schedule_constraints_on_domain(domain.copy());
- printf("p_%p = on_domain(p_%p)\n", res, domain.get());
+ printf("%s = isl_schedule_constraints_on_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), domain.get());
   return manage(res);
 }
 
 isl::schedule_constraints schedule_constraints::set_coincidence(isl::union_map coincidence) const
 {
   auto res = isl_schedule_constraints_set_coincidence(copy(), coincidence.copy());
- printf("p_%p = p_%p.set_coincidence(p_%p)\n", res, this->ptr, coincidence.get());
+ printf("%s = isl_schedule_constraints_set_coincidence(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), this->ptr, coincidence.get());
   return manage(res);
 }
 
 isl::schedule_constraints schedule_constraints::set_conditional_validity(isl::union_map condition, isl::union_map validity) const
 {
   auto res = isl_schedule_constraints_set_conditional_validity(copy(), condition.copy(), validity.copy());
- printf("p_%p = p_%p.set_conditional_validity(p_%p, p_%p)\n", res, this->ptr, condition.get(), validity.get());
+ printf("%s = isl_schedule_constraints_set_conditional_validity(p_%lu, p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), this->ptr, condition.get(), validity.get());
   return manage(res);
 }
 
 isl::schedule_constraints schedule_constraints::set_context(isl::set context) const
 {
   auto res = isl_schedule_constraints_set_context(copy(), context.copy());
- printf("p_%p = p_%p.set_context(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_schedule_constraints_set_context(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::schedule_constraints schedule_constraints::set_proximity(isl::union_map proximity) const
 {
   auto res = isl_schedule_constraints_set_proximity(copy(), proximity.copy());
- printf("p_%p = p_%p.set_proximity(p_%p)\n", res, this->ptr, proximity.get());
+ printf("%s = isl_schedule_constraints_set_proximity(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), this->ptr, proximity.get());
   return manage(res);
 }
 
 isl::schedule_constraints schedule_constraints::set_validity(isl::union_map validity) const
 {
   auto res = isl_schedule_constraints_set_validity(copy(), validity.copy());
- printf("p_%p = p_%p.set_validity(p_%p)\n", res, this->ptr, validity.get());
+ printf("%s = isl_schedule_constraints_set_validity(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_constraints").c_str(), this->ptr, validity.get());
   return manage(res);
 }
 
@@ -13247,11 +13390,15 @@ schedule_node &schedule_node::operator=(isl::schedule_node obj) {
 }
 
 schedule_node::~schedule_node() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_schedule_node_free(p_%lu);\n", this->ptr);
     isl_schedule_node_free(ptr);
+  }
 }
 
 __isl_give isl_schedule_node *schedule_node::copy() const & {
+auto temp = isl_schedule_node_copy(ptr);
+printf("%s = isl_schedule_node_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_schedule_node").c_str(), this->ptr);
   return isl_schedule_node_copy(ptr);
 }
 
@@ -13294,98 +13441,98 @@ void schedule_node::dump() const {
 isl::schedule_node schedule_node::align_params(isl::space space) const
 {
   auto res = isl_schedule_node_align_params(copy(), space.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, space.get());
+ printf("%s = isl_schedule_node_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, space.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::ancestor(int generation) const
 {
   auto res = isl_schedule_node_ancestor(copy(), generation);
- printf("p_%p = p_%p.ancestor(%d)\n", res, this->ptr, generation);
+ printf("%s = isl_schedule_node_ancestor(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, generation);
   return manage(res);
 }
 
 isl::boolean schedule_node::band_member_get_coincident(int pos) const
 {
   auto res = isl_schedule_node_band_member_get_coincident(get(), pos);
- printf("p_%p = p_%p.band_member_get_coincident(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_schedule_node_band_member_get_coincident(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::band_member_set_coincident(int pos, int coincident) const
 {
   auto res = isl_schedule_node_band_member_set_coincident(copy(), pos, coincident);
- printf("p_%p = p_%p.band_member_set_coincident(%d, %d)\n", res, this->ptr, pos, coincident);
+ printf("%s = isl_schedule_node_band_member_set_coincident(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, pos, coincident);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::band_set_ast_build_options(isl::union_set options) const
 {
   auto res = isl_schedule_node_band_set_ast_build_options(copy(), options.copy());
- printf("p_%p = p_%p.band_set_ast_build_options(p_%p)\n", res, this->ptr, options.get());
+ printf("%s = isl_schedule_node_band_set_ast_build_options(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, options.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::child(int pos) const
 {
   auto res = isl_schedule_node_child(copy(), pos);
- printf("p_%p = p_%p.child(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_schedule_node_child(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::set schedule_node::context_get_context() const
 {
   auto res = isl_schedule_node_context_get_context(get());
- printf("p_%p = p_%p.context_get_context()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_context_get_context(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::cut() const
 {
   auto res = isl_schedule_node_cut(copy());
- printf("p_%p = p_%p.cut()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_cut(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set schedule_node::domain_get_domain() const
 {
   auto res = isl_schedule_node_domain_get_domain(get());
- printf("p_%p = p_%p.domain_get_domain()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_domain_get_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_multi_aff schedule_node::expansion_get_contraction() const
 {
   auto res = isl_schedule_node_expansion_get_contraction(get());
- printf("p_%p = p_%p.expansion_get_contraction()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_expansion_get_contraction(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_node::expansion_get_expansion() const
 {
   auto res = isl_schedule_node_expansion_get_expansion(get());
- printf("p_%p = p_%p.expansion_get_expansion()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_expansion_get_expansion(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_node::extension_get_extension() const
 {
   auto res = isl_schedule_node_extension_get_extension(get());
- printf("p_%p = p_%p.extension_get_extension()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_extension_get_extension(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set schedule_node::filter_get_filter() const
 {
   auto res = isl_schedule_node_filter_get_filter(get());
- printf("p_%p = p_%p.filter_get_filter()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_filter_get_filter(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::first_child() const
 {
   auto res = isl_schedule_node_first_child(copy());
- printf("p_%p = p_%p.first_child()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_first_child(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -13400,322 +13547,322 @@ isl::stat schedule_node::foreach_ancestor_top_down(const std::function<isl::stat
     return isl_stat(ret);
   };
   auto res = isl_schedule_node_foreach_ancestor_top_down(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_ancestor_top_down()\n", res, this->ptr, fn);
+ printf("%s = isl_schedule_node_foreach_ancestor_top_down(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::schedule_node schedule_node::from_domain(isl::union_set domain)
 {
   auto res = isl_schedule_node_from_domain(domain.copy());
- printf("p_%p = from_domain(p_%p)\n", res, domain.get());
+ printf("%s = isl_schedule_node_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), domain.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::from_extension(isl::union_map extension)
 {
   auto res = isl_schedule_node_from_extension(extension.copy());
- printf("p_%p = from_extension(p_%p)\n", res, extension.get());
+ printf("%s = isl_schedule_node_from_extension(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), extension.get());
   return manage(res);
 }
 
 int schedule_node::get_ancestor_child_position(const isl::schedule_node &ancestor) const
 {
   auto res = isl_schedule_node_get_ancestor_child_position(get(), ancestor.get());
- printf("p_%p = p_%p.get_ancestor_child_position(p_%p)\n", res, this->ptr, ancestor.get());
+ printf("%s = isl_schedule_node_get_ancestor_child_position(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, ancestor.get());
   return res;
 }
 
 isl::schedule_node schedule_node::get_child(int pos) const
 {
   auto res = isl_schedule_node_get_child(get(), pos);
- printf("p_%p = p_%p.get_child(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_schedule_node_get_child(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 int schedule_node::get_child_position() const
 {
   auto res = isl_schedule_node_get_child_position(get());
- printf("p_%p = p_%p.get_child_position()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_child_position(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::union_set schedule_node::get_domain() const
 {
   auto res = isl_schedule_node_get_domain(get());
- printf("p_%p = p_%p.get_domain()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_union_pw_aff schedule_node::get_prefix_schedule_multi_union_pw_aff() const
 {
   auto res = isl_schedule_node_get_prefix_schedule_multi_union_pw_aff(get());
- printf("p_%p = p_%p.get_prefix_schedule_multi_union_pw_aff()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_prefix_schedule_multi_union_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_node::get_prefix_schedule_relation() const
 {
   auto res = isl_schedule_node_get_prefix_schedule_relation(get());
- printf("p_%p = p_%p.get_prefix_schedule_relation()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_prefix_schedule_relation(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_node::get_prefix_schedule_union_map() const
 {
   auto res = isl_schedule_node_get_prefix_schedule_union_map(get());
- printf("p_%p = p_%p.get_prefix_schedule_union_map()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_prefix_schedule_union_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_multi_aff schedule_node::get_prefix_schedule_union_pw_multi_aff() const
 {
   auto res = isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(get());
- printf("p_%p = p_%p.get_prefix_schedule_union_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_prefix_schedule_union_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule schedule_node::get_schedule() const
 {
   auto res = isl_schedule_node_get_schedule(get());
- printf("p_%p = p_%p.get_schedule()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_schedule(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr);
   return manage(res);
 }
 
 int schedule_node::get_schedule_depth() const
 {
   auto res = isl_schedule_node_get_schedule_depth(get());
- printf("p_%p = p_%p.get_schedule_depth()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_schedule_depth(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::schedule_node schedule_node::get_shared_ancestor(const isl::schedule_node &node2) const
 {
   auto res = isl_schedule_node_get_shared_ancestor(get(), node2.get());
- printf("p_%p = p_%p.get_shared_ancestor(p_%p)\n", res, this->ptr, node2.get());
+ printf("%s = isl_schedule_node_get_shared_ancestor(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, node2.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff schedule_node::get_subtree_contraction() const
 {
   auto res = isl_schedule_node_get_subtree_contraction(get());
- printf("p_%p = p_%p.get_subtree_contraction()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_subtree_contraction(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_node::get_subtree_expansion() const
 {
   auto res = isl_schedule_node_get_subtree_expansion(get());
- printf("p_%p = p_%p.get_subtree_expansion()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_subtree_expansion(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map schedule_node::get_subtree_schedule_union_map() const
 {
   auto res = isl_schedule_node_get_subtree_schedule_union_map(get());
- printf("p_%p = p_%p.get_subtree_schedule_union_map()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_subtree_schedule_union_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 int schedule_node::get_tree_depth() const
 {
   auto res = isl_schedule_node_get_tree_depth(get());
- printf("p_%p = p_%p.get_tree_depth()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_tree_depth(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::union_set schedule_node::get_universe_domain() const
 {
   auto res = isl_schedule_node_get_universe_domain(get());
- printf("p_%p = p_%p.get_universe_domain()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_get_universe_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::graft_after(isl::schedule_node graft) const
 {
   auto res = isl_schedule_node_graft_after(copy(), graft.copy());
- printf("p_%p = p_%p.graft_after(p_%p)\n", res, this->ptr, graft.get());
+ printf("%s = isl_schedule_node_graft_after(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, graft.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::graft_before(isl::schedule_node graft) const
 {
   auto res = isl_schedule_node_graft_before(copy(), graft.copy());
- printf("p_%p = p_%p.graft_before(p_%p)\n", res, this->ptr, graft.get());
+ printf("%s = isl_schedule_node_graft_before(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, graft.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::group(isl::id group_id) const
 {
   auto res = isl_schedule_node_group(copy(), group_id.copy());
- printf("p_%p = p_%p.group(p_%p)\n", res, this->ptr, group_id.get());
+ printf("%s = isl_schedule_node_group(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, group_id.get());
   return manage(res);
 }
 
 isl::set schedule_node::guard_get_guard() const
 {
   auto res = isl_schedule_node_guard_get_guard(get());
- printf("p_%p = p_%p.guard_get_guard()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_guard_get_guard(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean schedule_node::has_children() const
 {
   auto res = isl_schedule_node_has_children(get());
- printf("p_%p = p_%p.has_children()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_has_children(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean schedule_node::has_next_sibling() const
 {
   auto res = isl_schedule_node_has_next_sibling(get());
- printf("p_%p = p_%p.has_next_sibling()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_has_next_sibling(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean schedule_node::has_parent() const
 {
   auto res = isl_schedule_node_has_parent(get());
- printf("p_%p = p_%p.has_parent()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_has_parent(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean schedule_node::has_previous_sibling() const
 {
   auto res = isl_schedule_node_has_previous_sibling(get());
- printf("p_%p = p_%p.has_previous_sibling()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_has_previous_sibling(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::insert_context(isl::set context) const
 {
   auto res = isl_schedule_node_insert_context(copy(), context.copy());
- printf("p_%p = p_%p.insert_context(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_schedule_node_insert_context(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::insert_filter(isl::union_set filter) const
 {
   auto res = isl_schedule_node_insert_filter(copy(), filter.copy());
- printf("p_%p = p_%p.insert_filter(p_%p)\n", res, this->ptr, filter.get());
+ printf("%s = isl_schedule_node_insert_filter(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, filter.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::insert_guard(isl::set context) const
 {
   auto res = isl_schedule_node_insert_guard(copy(), context.copy());
- printf("p_%p = p_%p.insert_guard(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_schedule_node_insert_guard(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::insert_mark(isl::id mark) const
 {
   auto res = isl_schedule_node_insert_mark(copy(), mark.copy());
- printf("p_%p = p_%p.insert_mark(p_%p)\n", res, this->ptr, mark.get());
+ printf("%s = isl_schedule_node_insert_mark(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, mark.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::insert_partial_schedule(isl::multi_union_pw_aff schedule) const
 {
   auto res = isl_schedule_node_insert_partial_schedule(copy(), schedule.copy());
- printf("p_%p = p_%p.insert_partial_schedule(p_%p)\n", res, this->ptr, schedule.get());
+ printf("%s = isl_schedule_node_insert_partial_schedule(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, schedule.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::insert_sequence(isl::union_set_list filters) const
 {
   auto res = isl_schedule_node_insert_sequence(copy(), filters.copy());
- printf("p_%p = p_%p.insert_sequence(p_%p)\n", res, this->ptr, filters.get());
+ printf("%s = isl_schedule_node_insert_sequence(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, filters.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::insert_set(isl::union_set_list filters) const
 {
   auto res = isl_schedule_node_insert_set(copy(), filters.copy());
- printf("p_%p = p_%p.insert_set(p_%p)\n", res, this->ptr, filters.get());
+ printf("%s = isl_schedule_node_insert_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, filters.get());
   return manage(res);
 }
 
 isl::boolean schedule_node::is_equal(const isl::schedule_node &node2) const
 {
   auto res = isl_schedule_node_is_equal(get(), node2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, node2.get());
+ printf("%s = isl_schedule_node_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, node2.get());
   return manage(res);
 }
 
 isl::boolean schedule_node::is_subtree_anchored() const
 {
   auto res = isl_schedule_node_is_subtree_anchored(get());
- printf("p_%p = p_%p.is_subtree_anchored()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_is_subtree_anchored(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id schedule_node::mark_get_id() const
 {
   auto res = isl_schedule_node_mark_get_id(get());
- printf("p_%p = p_%p.mark_get_id()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_mark_get_id(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr);
   return manage(res);
 }
 
 int schedule_node::n_children() const
 {
   auto res = isl_schedule_node_n_children(get());
- printf("p_%p = p_%p.n_children()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_n_children(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::schedule_node schedule_node::next_sibling() const
 {
   auto res = isl_schedule_node_next_sibling(copy());
- printf("p_%p = p_%p.next_sibling()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_next_sibling(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::order_after(isl::union_set filter) const
 {
   auto res = isl_schedule_node_order_after(copy(), filter.copy());
- printf("p_%p = p_%p.order_after(p_%p)\n", res, this->ptr, filter.get());
+ printf("%s = isl_schedule_node_order_after(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, filter.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::order_before(isl::union_set filter) const
 {
   auto res = isl_schedule_node_order_before(copy(), filter.copy());
- printf("p_%p = p_%p.order_before(p_%p)\n", res, this->ptr, filter.get());
+ printf("%s = isl_schedule_node_order_before(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, filter.get());
   return manage(res);
 }
 
 isl::schedule_node schedule_node::parent() const
 {
   auto res = isl_schedule_node_parent(copy());
- printf("p_%p = p_%p.parent()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_parent(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::previous_sibling() const
 {
   auto res = isl_schedule_node_previous_sibling(copy());
- printf("p_%p = p_%p.previous_sibling()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_previous_sibling(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::reset_user() const
 {
   auto res = isl_schedule_node_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::root() const
 {
   auto res = isl_schedule_node_root(copy());
- printf("p_%p = p_%p.root()\n", res, this->ptr);
+ printf("%s = isl_schedule_node_root(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule_node schedule_node::sequence_splice_child(int pos) const
 {
   auto res = isl_schedule_node_sequence_splice_child(copy(), pos);
- printf("p_%p = p_%p.sequence_splice_child(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_schedule_node_sequence_splice_child(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule_node").c_str(), this->ptr, pos);
   return manage(res);
 }
 
@@ -13745,25 +13892,25 @@ set::set(__isl_take isl_set *ptr)
 set::set(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_set_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_set_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 set::set(isl::basic_set bset)
 {
   auto res = isl_set_from_basic_set(bset.copy());
- printf("p_%p = from_basic_set(p_%p)\n", res, bset.get());
+ printf("%s = isl_set_from_basic_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), bset.get());
   ptr = res;
 }
 set::set(isl::point pnt)
 {
   auto res = isl_set_from_point(pnt.copy());
- printf("p_%p = from_point(p_%p)\n", res, pnt.get());
+ printf("%s = isl_set_from_point(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), pnt.get());
   ptr = res;
 }
 set::set(isl::union_set uset)
 {
   auto res = isl_set_from_union_set(uset.copy());
- printf("p_%p = from_union_set(p_%p)\n", res, uset.get());
+ printf("%s = isl_set_from_union_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), uset.get());
   ptr = res;
 }
 
@@ -13773,11 +13920,15 @@ set &set::operator=(isl::set obj) {
 }
 
 set::~set() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_set_free(p_%lu);\n", this->ptr);
     isl_set_free(ptr);
+  }
 }
 
 __isl_give isl_set *set::copy() const & {
+auto temp = isl_set_copy(ptr);
+printf("%s = isl_set_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_set").c_str(), this->ptr);
   return isl_set_copy(ptr);
 }
 
@@ -13820,245 +13971,245 @@ void set::dump() const {
 isl::set set::add_constraint(isl::constraint constraint) const
 {
   auto res = isl_set_add_constraint(copy(), constraint.copy());
- printf("p_%p = p_%p.add_constraint(p_%p)\n", res, this->ptr, constraint.get());
+ printf("%s = isl_set_add_constraint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, constraint.get());
   return manage(res);
 }
 
 isl::set set::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_set_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_set_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::basic_set set::affine_hull() const
 {
   auto res = isl_set_affine_hull(copy());
- printf("p_%p = p_%p.affine_hull()\n", res, this->ptr);
+ printf("%s = isl_set_affine_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::align_params(isl::space model) const
 {
   auto res = isl_set_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_set_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::set set::apply(isl::map map) const
 {
   auto res = isl_set_apply(copy(), map.copy());
- printf("p_%p = p_%p.apply(p_%p)\n", res, this->ptr, map.get());
+ printf("%s = isl_set_apply(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, map.get());
   return manage(res);
 }
 
 isl::basic_set set::bounded_simple_hull() const
 {
   auto res = isl_set_bounded_simple_hull(copy());
- printf("p_%p = p_%p.bounded_simple_hull()\n", res, this->ptr);
+ printf("%s = isl_set_bounded_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::box_from_points(isl::point pnt1, isl::point pnt2)
 {
   auto res = isl_set_box_from_points(pnt1.copy(), pnt2.copy());
- printf("p_%p = box_from_points(p_%p, p_%p)\n", res, pnt1.get(), pnt2.get());
+ printf("%s = isl_set_box_from_points(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), pnt1.get(), pnt2.get());
   return manage(res);
 }
 
 isl::set set::coalesce() const
 {
   auto res = isl_set_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_set_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set set::coefficients() const
 {
   auto res = isl_set_coefficients(copy());
- printf("p_%p = p_%p.coefficients()\n", res, this->ptr);
+ printf("%s = isl_set_coefficients(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::complement() const
 {
   auto res = isl_set_complement(copy());
- printf("p_%p = p_%p.complement()\n", res, this->ptr);
+ printf("%s = isl_set_complement(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set set::convex_hull() const
 {
   auto res = isl_set_convex_hull(copy());
- printf("p_%p = p_%p.convex_hull()\n", res, this->ptr);
+ printf("%s = isl_set_convex_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val set::count_val() const
 {
   auto res = isl_set_count_val(get());
- printf("p_%p = p_%p.count_val()\n", res, this->ptr);
+ printf("%s = isl_set_count_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::detect_equalities() const
 {
   auto res = isl_set_detect_equalities(copy());
- printf("p_%p = p_%p.detect_equalities()\n", res, this->ptr);
+ printf("%s = isl_set_detect_equalities(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int set::dim(isl::dim type) const
 {
   auto res = isl_set_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_set_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::boolean set::dim_has_any_lower_bound(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_dim_has_any_lower_bound(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.dim_has_any_lower_bound(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_dim_has_any_lower_bound(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean set::dim_has_any_upper_bound(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_dim_has_any_upper_bound(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.dim_has_any_upper_bound(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_dim_has_any_upper_bound(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean set::dim_has_lower_bound(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_dim_has_lower_bound(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.dim_has_lower_bound(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_dim_has_lower_bound(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean set::dim_has_upper_bound(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_dim_has_upper_bound(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.dim_has_upper_bound(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_dim_has_upper_bound(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean set::dim_is_bounded(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_dim_is_bounded(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.dim_is_bounded(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_dim_is_bounded(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::pw_aff set::dim_max(int pos) const
 {
   auto res = isl_set_dim_max(copy(), pos);
- printf("p_%p = p_%p.dim_max(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_set_dim_max(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::pw_aff set::dim_min(int pos) const
 {
   auto res = isl_set_dim_min(copy(), pos);
- printf("p_%p = p_%p.dim_min(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_set_dim_min(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::set set::drop_constraints_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_drop_constraints_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_drop_constraints_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::drop_constraints_not_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_drop_constraints_not_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_constraints_not_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_drop_constraints_not_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::drop_unused_params() const
 {
   auto res = isl_set_drop_unused_params(copy());
- printf("p_%p = p_%p.drop_unused_params()\n", res, this->ptr);
+ printf("%s = isl_set_drop_unused_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::eliminate(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_eliminate(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.eliminate(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_eliminate(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::empty(isl::space space)
 {
   auto res = isl_set_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_set_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), space.get());
   return manage(res);
 }
 
 isl::set set::equate(isl::dim type1, int pos1, isl::dim type2, int pos2) const
 {
   auto res = isl_set_equate(copy(), static_cast<enum isl_dim_type>(type1), pos1, static_cast<enum isl_dim_type>(type2), pos2);
- printf("p_%p = p_%p.equate(%d, %d, %d, %d)\n", res, this->ptr, type1, pos1, type2, pos2);
+ printf("%s = isl_set_equate(p_%lu, %d, %d, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type1, pos1, type2, pos2);
   return manage(res);
 }
 
 int set::find_dim_by_id(isl::dim type, const isl::id &id) const
 {
   auto res = isl_set_find_dim_by_id(get(), static_cast<enum isl_dim_type>(type), id.get());
- printf("p_%p = p_%p.find_dim_by_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_set_find_dim_by_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, id.get());
   return res;
 }
 
 int set::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_set_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_set_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::set set::fix_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_set_fix_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.fix_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_set_fix_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::set set::fix_val(isl::dim type, unsigned int pos, isl::val v) const
 {
   auto res = isl_set_fix_val(copy(), static_cast<enum isl_dim_type>(type), pos, v.copy());
- printf("p_%p = p_%p.fix_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, v.get());
+ printf("%s = isl_set_fix_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, v.get());
   return manage(res);
 }
 
 isl::set set::flat_product(isl::set set2) const
 {
   auto res = isl_set_flat_product(copy(), set2.copy());
- printf("p_%p = p_%p.flat_product(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_flat_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::set set::flatten() const
 {
   auto res = isl_set_flatten(copy());
- printf("p_%p = p_%p.flatten()\n", res, this->ptr);
+ printf("%s = isl_set_flatten(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map set::flatten_map() const
 {
   auto res = isl_set_flatten_map(copy());
- printf("p_%p = p_%p.flatten_map()\n", res, this->ptr);
+ printf("%s = isl_set_flatten_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 int set::follows_at(const isl::set &set2, int pos) const
 {
   auto res = isl_set_follows_at(get(), set2.get(), pos);
- printf("p_%p = p_%p.follows_at(p_%p, %d)\n", res, this->ptr, set2.get(), pos);
+ printf("%s = isl_set_follows_at(p_%lu, p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, set2.get(), pos);
   return res;
 }
 
@@ -14073,7 +14224,7 @@ isl::stat set::foreach_basic_set(const std::function<isl::stat(isl::basic_set)> 
     return isl_stat(ret);
   };
   auto res = isl_set_foreach_basic_set(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_basic_set()\n", res, this->ptr, fn);
+ printf("%s = isl_set_foreach_basic_set(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
@@ -14088,56 +14239,56 @@ isl::stat set::foreach_point(const std::function<isl::stat(isl::point)> &fn) con
     return isl_stat(ret);
   };
   auto res = isl_set_foreach_point(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_point()\n", res, this->ptr, fn);
+ printf("%s = isl_set_foreach_point(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::set set::from_multi_pw_aff(isl::multi_pw_aff mpa)
 {
   auto res = isl_set_from_multi_pw_aff(mpa.copy());
- printf("p_%p = from_multi_pw_aff(p_%p)\n", res, mpa.get());
+ printf("%s = isl_set_from_multi_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), mpa.get());
   return manage(res);
 }
 
 isl::set set::from_params() const
 {
   auto res = isl_set_from_params(copy());
- printf("p_%p = p_%p.from_params()\n", res, this->ptr);
+ printf("%s = isl_set_from_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::from_pw_aff(isl::pw_aff pwaff)
 {
   auto res = isl_set_from_pw_aff(pwaff.copy());
- printf("p_%p = from_pw_aff(p_%p)\n", res, pwaff.get());
+ printf("%s = isl_set_from_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), pwaff.get());
   return manage(res);
 }
 
 isl::set set::from_pw_multi_aff(isl::pw_multi_aff pma)
 {
   auto res = isl_set_from_pw_multi_aff(pma.copy());
- printf("p_%p = from_pw_multi_aff(p_%p)\n", res, pma.get());
+ printf("%s = isl_set_from_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), pma.get());
   return manage(res);
 }
 
 isl::basic_set_list set::get_basic_set_list() const
 {
   auto res = isl_set_get_basic_set_list(get());
- printf("p_%p = p_%p.get_basic_set_list()\n", res, this->ptr);
+ printf("%s = isl_set_get_basic_set_list(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set_list").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id set::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 std::string set::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -14145,28 +14296,28 @@ std::string set::get_dim_name(isl::dim type, unsigned int pos) const
 isl::space set::get_space() const
 {
   auto res = isl_set_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_set_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val set::get_stride(int pos) const
 {
   auto res = isl_set_get_stride(get(), pos);
- printf("p_%p = p_%p.get_stride(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_set_get_stride(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::id set::get_tuple_id() const
 {
   auto res = isl_set_get_tuple_id(get());
- printf("p_%p = p_%p.get_tuple_id()\n", res, this->ptr);
+ printf("%s = isl_set_get_tuple_id(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr);
   return manage(res);
 }
 
 std::string set::get_tuple_name() const
 {
   auto res = isl_set_get_tuple_name(get());
- printf("p_%p = p_%p.get_tuple_name()\n", res, this->ptr);
+ printf("%s = isl_set_get_tuple_name(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr);
   std::string tmp(res);
   return tmp;
 }
@@ -14174,581 +14325,581 @@ std::string set::get_tuple_name() const
 isl::set set::gist(isl::set context) const
 {
   auto res = isl_set_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_set_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::set set::gist_basic_set(isl::basic_set context) const
 {
   auto res = isl_set_gist_basic_set(copy(), context.copy());
- printf("p_%p = p_%p.gist_basic_set(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_set_gist_basic_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::set set::gist_params(isl::set context) const
 {
   auto res = isl_set_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_set_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::boolean set::has_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_has_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_has_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean set::has_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_has_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_has_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean set::has_equal_space(const isl::set &set2) const
 {
   auto res = isl_set_has_equal_space(get(), set2.get());
- printf("p_%p = p_%p.has_equal_space(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_has_equal_space(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::boolean set::has_tuple_id() const
 {
   auto res = isl_set_has_tuple_id(get());
- printf("p_%p = p_%p.has_tuple_id()\n", res, this->ptr);
+ printf("%s = isl_set_has_tuple_id(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean set::has_tuple_name() const
 {
   auto res = isl_set_has_tuple_name(get());
- printf("p_%p = p_%p.has_tuple_name()\n", res, this->ptr);
+ printf("%s = isl_set_has_tuple_name(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map set::identity() const
 {
   auto res = isl_set_identity(copy());
- printf("p_%p = p_%p.identity()\n", res, this->ptr);
+ printf("%s = isl_set_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_aff set::indicator_function() const
 {
   auto res = isl_set_indicator_function(copy());
- printf("p_%p = p_%p.indicator_function()\n", res, this->ptr);
+ printf("%s = isl_set_indicator_function(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::insert_dims(isl::dim type, unsigned int pos, unsigned int n) const
 {
   auto res = isl_set_insert_dims(copy(), static_cast<enum isl_dim_type>(type), pos, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, pos, n);
+ printf("%s = isl_set_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, n);
   return manage(res);
 }
 
 isl::set set::intersect(isl::set set2) const
 {
   auto res = isl_set_intersect(copy(), set2.copy());
- printf("p_%p = p_%p.intersect(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_intersect(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::set set::intersect_params(isl::set params) const
 {
   auto res = isl_set_intersect_params(copy(), params.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, params.get());
+ printf("%s = isl_set_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, params.get());
   return manage(res);
 }
 
 isl::boolean set::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean set::is_bounded() const
 {
   auto res = isl_set_is_bounded(get());
- printf("p_%p = p_%p.is_bounded()\n", res, this->ptr);
+ printf("%s = isl_set_is_bounded(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean set::is_box() const
 {
   auto res = isl_set_is_box(get());
- printf("p_%p = p_%p.is_box()\n", res, this->ptr);
+ printf("%s = isl_set_is_box(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean set::is_disjoint(const isl::set &set2) const
 {
   auto res = isl_set_is_disjoint(get(), set2.get());
- printf("p_%p = p_%p.is_disjoint(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_is_disjoint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::boolean set::is_empty() const
 {
   auto res = isl_set_is_empty(get());
- printf("p_%p = p_%p.is_empty()\n", res, this->ptr);
+ printf("%s = isl_set_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean set::is_equal(const isl::set &set2) const
 {
   auto res = isl_set_is_equal(get(), set2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::boolean set::is_params() const
 {
   auto res = isl_set_is_params(get());
- printf("p_%p = p_%p.is_params()\n", res, this->ptr);
+ printf("%s = isl_set_is_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean set::is_singleton() const
 {
   auto res = isl_set_is_singleton(get());
- printf("p_%p = p_%p.is_singleton()\n", res, this->ptr);
+ printf("%s = isl_set_is_singleton(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean set::is_strict_subset(const isl::set &set2) const
 {
   auto res = isl_set_is_strict_subset(get(), set2.get());
- printf("p_%p = p_%p.is_strict_subset(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_is_strict_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::boolean set::is_subset(const isl::set &set2) const
 {
   auto res = isl_set_is_subset(get(), set2.get());
- printf("p_%p = p_%p.is_subset(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_is_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::boolean set::is_wrapping() const
 {
   auto res = isl_set_is_wrapping(get());
- printf("p_%p = p_%p.is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_set_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::map set::lex_ge_set(isl::set set2) const
 {
   auto res = isl_set_lex_ge_set(copy(), set2.copy());
- printf("p_%p = p_%p.lex_ge_set(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_lex_ge_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::map set::lex_gt_set(isl::set set2) const
 {
   auto res = isl_set_lex_gt_set(copy(), set2.copy());
- printf("p_%p = p_%p.lex_gt_set(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_lex_gt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::map set::lex_le_set(isl::set set2) const
 {
   auto res = isl_set_lex_le_set(copy(), set2.copy());
- printf("p_%p = p_%p.lex_le_set(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_lex_le_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::map set::lex_lt_set(isl::set set2) const
 {
   auto res = isl_set_lex_lt_set(copy(), set2.copy());
- printf("p_%p = p_%p.lex_lt_set(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_lex_lt_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::set set::lexmax() const
 {
   auto res = isl_set_lexmax(copy());
- printf("p_%p = p_%p.lexmax()\n", res, this->ptr);
+ printf("%s = isl_set_lexmax(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff set::lexmax_pw_multi_aff() const
 {
   auto res = isl_set_lexmax_pw_multi_aff(copy());
- printf("p_%p = p_%p.lexmax_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_set_lexmax_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::lexmin() const
 {
   auto res = isl_set_lexmin(copy());
- printf("p_%p = p_%p.lexmin()\n", res, this->ptr);
+ printf("%s = isl_set_lexmin(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::pw_multi_aff set::lexmin_pw_multi_aff() const
 {
   auto res = isl_set_lexmin_pw_multi_aff(copy());
- printf("p_%p = p_%p.lexmin_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_set_lexmin_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::lower_bound_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_set_lower_bound_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.lower_bound_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_set_lower_bound_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::set set::lower_bound_val(isl::dim type, unsigned int pos, isl::val value) const
 {
   auto res = isl_set_lower_bound_val(copy(), static_cast<enum isl_dim_type>(type), pos, value.copy());
- printf("p_%p = p_%p.lower_bound_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, value.get());
+ printf("%s = isl_set_lower_bound_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, value.get());
   return manage(res);
 }
 
 isl::val set::max_val(const isl::aff &obj) const
 {
   auto res = isl_set_max_val(get(), obj.get());
- printf("p_%p = p_%p.max_val(p_%p)\n", res, this->ptr, obj.get());
+ printf("%s = isl_set_max_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, obj.get());
   return manage(res);
 }
 
 isl::val set::min_val(const isl::aff &obj) const
 {
   auto res = isl_set_min_val(get(), obj.get());
- printf("p_%p = p_%p.min_val(p_%p)\n", res, this->ptr, obj.get());
+ printf("%s = isl_set_min_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, obj.get());
   return manage(res);
 }
 
 isl::set set::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_set_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_set_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 int set::n_basic_set() const
 {
   auto res = isl_set_n_basic_set(get());
- printf("p_%p = p_%p.n_basic_set()\n", res, this->ptr);
+ printf("%s = isl_set_n_basic_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 unsigned int set::n_dim() const
 {
   auto res = isl_set_n_dim(get());
- printf("p_%p = p_%p.n_dim()\n", res, this->ptr);
+ printf("%s = isl_set_n_dim(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr);
   return res;
 }
 
 isl::set set::nat_universe(isl::space dim)
 {
   auto res = isl_set_nat_universe(dim.copy());
- printf("p_%p = nat_universe(p_%p)\n", res, dim.get());
+ printf("%s = isl_set_nat_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), dim.get());
   return manage(res);
 }
 
 isl::set set::neg() const
 {
   auto res = isl_set_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_set_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::params() const
 {
   auto res = isl_set_params(copy());
- printf("p_%p = p_%p.params()\n", res, this->ptr);
+ printf("%s = isl_set_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 int set::plain_cmp(const isl::set &set2) const
 {
   auto res = isl_set_plain_cmp(get(), set2.get());
- printf("p_%p = p_%p.plain_cmp(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_plain_cmp(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, set2.get());
   return res;
 }
 
 isl::val set::plain_get_val_if_fixed(isl::dim type, unsigned int pos) const
 {
   auto res = isl_set_plain_get_val_if_fixed(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.plain_get_val_if_fixed(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_set_plain_get_val_if_fixed(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean set::plain_is_disjoint(const isl::set &set2) const
 {
   auto res = isl_set_plain_is_disjoint(get(), set2.get());
- printf("p_%p = p_%p.plain_is_disjoint(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_plain_is_disjoint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::boolean set::plain_is_empty() const
 {
   auto res = isl_set_plain_is_empty(get());
- printf("p_%p = p_%p.plain_is_empty()\n", res, this->ptr);
+ printf("%s = isl_set_plain_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean set::plain_is_equal(const isl::set &set2) const
 {
   auto res = isl_set_plain_is_equal(get(), set2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::boolean set::plain_is_universe() const
 {
   auto res = isl_set_plain_is_universe(get());
- printf("p_%p = p_%p.plain_is_universe()\n", res, this->ptr);
+ printf("%s = isl_set_plain_is_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set set::plain_unshifted_simple_hull() const
 {
   auto res = isl_set_plain_unshifted_simple_hull(copy());
- printf("p_%p = p_%p.plain_unshifted_simple_hull()\n", res, this->ptr);
+ printf("%s = isl_set_plain_unshifted_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set set::polyhedral_hull() const
 {
   auto res = isl_set_polyhedral_hull(copy());
- printf("p_%p = p_%p.polyhedral_hull()\n", res, this->ptr);
+ printf("%s = isl_set_polyhedral_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::preimage_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_set_preimage_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_set_preimage_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::set set::preimage_multi_pw_aff(isl::multi_pw_aff mpa) const
 {
   auto res = isl_set_preimage_multi_pw_aff(copy(), mpa.copy());
- printf("p_%p = p_%p.preimage_multi_pw_aff(p_%p)\n", res, this->ptr, mpa.get());
+ printf("%s = isl_set_preimage_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, mpa.get());
   return manage(res);
 }
 
 isl::set set::preimage_pw_multi_aff(isl::pw_multi_aff pma) const
 {
   auto res = isl_set_preimage_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.preimage_pw_multi_aff(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_set_preimage_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::set set::product(isl::set set2) const
 {
   auto res = isl_set_product(copy(), set2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::map set::project_onto_map(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_project_onto_map(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.project_onto_map(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_project_onto_map(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::project_out(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_project_out(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.project_out(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_project_out(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::remove_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_remove_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_remove_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::remove_divs() const
 {
   auto res = isl_set_remove_divs(copy());
- printf("p_%p = p_%p.remove_divs()\n", res, this->ptr);
+ printf("%s = isl_set_remove_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::remove_divs_involving_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_remove_divs_involving_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.remove_divs_involving_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_remove_divs_involving_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::remove_redundancies() const
 {
   auto res = isl_set_remove_redundancies(copy());
- printf("p_%p = p_%p.remove_redundancies()\n", res, this->ptr);
+ printf("%s = isl_set_remove_redundancies(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::remove_unknown_divs() const
 {
   auto res = isl_set_remove_unknown_divs(copy());
- printf("p_%p = p_%p.remove_unknown_divs()\n", res, this->ptr);
+ printf("%s = isl_set_remove_unknown_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::reset_space(isl::space dim) const
 {
   auto res = isl_set_reset_space(copy(), dim.copy());
- printf("p_%p = p_%p.reset_space(p_%p)\n", res, this->ptr, dim.get());
+ printf("%s = isl_set_reset_space(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, dim.get());
   return manage(res);
 }
 
 isl::set set::reset_tuple_id() const
 {
   auto res = isl_set_reset_tuple_id(copy());
- printf("p_%p = p_%p.reset_tuple_id()\n", res, this->ptr);
+ printf("%s = isl_set_reset_tuple_id(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::reset_user() const
 {
   auto res = isl_set_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_set_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set set::sample() const
 {
   auto res = isl_set_sample(copy());
- printf("p_%p = p_%p.sample()\n", res, this->ptr);
+ printf("%s = isl_set_sample(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::point set::sample_point() const
 {
   auto res = isl_set_sample_point(copy());
- printf("p_%p = p_%p.sample_point()\n", res, this->ptr);
+ printf("%s = isl_set_sample_point(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_point").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_set_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_set_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::set set::set_tuple_id(isl::id id) const
 {
   auto res = isl_set_set_tuple_id(copy(), id.copy());
- printf("p_%p = p_%p.set_tuple_id(p_%p)\n", res, this->ptr, id.get());
+ printf("%s = isl_set_set_tuple_id(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, id.get());
   return manage(res);
 }
 
 isl::set set::set_tuple_name(const std::string &s) const
 {
   auto res = isl_set_set_tuple_name(copy(), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%s)\n", res, this->ptr, s.c_str());
+ printf("%s = isl_set_set_tuple_name(p_%lu, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, s.c_str());
   return manage(res);
 }
 
 isl::basic_set set::simple_hull() const
 {
   auto res = isl_set_simple_hull(copy());
- printf("p_%p = p_%p.simple_hull()\n", res, this->ptr);
+ printf("%s = isl_set_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 int set::size() const
 {
   auto res = isl_set_size(get());
- printf("p_%p = p_%p.size()\n", res, this->ptr);
+ printf("%s = isl_set_size(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::basic_set set::solutions() const
 {
   auto res = isl_set_solutions(copy());
- printf("p_%p = p_%p.solutions()\n", res, this->ptr);
+ printf("%s = isl_set_solutions(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::split_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_set_split_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.split_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_set_split_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::set set::subtract(isl::set set2) const
 {
   auto res = isl_set_subtract(copy(), set2.copy());
- printf("p_%p = p_%p.subtract(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_subtract(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::set set::sum(isl::set set2) const
 {
   auto res = isl_set_sum(copy(), set2.copy());
- printf("p_%p = p_%p.sum(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_sum(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::set set::unite(isl::set set2) const
 {
   auto res = isl_set_union(copy(), set2.copy());
- printf("p_%p = p_%p.unite(p_%p)\n", res, this->ptr, set2.get());
+ printf("%s = isl_set_union(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, set2.get());
   return manage(res);
 }
 
 isl::set set::universe(isl::space space)
 {
   auto res = isl_set_universe(space.copy());
- printf("p_%p = universe(p_%p)\n", res, space.get());
+ printf("%s = isl_set_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), space.get());
   return manage(res);
 }
 
 isl::basic_set set::unshifted_simple_hull() const
 {
   auto res = isl_set_unshifted_simple_hull(copy());
- printf("p_%p = p_%p.unshifted_simple_hull()\n", res, this->ptr);
+ printf("%s = isl_set_unshifted_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set set::unshifted_simple_hull_from_set_list(isl::set_list list) const
 {
   auto res = isl_set_unshifted_simple_hull_from_set_list(copy(), list.copy());
- printf("p_%p = p_%p.unshifted_simple_hull_from_set_list(p_%p)\n", res, this->ptr, list.get());
+ printf("%s = isl_set_unshifted_simple_hull_from_set_list(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr, list.get());
   return manage(res);
 }
 
 isl::map set::unwrap() const
 {
   auto res = isl_set_unwrap(copy());
- printf("p_%p = p_%p.unwrap()\n", res, this->ptr);
+ printf("%s = isl_set_unwrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::set set::upper_bound_si(isl::dim type, unsigned int pos, int value) const
 {
   auto res = isl_set_upper_bound_si(copy(), static_cast<enum isl_dim_type>(type), pos, value);
- printf("p_%p = p_%p.upper_bound_si(%d, %u, %d)\n", res, this->ptr, type, pos, value);
+ printf("%s = isl_set_upper_bound_si(p_%lu, %d, %u, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, value);
   return manage(res);
 }
 
 isl::set set::upper_bound_val(isl::dim type, unsigned int pos, isl::val value) const
 {
   auto res = isl_set_upper_bound_val(copy(), static_cast<enum isl_dim_type>(type), pos, value.copy());
- printf("p_%p = p_%p.upper_bound_val(%d, %u, p_%p)\n", res, this->ptr, type, pos, value.get());
+ printf("%s = isl_set_upper_bound_val(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, type, pos, value.get());
   return manage(res);
 }
 
 isl::map set::wrapped_domain_map() const
 {
   auto res = isl_set_wrapped_domain_map(copy());
- printf("p_%p = p_%p.wrapped_domain_map()\n", res, this->ptr);
+ printf("%s = isl_set_wrapped_domain_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -14782,11 +14933,15 @@ set_list &set_list::operator=(isl::set_list obj) {
 }
 
 set_list::~set_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_set_list_free(p_%lu);\n", this->ptr);
     isl_set_list_free(ptr);
+  }
 }
 
 __isl_give isl_set_list *set_list::copy() const & {
+auto temp = isl_set_list_copy(ptr);
+printf("%s = isl_set_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_set_list").c_str(), this->ptr);
   return isl_set_list_copy(ptr);
 }
 
@@ -14844,13 +14999,13 @@ space::space(__isl_take isl_space *ptr)
 space::space(isl::ctx ctx, unsigned int nparam, unsigned int n_in, unsigned int n_out)
 {
   auto res = isl_space_alloc(ctx.copy(), nparam, n_in, n_out);
- printf("p_%p = alloc(p_%p, %u, %u, %u)\n", res, ctx.get(), nparam, n_in, n_out);
+ printf("%s = isl_space_alloc(%s, %u, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), "ctx_0", nparam, n_in, n_out);
   ptr = res;
 }
 space::space(isl::ctx ctx, unsigned int nparam, unsigned int dim)
 {
   auto res = isl_space_set_alloc(ctx.copy(), nparam, dim);
- printf("p_%p = set_alloc(p_%p, %u, %u)\n", res, ctx.get(), nparam, dim);
+ printf("%s = isl_space_set_alloc(%s, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), "ctx_0", nparam, dim);
   ptr = res;
 }
 
@@ -14860,11 +15015,15 @@ space &space::operator=(isl::space obj) {
 }
 
 space::~space() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_space_free(p_%lu);\n", this->ptr);
     isl_space_free(ptr);
+  }
 }
 
 __isl_give isl_space *space::copy() const & {
+auto temp = isl_space_copy(ptr);
+printf("%s = isl_space_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_space").c_str(), this->ptr);
   return isl_space_copy(ptr);
 }
 
@@ -14907,182 +15066,182 @@ void space::dump() const {
 isl::space space::add_dims(isl::dim type, unsigned int n) const
 {
   auto res = isl_space_add_dims(copy(), static_cast<enum isl_dim_type>(type), n);
- printf("p_%p = p_%p.add_dims(%d, %u)\n", res, this->ptr, type, n);
+ printf("%s = isl_space_add_dims(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, type, n);
   return manage(res);
 }
 
 isl::space space::add_param_id(isl::id id) const
 {
   auto res = isl_space_add_param_id(copy(), id.copy());
- printf("p_%p = p_%p.add_param_id(p_%p)\n", res, this->ptr, id.get());
+ printf("%s = isl_space_add_param_id(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, id.get());
   return manage(res);
 }
 
 isl::space space::align_params(isl::space dim2) const
 {
   auto res = isl_space_align_params(copy(), dim2.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, dim2.get());
+ printf("%s = isl_space_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, dim2.get());
   return manage(res);
 }
 
 isl::boolean space::can_curry() const
 {
   auto res = isl_space_can_curry(get());
- printf("p_%p = p_%p.can_curry()\n", res, this->ptr);
+ printf("%s = isl_space_can_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::can_range_curry() const
 {
   auto res = isl_space_can_range_curry(get());
- printf("p_%p = p_%p.can_range_curry()\n", res, this->ptr);
+ printf("%s = isl_space_can_range_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::can_uncurry() const
 {
   auto res = isl_space_can_uncurry(get());
- printf("p_%p = p_%p.can_uncurry()\n", res, this->ptr);
+ printf("%s = isl_space_can_uncurry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::can_zip() const
 {
   auto res = isl_space_can_zip(get());
- printf("p_%p = p_%p.can_zip()\n", res, this->ptr);
+ printf("%s = isl_space_can_zip(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::curry() const
 {
   auto res = isl_space_curry(copy());
- printf("p_%p = p_%p.curry()\n", res, this->ptr);
+ printf("%s = isl_space_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int space::dim(isl::dim type) const
 {
   auto res = isl_space_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_space_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::space space::domain() const
 {
   auto res = isl_space_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_space_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::domain_factor_domain() const
 {
   auto res = isl_space_domain_factor_domain(copy());
- printf("p_%p = p_%p.domain_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_space_domain_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::domain_factor_range() const
 {
   auto res = isl_space_domain_factor_range(copy());
- printf("p_%p = p_%p.domain_factor_range()\n", res, this->ptr);
+ printf("%s = isl_space_domain_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::domain_is_wrapping() const
 {
   auto res = isl_space_domain_is_wrapping(get());
- printf("p_%p = p_%p.domain_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_space_domain_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::domain_map() const
 {
   auto res = isl_space_domain_map(copy());
- printf("p_%p = p_%p.domain_map()\n", res, this->ptr);
+ printf("%s = isl_space_domain_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::domain_product(isl::space right) const
 {
   auto res = isl_space_domain_product(copy(), right.copy());
- printf("p_%p = p_%p.domain_product(p_%p)\n", res, this->ptr, right.get());
+ printf("%s = isl_space_domain_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, right.get());
   return manage(res);
 }
 
 isl::space space::drop_dims(isl::dim type, unsigned int first, unsigned int num) const
 {
   auto res = isl_space_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, num);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, num);
+ printf("%s = isl_space_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, type, first, num);
   return manage(res);
 }
 
 isl::space space::factor_domain() const
 {
   auto res = isl_space_factor_domain(copy());
- printf("p_%p = p_%p.factor_domain()\n", res, this->ptr);
+ printf("%s = isl_space_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::factor_range() const
 {
   auto res = isl_space_factor_range(copy());
- printf("p_%p = p_%p.factor_range()\n", res, this->ptr);
+ printf("%s = isl_space_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 int space::find_dim_by_id(isl::dim type, const isl::id &id) const
 {
   auto res = isl_space_find_dim_by_id(get(), static_cast<enum isl_dim_type>(type), id.get());
- printf("p_%p = p_%p.find_dim_by_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_space_find_dim_by_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, id.get());
   return res;
 }
 
 int space::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_space_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_space_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::space space::flatten_domain() const
 {
   auto res = isl_space_flatten_domain(copy());
- printf("p_%p = p_%p.flatten_domain()\n", res, this->ptr);
+ printf("%s = isl_space_flatten_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::flatten_range() const
 {
   auto res = isl_space_flatten_range(copy());
- printf("p_%p = p_%p.flatten_range()\n", res, this->ptr);
+ printf("%s = isl_space_flatten_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::from_domain() const
 {
   auto res = isl_space_from_domain(copy());
- printf("p_%p = p_%p.from_domain()\n", res, this->ptr);
+ printf("%s = isl_space_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::from_range() const
 {
   auto res = isl_space_from_range(copy());
- printf("p_%p = p_%p.from_range()\n", res, this->ptr);
+ printf("%s = isl_space_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::id space::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_space_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_space_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 std::string space::get_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_space_get_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_space_get_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type, pos);
   std::string tmp(res);
   return tmp;
 }
@@ -15090,14 +15249,14 @@ std::string space::get_dim_name(isl::dim type, unsigned int pos) const
 isl::id space::get_tuple_id(isl::dim type) const
 {
   auto res = isl_space_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_space_get_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type);
   return manage(res);
 }
 
 std::string space::get_tuple_name(isl::dim type) const
 {
   auto res = isl_space_get_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.get_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_space_get_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "char*").c_str(), this->ptr, type);
   std::string tmp(res);
   return tmp;
 }
@@ -15105,287 +15264,287 @@ std::string space::get_tuple_name(isl::dim type) const
 isl::boolean space::has_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_space_has_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_space_has_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean space::has_dim_name(isl::dim type, unsigned int pos) const
 {
   auto res = isl_space_has_dim_name(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.has_dim_name(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_space_has_dim_name(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 isl::boolean space::has_equal_params(const isl::space &space2) const
 {
   auto res = isl_space_has_equal_params(get(), space2.get());
- printf("p_%p = p_%p.has_equal_params(p_%p)\n", res, this->ptr, space2.get());
+ printf("%s = isl_space_has_equal_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, space2.get());
   return manage(res);
 }
 
 isl::boolean space::has_equal_tuples(const isl::space &space2) const
 {
   auto res = isl_space_has_equal_tuples(get(), space2.get());
- printf("p_%p = p_%p.has_equal_tuples(p_%p)\n", res, this->ptr, space2.get());
+ printf("%s = isl_space_has_equal_tuples(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, space2.get());
   return manage(res);
 }
 
 isl::boolean space::has_tuple_id(isl::dim type) const
 {
   auto res = isl_space_has_tuple_id(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_space_has_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::boolean space::has_tuple_name(isl::dim type) const
 {
   auto res = isl_space_has_tuple_name(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.has_tuple_name(%d)\n", res, this->ptr, type);
+ printf("%s = isl_space_has_tuple_name(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::space space::insert_dims(isl::dim type, unsigned int pos, unsigned int n) const
 {
   auto res = isl_space_insert_dims(copy(), static_cast<enum isl_dim_type>(type), pos, n);
- printf("p_%p = p_%p.insert_dims(%d, %u, %u)\n", res, this->ptr, type, pos, n);
+ printf("%s = isl_space_insert_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, type, pos, n);
   return manage(res);
 }
 
 isl::boolean space::is_domain(const isl::space &space2) const
 {
   auto res = isl_space_is_domain(get(), space2.get());
- printf("p_%p = p_%p.is_domain(p_%p)\n", res, this->ptr, space2.get());
+ printf("%s = isl_space_is_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, space2.get());
   return manage(res);
 }
 
 isl::boolean space::is_equal(const isl::space &space2) const
 {
   auto res = isl_space_is_equal(get(), space2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, space2.get());
+ printf("%s = isl_space_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, space2.get());
   return manage(res);
 }
 
 isl::boolean space::is_map() const
 {
   auto res = isl_space_is_map(get());
- printf("p_%p = p_%p.is_map()\n", res, this->ptr);
+ printf("%s = isl_space_is_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::is_params() const
 {
   auto res = isl_space_is_params(get());
- printf("p_%p = p_%p.is_params()\n", res, this->ptr);
+ printf("%s = isl_space_is_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::is_product() const
 {
   auto res = isl_space_is_product(get());
- printf("p_%p = p_%p.is_product()\n", res, this->ptr);
+ printf("%s = isl_space_is_product(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::is_range(const isl::space &space2) const
 {
   auto res = isl_space_is_range(get(), space2.get());
- printf("p_%p = p_%p.is_range(p_%p)\n", res, this->ptr, space2.get());
+ printf("%s = isl_space_is_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, space2.get());
   return manage(res);
 }
 
 isl::boolean space::is_set() const
 {
   auto res = isl_space_is_set(get());
- printf("p_%p = p_%p.is_set()\n", res, this->ptr);
+ printf("%s = isl_space_is_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::is_wrapping() const
 {
   auto res = isl_space_is_wrapping(get());
- printf("p_%p = p_%p.is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_space_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::join(isl::space right) const
 {
   auto res = isl_space_join(copy(), right.copy());
- printf("p_%p = p_%p.join(p_%p)\n", res, this->ptr, right.get());
+ printf("%s = isl_space_join(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, right.get());
   return manage(res);
 }
 
 isl::space space::map_from_domain_and_range(isl::space range) const
 {
   auto res = isl_space_map_from_domain_and_range(copy(), range.copy());
- printf("p_%p = p_%p.map_from_domain_and_range(p_%p)\n", res, this->ptr, range.get());
+ printf("%s = isl_space_map_from_domain_and_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, range.get());
   return manage(res);
 }
 
 isl::space space::map_from_set() const
 {
   auto res = isl_space_map_from_set(copy());
- printf("p_%p = p_%p.map_from_set()\n", res, this->ptr);
+ printf("%s = isl_space_map_from_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::move_dims(isl::dim dst_type, unsigned int dst_pos, isl::dim src_type, unsigned int src_pos, unsigned int n) const
 {
   auto res = isl_space_move_dims(copy(), static_cast<enum isl_dim_type>(dst_type), dst_pos, static_cast<enum isl_dim_type>(src_type), src_pos, n);
- printf("p_%p = p_%p.move_dims(%d, %u, %d, %u, %u)\n", res, this->ptr, dst_type, dst_pos, src_type, src_pos, n);
+ printf("%s = isl_space_move_dims(p_%lu, %d, %u, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, dst_type, dst_pos, src_type, src_pos, n);
   return manage(res);
 }
 
 isl::space space::params() const
 {
   auto res = isl_space_params(copy());
- printf("p_%p = p_%p.params()\n", res, this->ptr);
+ printf("%s = isl_space_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::params_alloc(isl::ctx ctx, unsigned int nparam)
 {
   auto res = isl_space_params_alloc(ctx.copy(), nparam);
- printf("p_%p = params_alloc(p_%p, %u)\n", res, ctx.get(), nparam);
+ printf("%s = isl_space_params_alloc(%s, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), "ctx_0", nparam);
   return manage(res);
 }
 
 isl::space space::product(isl::space right) const
 {
   auto res = isl_space_product(copy(), right.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, right.get());
+ printf("%s = isl_space_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, right.get());
   return manage(res);
 }
 
 isl::space space::range() const
 {
   auto res = isl_space_range(copy());
- printf("p_%p = p_%p.range()\n", res, this->ptr);
+ printf("%s = isl_space_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::range_curry() const
 {
   auto res = isl_space_range_curry(copy());
- printf("p_%p = p_%p.range_curry()\n", res, this->ptr);
+ printf("%s = isl_space_range_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::range_factor_domain() const
 {
   auto res = isl_space_range_factor_domain(copy());
- printf("p_%p = p_%p.range_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_space_range_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::range_factor_range() const
 {
   auto res = isl_space_range_factor_range(copy());
- printf("p_%p = p_%p.range_factor_range()\n", res, this->ptr);
+ printf("%s = isl_space_range_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean space::range_is_wrapping() const
 {
   auto res = isl_space_range_is_wrapping(get());
- printf("p_%p = p_%p.range_is_wrapping()\n", res, this->ptr);
+ printf("%s = isl_space_range_is_wrapping(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::range_map() const
 {
   auto res = isl_space_range_map(copy());
- printf("p_%p = p_%p.range_map()\n", res, this->ptr);
+ printf("%s = isl_space_range_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::range_product(isl::space right) const
 {
   auto res = isl_space_range_product(copy(), right.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, right.get());
+ printf("%s = isl_space_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, right.get());
   return manage(res);
 }
 
 isl::space space::reset_tuple_id(isl::dim type) const
 {
   auto res = isl_space_reset_tuple_id(copy(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.reset_tuple_id(%d)\n", res, this->ptr, type);
+ printf("%s = isl_space_reset_tuple_id(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, type);
   return manage(res);
 }
 
 isl::space space::reset_user() const
 {
   auto res = isl_space_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_space_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::reverse() const
 {
   auto res = isl_space_reverse(copy());
- printf("p_%p = p_%p.reverse()\n", res, this->ptr);
+ printf("%s = isl_space_reverse(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::set_dim_id(isl::dim type, unsigned int pos, isl::id id) const
 {
   auto res = isl_space_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.copy());
- printf("p_%p = p_%p.set_dim_id(%d, %u, p_%p)\n", res, this->ptr, type, pos, id.get());
+ printf("%s = isl_space_set_dim_id(p_%lu, %d, %u, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, type, pos, id.get());
   return manage(res);
 }
 
 isl::space space::set_from_params() const
 {
   auto res = isl_space_set_from_params(copy());
- printf("p_%p = p_%p.set_from_params()\n", res, this->ptr);
+ printf("%s = isl_space_set_from_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::set_tuple_id(isl::dim type, isl::id id) const
 {
   auto res = isl_space_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.copy());
- printf("p_%p = p_%p.set_tuple_id(%d, p_%p)\n", res, this->ptr, type, id.get());
+ printf("%s = isl_space_set_tuple_id(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, type, id.get());
   return manage(res);
 }
 
 isl::space space::set_tuple_name(isl::dim type, const std::string &s) const
 {
   auto res = isl_space_set_tuple_name(copy(), static_cast<enum isl_dim_type>(type), s.c_str());
- printf("p_%p = p_%p.set_tuple_name(%d, %s)\n", res, this->ptr, type, s.c_str());
+ printf("%s = isl_space_set_tuple_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr, type, s.c_str());
   return manage(res);
 }
 
 isl::boolean space::tuple_is_equal(isl::dim type1, const isl::space &space2, isl::dim type2) const
 {
   auto res = isl_space_tuple_is_equal(get(), static_cast<enum isl_dim_type>(type1), space2.get(), static_cast<enum isl_dim_type>(type2));
- printf("p_%p = p_%p.tuple_is_equal(%d, p_%p, %d)\n", res, this->ptr, type1, space2.get(), type2);
+ printf("%s = isl_space_tuple_is_equal(p_%lu, %d, p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type1, space2.get(), type2);
   return manage(res);
 }
 
 isl::space space::uncurry() const
 {
   auto res = isl_space_uncurry(copy());
- printf("p_%p = p_%p.uncurry()\n", res, this->ptr);
+ printf("%s = isl_space_uncurry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::unwrap() const
 {
   auto res = isl_space_unwrap(copy());
- printf("p_%p = p_%p.unwrap()\n", res, this->ptr);
+ printf("%s = isl_space_unwrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::wrap() const
 {
   auto res = isl_space_wrap(copy());
- printf("p_%p = p_%p.wrap()\n", res, this->ptr);
+ printf("%s = isl_space_wrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::space space::zip() const
 {
   auto res = isl_space_zip(copy());
- printf("p_%p = p_%p.zip()\n", res, this->ptr);
+ printf("%s = isl_space_zip(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -15419,11 +15578,15 @@ term &term::operator=(isl::term obj) {
 }
 
 term::~term() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_term_free(p_%lu);\n", this->ptr);
     isl_term_free(ptr);
+  }
 }
 
 __isl_give isl_term *term::copy() const & {
+auto temp = isl_term_copy(ptr);
+printf("%s = isl_term_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_term").c_str(), this->ptr);
   return isl_term_copy(ptr);
 }
 
@@ -15453,28 +15616,28 @@ isl::ctx term::get_ctx() const {
 unsigned int term::dim(isl::dim type) const
 {
   auto res = isl_term_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_term_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::val term::get_coefficient_val() const
 {
   auto res = isl_term_get_coefficient_val(get());
- printf("p_%p = p_%p.get_coefficient_val()\n", res, this->ptr);
+ printf("%s = isl_term_get_coefficient_val(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::aff term::get_div(unsigned int pos) const
 {
   auto res = isl_term_get_div(get(), pos);
- printf("p_%p = p_%p.get_div(%u)\n", res, this->ptr, pos);
+ printf("%s = isl_term_get_div(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 int term::get_exp(isl::dim type, unsigned int pos) const
 {
   auto res = isl_term_get_exp(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_exp(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_term_get_exp(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, pos);
   return res;
 }
 
@@ -15504,7 +15667,7 @@ union_access_info::union_access_info(__isl_take isl_union_access_info *ptr)
 union_access_info::union_access_info(isl::union_map sink)
 {
   auto res = isl_union_access_info_from_sink(sink.copy());
- printf("p_%p = from_sink(p_%p)\n", res, sink.get());
+ printf("%s = isl_union_access_info_from_sink(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_access_info").c_str(), sink.get());
   ptr = res;
 }
 
@@ -15514,11 +15677,15 @@ union_access_info &union_access_info::operator=(isl::union_access_info obj) {
 }
 
 union_access_info::~union_access_info() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_access_info_free(p_%lu);\n", this->ptr);
     isl_union_access_info_free(ptr);
+  }
 }
 
 __isl_give isl_union_access_info *union_access_info::copy() const & {
+auto temp = isl_union_access_info_copy(ptr);
+printf("%s = isl_union_access_info_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_access_info").c_str(), this->ptr);
   return isl_union_access_info_copy(ptr);
 }
 
@@ -15557,42 +15724,42 @@ std::string union_access_info::to_str() const {
 isl::union_flow union_access_info::compute_flow() const
 {
   auto res = isl_union_access_info_compute_flow(copy());
- printf("p_%p = p_%p.compute_flow()\n", res, this->ptr);
+ printf("%s = isl_union_access_info_compute_flow(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_flow").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_access_info union_access_info::set_kill(isl::union_map kill) const
 {
   auto res = isl_union_access_info_set_kill(copy(), kill.copy());
- printf("p_%p = p_%p.set_kill(p_%p)\n", res, this->ptr, kill.get());
+ printf("%s = isl_union_access_info_set_kill(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_access_info").c_str(), this->ptr, kill.get());
   return manage(res);
 }
 
 isl::union_access_info union_access_info::set_may_source(isl::union_map may_source) const
 {
   auto res = isl_union_access_info_set_may_source(copy(), may_source.copy());
- printf("p_%p = p_%p.set_may_source(p_%p)\n", res, this->ptr, may_source.get());
+ printf("%s = isl_union_access_info_set_may_source(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_access_info").c_str(), this->ptr, may_source.get());
   return manage(res);
 }
 
 isl::union_access_info union_access_info::set_must_source(isl::union_map must_source) const
 {
   auto res = isl_union_access_info_set_must_source(copy(), must_source.copy());
- printf("p_%p = p_%p.set_must_source(p_%p)\n", res, this->ptr, must_source.get());
+ printf("%s = isl_union_access_info_set_must_source(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_access_info").c_str(), this->ptr, must_source.get());
   return manage(res);
 }
 
 isl::union_access_info union_access_info::set_schedule(isl::schedule schedule) const
 {
   auto res = isl_union_access_info_set_schedule(copy(), schedule.copy());
- printf("p_%p = p_%p.set_schedule(p_%p)\n", res, this->ptr, schedule.get());
+ printf("%s = isl_union_access_info_set_schedule(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_access_info").c_str(), this->ptr, schedule.get());
   return manage(res);
 }
 
 isl::union_access_info union_access_info::set_schedule_map(isl::union_map schedule_map) const
 {
   auto res = isl_union_access_info_set_schedule_map(copy(), schedule_map.copy());
- printf("p_%p = p_%p.set_schedule_map(p_%p)\n", res, this->ptr, schedule_map.get());
+ printf("%s = isl_union_access_info_set_schedule_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_access_info").c_str(), this->ptr, schedule_map.get());
   return manage(res);
 }
 
@@ -15626,11 +15793,15 @@ union_flow &union_flow::operator=(isl::union_flow obj) {
 }
 
 union_flow::~union_flow() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_flow_free(p_%lu);\n", this->ptr);
     isl_union_flow_free(ptr);
+  }
 }
 
 __isl_give isl_union_flow *union_flow::copy() const & {
+auto temp = isl_union_flow_copy(ptr);
+printf("%s = isl_union_flow_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_flow").c_str(), this->ptr);
   return isl_union_flow_copy(ptr);
 }
 
@@ -15669,42 +15840,42 @@ std::string union_flow::to_str() const {
 isl::union_map union_flow::get_full_may_dependence() const
 {
   auto res = isl_union_flow_get_full_may_dependence(get());
- printf("p_%p = p_%p.get_full_may_dependence()\n", res, this->ptr);
+ printf("%s = isl_union_flow_get_full_may_dependence(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_flow::get_full_must_dependence() const
 {
   auto res = isl_union_flow_get_full_must_dependence(get());
- printf("p_%p = p_%p.get_full_must_dependence()\n", res, this->ptr);
+ printf("%s = isl_union_flow_get_full_must_dependence(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_flow::get_may_dependence() const
 {
   auto res = isl_union_flow_get_may_dependence(get());
- printf("p_%p = p_%p.get_may_dependence()\n", res, this->ptr);
+ printf("%s = isl_union_flow_get_may_dependence(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_flow::get_may_no_source() const
 {
   auto res = isl_union_flow_get_may_no_source(get());
- printf("p_%p = p_%p.get_may_no_source()\n", res, this->ptr);
+ printf("%s = isl_union_flow_get_may_no_source(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_flow::get_must_dependence() const
 {
   auto res = isl_union_flow_get_must_dependence(get());
- printf("p_%p = p_%p.get_must_dependence()\n", res, this->ptr);
+ printf("%s = isl_union_flow_get_must_dependence(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_flow::get_must_no_source() const
 {
   auto res = isl_union_flow_get_must_no_source(get());
- printf("p_%p = p_%p.get_must_no_source()\n", res, this->ptr);
+ printf("%s = isl_union_flow_get_must_no_source(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -15734,25 +15905,25 @@ union_map::union_map(__isl_take isl_union_map *ptr)
 union_map::union_map(isl::union_pw_aff upa)
 {
   auto res = isl_union_map_from_union_pw_aff(upa.copy());
- printf("p_%p = from_union_pw_aff(p_%p)\n", res, upa.get());
+ printf("%s = isl_union_map_from_union_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), upa.get());
   ptr = res;
 }
 union_map::union_map(isl::basic_map bmap)
 {
   auto res = isl_union_map_from_basic_map(bmap.copy());
- printf("p_%p = from_basic_map(p_%p)\n", res, bmap.get());
+ printf("%s = isl_union_map_from_basic_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), bmap.get());
   ptr = res;
 }
 union_map::union_map(isl::map map)
 {
   auto res = isl_union_map_from_map(map.copy());
- printf("p_%p = from_map(p_%p)\n", res, map.get());
+ printf("%s = isl_union_map_from_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), map.get());
   ptr = res;
 }
 union_map::union_map(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_union_map_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_union_map_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -15762,11 +15933,15 @@ union_map &union_map::operator=(isl::union_map obj) {
 }
 
 union_map::~union_map() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_map_free(p_%lu);\n", this->ptr);
     isl_union_map_free(ptr);
+  }
 }
 
 __isl_give isl_union_map *union_map::copy() const & {
+auto temp = isl_union_map_copy(ptr);
+printf("%s = isl_union_map_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_map").c_str(), this->ptr);
   return isl_union_map_copy(ptr);
 }
 
@@ -15809,189 +15984,189 @@ void union_map::dump() const {
 isl::union_map union_map::add_map(isl::map map) const
 {
   auto res = isl_union_map_add_map(copy(), map.copy());
- printf("p_%p = p_%p.add_map(p_%p)\n", res, this->ptr, map.get());
+ printf("%s = isl_union_map_add_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, map.get());
   return manage(res);
 }
 
 isl::union_map union_map::affine_hull() const
 {
   auto res = isl_union_map_affine_hull(copy());
- printf("p_%p = p_%p.affine_hull()\n", res, this->ptr);
+ printf("%s = isl_union_map_affine_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::align_params(isl::space model) const
 {
   auto res = isl_union_map_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_union_map_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::union_map union_map::apply_domain(isl::union_map umap2) const
 {
   auto res = isl_union_map_apply_domain(copy(), umap2.copy());
- printf("p_%p = p_%p.apply_domain(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_apply_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::apply_range(isl::union_map umap2) const
 {
   auto res = isl_union_map_apply_range(copy(), umap2.copy());
- printf("p_%p = p_%p.apply_range(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_apply_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::coalesce() const
 {
   auto res = isl_union_map_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_union_map_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::contains(const isl::space &space) const
 {
   auto res = isl_union_map_contains(get(), space.get());
- printf("p_%p = p_%p.contains(p_%p)\n", res, this->ptr, space.get());
+ printf("%s = isl_union_map_contains(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, space.get());
   return manage(res);
 }
 
 isl::union_map union_map::curry() const
 {
   auto res = isl_union_map_curry(copy());
- printf("p_%p = p_%p.curry()\n", res, this->ptr);
+ printf("%s = isl_union_map_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_map::deltas() const
 {
   auto res = isl_union_map_deltas(copy());
- printf("p_%p = p_%p.deltas()\n", res, this->ptr);
+ printf("%s = isl_union_map_deltas(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::deltas_map() const
 {
   auto res = isl_union_map_deltas_map(copy());
- printf("p_%p = p_%p.deltas_map()\n", res, this->ptr);
+ printf("%s = isl_union_map_deltas_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::detect_equalities() const
 {
   auto res = isl_union_map_detect_equalities(copy());
- printf("p_%p = p_%p.detect_equalities()\n", res, this->ptr);
+ printf("%s = isl_union_map_detect_equalities(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int union_map::dim(isl::dim type) const
 {
   auto res = isl_union_map_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_union_map_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::union_set union_map::domain() const
 {
   auto res = isl_union_map_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_union_map_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::domain_factor_domain() const
 {
   auto res = isl_union_map_domain_factor_domain(copy());
- printf("p_%p = p_%p.domain_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_union_map_domain_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::domain_factor_range() const
 {
   auto res = isl_union_map_domain_factor_range(copy());
- printf("p_%p = p_%p.domain_factor_range()\n", res, this->ptr);
+ printf("%s = isl_union_map_domain_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::domain_map() const
 {
   auto res = isl_union_map_domain_map(copy());
- printf("p_%p = p_%p.domain_map()\n", res, this->ptr);
+ printf("%s = isl_union_map_domain_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_map::domain_map_union_pw_multi_aff() const
 {
   auto res = isl_union_map_domain_map_union_pw_multi_aff(copy());
- printf("p_%p = p_%p.domain_map_union_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_union_map_domain_map_union_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::domain_product(isl::union_map umap2) const
 {
   auto res = isl_union_map_domain_product(copy(), umap2.copy());
- printf("p_%p = p_%p.domain_product(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_domain_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::empty(isl::space space)
 {
   auto res = isl_union_map_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_union_map_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), space.get());
   return manage(res);
 }
 
 isl::union_map union_map::eq_at(isl::multi_union_pw_aff mupa) const
 {
   auto res = isl_union_map_eq_at_multi_union_pw_aff(copy(), mupa.copy());
- printf("p_%p = p_%p.eq_at(p_%p)\n", res, this->ptr, mupa.get());
+ printf("%s = isl_union_map_eq_at_multi_union_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, mupa.get());
   return manage(res);
 }
 
 isl::map union_map::extract_map(isl::space dim) const
 {
   auto res = isl_union_map_extract_map(get(), dim.copy());
- printf("p_%p = p_%p.extract_map(p_%p)\n", res, this->ptr, dim.get());
+ printf("%s = isl_union_map_extract_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_map").c_str(), this->ptr, dim.get());
   return manage(res);
 }
 
 isl::union_map union_map::factor_domain() const
 {
   auto res = isl_union_map_factor_domain(copy());
- printf("p_%p = p_%p.factor_domain()\n", res, this->ptr);
+ printf("%s = isl_union_map_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::factor_range() const
 {
   auto res = isl_union_map_factor_range(copy());
- printf("p_%p = p_%p.factor_range()\n", res, this->ptr);
+ printf("%s = isl_union_map_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 int union_map::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_union_map_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_union_map_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::union_map union_map::fixed_power(isl::val exp) const
 {
   auto res = isl_union_map_fixed_power_val(copy(), exp.copy());
- printf("p_%p = p_%p.fixed_power(p_%p)\n", res, this->ptr, exp.get());
+ printf("%s = isl_union_map_fixed_power_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, exp.get());
   return manage(res);
 }
 
 isl::union_map union_map::flat_domain_product(isl::union_map umap2) const
 {
   auto res = isl_union_map_flat_domain_product(copy(), umap2.copy());
- printf("p_%p = p_%p.flat_domain_product(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_flat_domain_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::flat_range_product(isl::union_map umap2) const
 {
   auto res = isl_union_map_flat_range_product(copy(), umap2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
@@ -16006,497 +16181,497 @@ isl::stat union_map::foreach_map(const std::function<isl::stat(isl::map)> &fn) c
     return isl_stat(ret);
   };
   auto res = isl_union_map_foreach_map(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_map()\n", res, this->ptr, fn);
+ printf("%s = isl_union_map_foreach_map(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::union_map union_map::from(isl::union_pw_multi_aff upma)
 {
   auto res = isl_union_map_from_union_pw_multi_aff(upma.copy());
- printf("p_%p = from(p_%p)\n", res, upma.get());
+ printf("%s = isl_union_map_from_union_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), upma.get());
   return manage(res);
 }
 
 isl::union_map union_map::from(isl::multi_union_pw_aff mupa)
 {
   auto res = isl_union_map_from_multi_union_pw_aff(mupa.copy());
- printf("p_%p = from(p_%p)\n", res, mupa.get());
+ printf("%s = isl_union_map_from_multi_union_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), mupa.get());
   return manage(res);
 }
 
 isl::union_map union_map::from_domain(isl::union_set uset)
 {
   auto res = isl_union_map_from_domain(uset.copy());
- printf("p_%p = from_domain(p_%p)\n", res, uset.get());
+ printf("%s = isl_union_map_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), uset.get());
   return manage(res);
 }
 
 isl::union_map union_map::from_domain_and_range(isl::union_set domain, isl::union_set range)
 {
   auto res = isl_union_map_from_domain_and_range(domain.copy(), range.copy());
- printf("p_%p = from_domain_and_range(p_%p, p_%p)\n", res, domain.get(), range.get());
+ printf("%s = isl_union_map_from_domain_and_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), domain.get(), range.get());
   return manage(res);
 }
 
 isl::union_map union_map::from_range(isl::union_set uset)
 {
   auto res = isl_union_map_from_range(uset.copy());
- printf("p_%p = from_range(p_%p)\n", res, uset.get());
+ printf("%s = isl_union_map_from_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), uset.get());
   return manage(res);
 }
 
 isl::id union_map::get_dim_id(isl::dim type, unsigned int pos) const
 {
   auto res = isl_union_map_get_dim_id(get(), static_cast<enum isl_dim_type>(type), pos);
- printf("p_%p = p_%p.get_dim_id(%d, %u)\n", res, this->ptr, type, pos);
+ printf("%s = isl_union_map_get_dim_id(p_%lu, %d, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_id").c_str(), this->ptr, type, pos);
   return manage(res);
 }
 
 uint32_t union_map::get_hash() const
 {
   auto res = isl_union_map_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_union_map_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 isl::space union_map::get_space() const
 {
   auto res = isl_union_map_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_union_map_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::gist(isl::union_map context) const
 {
   auto res = isl_union_map_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_map_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_map union_map::gist_domain(isl::union_set uset) const
 {
   auto res = isl_union_map_gist_domain(copy(), uset.copy());
- printf("p_%p = p_%p.gist_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_map_gist_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_map union_map::gist_params(isl::set set) const
 {
   auto res = isl_union_map_gist_params(copy(), set.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_map_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::union_map union_map::gist_range(isl::union_set uset) const
 {
   auto res = isl_union_map_gist_range(copy(), uset.copy());
- printf("p_%p = p_%p.gist_range(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_map_gist_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_map union_map::intersect(isl::union_map umap2) const
 {
   auto res = isl_union_map_intersect(copy(), umap2.copy());
- printf("p_%p = p_%p.intersect(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_intersect(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::intersect_domain(isl::union_set uset) const
 {
   auto res = isl_union_map_intersect_domain(copy(), uset.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_map_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_map union_map::intersect_params(isl::set set) const
 {
   auto res = isl_union_map_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_map_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::union_map union_map::intersect_range(isl::union_set uset) const
 {
   auto res = isl_union_map_intersect_range(copy(), uset.copy());
- printf("p_%p = p_%p.intersect_range(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_map_intersect_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_map union_map::intersect_range_factor_range(isl::union_map factor) const
 {
   auto res = isl_union_map_intersect_range_factor_range(copy(), factor.copy());
- printf("p_%p = p_%p.intersect_range_factor_range(p_%p)\n", res, this->ptr, factor.get());
+ printf("%s = isl_union_map_intersect_range_factor_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, factor.get());
   return manage(res);
 }
 
 isl::boolean union_map::involves_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_union_map_involves_dims(get(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.involves_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_union_map_involves_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::boolean union_map::is_bijective() const
 {
   auto res = isl_union_map_is_bijective(get());
- printf("p_%p = p_%p.is_bijective()\n", res, this->ptr);
+ printf("%s = isl_union_map_is_bijective(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::is_disjoint(const isl::union_map &umap2) const
 {
   auto res = isl_union_map_is_disjoint(get(), umap2.get());
- printf("p_%p = p_%p.is_disjoint(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_is_disjoint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::boolean union_map::is_empty() const
 {
   auto res = isl_union_map_is_empty(get());
- printf("p_%p = p_%p.is_empty()\n", res, this->ptr);
+ printf("%s = isl_union_map_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::is_equal(const isl::union_map &umap2) const
 {
   auto res = isl_union_map_is_equal(get(), umap2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::boolean union_map::is_identity() const
 {
   auto res = isl_union_map_is_identity(get());
- printf("p_%p = p_%p.is_identity()\n", res, this->ptr);
+ printf("%s = isl_union_map_is_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::is_injective() const
 {
   auto res = isl_union_map_is_injective(get());
- printf("p_%p = p_%p.is_injective()\n", res, this->ptr);
+ printf("%s = isl_union_map_is_injective(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::is_single_valued() const
 {
   auto res = isl_union_map_is_single_valued(get());
- printf("p_%p = p_%p.is_single_valued()\n", res, this->ptr);
+ printf("%s = isl_union_map_is_single_valued(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::is_strict_subset(const isl::union_map &umap2) const
 {
   auto res = isl_union_map_is_strict_subset(get(), umap2.get());
- printf("p_%p = p_%p.is_strict_subset(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_is_strict_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::boolean union_map::is_subset(const isl::union_map &umap2) const
 {
   auto res = isl_union_map_is_subset(get(), umap2.get());
- printf("p_%p = p_%p.is_subset(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_is_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::lex_ge_union_map(isl::union_map umap2) const
 {
   auto res = isl_union_map_lex_ge_union_map(copy(), umap2.copy());
- printf("p_%p = p_%p.lex_ge_union_map(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_lex_ge_union_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::lex_gt_at_multi_union_pw_aff(isl::multi_union_pw_aff mupa) const
 {
   auto res = isl_union_map_lex_gt_at_multi_union_pw_aff(copy(), mupa.copy());
- printf("p_%p = p_%p.lex_gt_at_multi_union_pw_aff(p_%p)\n", res, this->ptr, mupa.get());
+ printf("%s = isl_union_map_lex_gt_at_multi_union_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, mupa.get());
   return manage(res);
 }
 
 isl::union_map union_map::lex_gt_union_map(isl::union_map umap2) const
 {
   auto res = isl_union_map_lex_gt_union_map(copy(), umap2.copy());
- printf("p_%p = p_%p.lex_gt_union_map(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_lex_gt_union_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::lex_le_union_map(isl::union_map umap2) const
 {
   auto res = isl_union_map_lex_le_union_map(copy(), umap2.copy());
- printf("p_%p = p_%p.lex_le_union_map(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_lex_le_union_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::lex_lt_at_multi_union_pw_aff(isl::multi_union_pw_aff mupa) const
 {
   auto res = isl_union_map_lex_lt_at_multi_union_pw_aff(copy(), mupa.copy());
- printf("p_%p = p_%p.lex_lt_at_multi_union_pw_aff(p_%p)\n", res, this->ptr, mupa.get());
+ printf("%s = isl_union_map_lex_lt_at_multi_union_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, mupa.get());
   return manage(res);
 }
 
 isl::union_map union_map::lex_lt_union_map(isl::union_map umap2) const
 {
   auto res = isl_union_map_lex_lt_union_map(copy(), umap2.copy());
- printf("p_%p = p_%p.lex_lt_union_map(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_lex_lt_union_map(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::lexmax() const
 {
   auto res = isl_union_map_lexmax(copy());
- printf("p_%p = p_%p.lexmax()\n", res, this->ptr);
+ printf("%s = isl_union_map_lexmax(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::lexmin() const
 {
   auto res = isl_union_map_lexmin(copy());
- printf("p_%p = p_%p.lexmin()\n", res, this->ptr);
+ printf("%s = isl_union_map_lexmin(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 int union_map::n_map() const
 {
   auto res = isl_union_map_n_map(get());
- printf("p_%p = p_%p.n_map()\n", res, this->ptr);
+ printf("%s = isl_union_map_n_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::set union_map::params() const
 {
   auto res = isl_union_map_params(copy());
- printf("p_%p = p_%p.params()\n", res, this->ptr);
+ printf("%s = isl_union_map_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::plain_is_empty() const
 {
   auto res = isl_union_map_plain_is_empty(get());
- printf("p_%p = p_%p.plain_is_empty()\n", res, this->ptr);
+ printf("%s = isl_union_map_plain_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_map::plain_is_injective() const
 {
   auto res = isl_union_map_plain_is_injective(get());
- printf("p_%p = p_%p.plain_is_injective()\n", res, this->ptr);
+ printf("%s = isl_union_map_plain_is_injective(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::polyhedral_hull() const
 {
   auto res = isl_union_map_polyhedral_hull(copy());
- printf("p_%p = p_%p.polyhedral_hull()\n", res, this->ptr);
+ printf("%s = isl_union_map_polyhedral_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::preimage_domain_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_union_map_preimage_domain_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_domain_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_union_map_preimage_domain_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::union_map union_map::preimage_domain_multi_pw_aff(isl::multi_pw_aff mpa) const
 {
   auto res = isl_union_map_preimage_domain_multi_pw_aff(copy(), mpa.copy());
- printf("p_%p = p_%p.preimage_domain_multi_pw_aff(p_%p)\n", res, this->ptr, mpa.get());
+ printf("%s = isl_union_map_preimage_domain_multi_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, mpa.get());
   return manage(res);
 }
 
 isl::union_map union_map::preimage_domain_pw_multi_aff(isl::pw_multi_aff pma) const
 {
   auto res = isl_union_map_preimage_domain_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.preimage_domain_pw_multi_aff(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_union_map_preimage_domain_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::union_map union_map::preimage_domain_union_pw_multi_aff(isl::union_pw_multi_aff upma) const
 {
   auto res = isl_union_map_preimage_domain_union_pw_multi_aff(copy(), upma.copy());
- printf("p_%p = p_%p.preimage_domain_union_pw_multi_aff(p_%p)\n", res, this->ptr, upma.get());
+ printf("%s = isl_union_map_preimage_domain_union_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, upma.get());
   return manage(res);
 }
 
 isl::union_map union_map::preimage_range_multi_aff(isl::multi_aff ma) const
 {
   auto res = isl_union_map_preimage_range_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage_range_multi_aff(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_union_map_preimage_range_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::union_map union_map::preimage_range_pw_multi_aff(isl::pw_multi_aff pma) const
 {
   auto res = isl_union_map_preimage_range_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.preimage_range_pw_multi_aff(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_union_map_preimage_range_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::union_map union_map::preimage_range_union_pw_multi_aff(isl::union_pw_multi_aff upma) const
 {
   auto res = isl_union_map_preimage_range_union_pw_multi_aff(copy(), upma.copy());
- printf("p_%p = p_%p.preimage_range_union_pw_multi_aff(p_%p)\n", res, this->ptr, upma.get());
+ printf("%s = isl_union_map_preimage_range_union_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, upma.get());
   return manage(res);
 }
 
 isl::union_map union_map::product(isl::union_map umap2) const
 {
   auto res = isl_union_map_product(copy(), umap2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::project_out(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_union_map_project_out(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.project_out(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_union_map_project_out(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::union_map union_map::project_out_all_params() const
 {
   auto res = isl_union_map_project_out_all_params(copy());
- printf("p_%p = p_%p.project_out_all_params()\n", res, this->ptr);
+ printf("%s = isl_union_map_project_out_all_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_map::range() const
 {
   auto res = isl_union_map_range(copy());
- printf("p_%p = p_%p.range()\n", res, this->ptr);
+ printf("%s = isl_union_map_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::range_curry() const
 {
   auto res = isl_union_map_range_curry(copy());
- printf("p_%p = p_%p.range_curry()\n", res, this->ptr);
+ printf("%s = isl_union_map_range_curry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::range_factor_domain() const
 {
   auto res = isl_union_map_range_factor_domain(copy());
- printf("p_%p = p_%p.range_factor_domain()\n", res, this->ptr);
+ printf("%s = isl_union_map_range_factor_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::range_factor_range() const
 {
   auto res = isl_union_map_range_factor_range(copy());
- printf("p_%p = p_%p.range_factor_range()\n", res, this->ptr);
+ printf("%s = isl_union_map_range_factor_range(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::range_map() const
 {
   auto res = isl_union_map_range_map(copy());
- printf("p_%p = p_%p.range_map()\n", res, this->ptr);
+ printf("%s = isl_union_map_range_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::range_product(isl::union_map umap2) const
 {
   auto res = isl_union_map_range_product(copy(), umap2.copy());
- printf("p_%p = p_%p.range_product(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::remove_divs() const
 {
   auto res = isl_union_map_remove_divs(copy());
- printf("p_%p = p_%p.remove_divs()\n", res, this->ptr);
+ printf("%s = isl_union_map_remove_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::remove_redundancies() const
 {
   auto res = isl_union_map_remove_redundancies(copy());
- printf("p_%p = p_%p.remove_redundancies()\n", res, this->ptr);
+ printf("%s = isl_union_map_remove_redundancies(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::reset_user() const
 {
   auto res = isl_union_map_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_union_map_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::reverse() const
 {
   auto res = isl_union_map_reverse(copy());
- printf("p_%p = p_%p.reverse()\n", res, this->ptr);
+ printf("%s = isl_union_map_reverse(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_map union_map::sample() const
 {
   auto res = isl_union_map_sample(copy());
- printf("p_%p = p_%p.sample()\n", res, this->ptr);
+ printf("%s = isl_union_map_sample(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::simple_hull() const
 {
   auto res = isl_union_map_simple_hull(copy());
- printf("p_%p = p_%p.simple_hull()\n", res, this->ptr);
+ printf("%s = isl_union_map_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::subtract(isl::union_map umap2) const
 {
   auto res = isl_union_map_subtract(copy(), umap2.copy());
- printf("p_%p = p_%p.subtract(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_subtract(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::subtract_domain(isl::union_set dom) const
 {
   auto res = isl_union_map_subtract_domain(copy(), dom.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, dom.get());
+ printf("%s = isl_union_map_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, dom.get());
   return manage(res);
 }
 
 isl::union_map union_map::subtract_range(isl::union_set dom) const
 {
   auto res = isl_union_map_subtract_range(copy(), dom.copy());
- printf("p_%p = p_%p.subtract_range(p_%p)\n", res, this->ptr, dom.get());
+ printf("%s = isl_union_map_subtract_range(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, dom.get());
   return manage(res);
 }
 
 isl::union_map union_map::uncurry() const
 {
   auto res = isl_union_map_uncurry(copy());
- printf("p_%p = p_%p.uncurry()\n", res, this->ptr);
+ printf("%s = isl_union_map_uncurry(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::unite(isl::union_map umap2) const
 {
   auto res = isl_union_map_union(copy(), umap2.copy());
- printf("p_%p = p_%p.unite(p_%p)\n", res, this->ptr, umap2.get());
+ printf("%s = isl_union_map_union(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, umap2.get());
   return manage(res);
 }
 
 isl::union_map union_map::universe() const
 {
   auto res = isl_union_map_universe(copy());
- printf("p_%p = p_%p.universe()\n", res, this->ptr);
+ printf("%s = isl_union_map_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_map::wrap() const
 {
   auto res = isl_union_map_wrap(copy());
- printf("p_%p = p_%p.wrap()\n", res, this->ptr);
+ printf("%s = isl_union_map_wrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_map::zip() const
 {
   auto res = isl_union_map_zip(copy());
- printf("p_%p = p_%p.zip()\n", res, this->ptr);
+ printf("%s = isl_union_map_zip(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -16530,11 +16705,15 @@ union_map_list &union_map_list::operator=(isl::union_map_list obj) {
 }
 
 union_map_list::~union_map_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_map_list_free(p_%lu);\n", this->ptr);
     isl_union_map_list_free(ptr);
+  }
 }
 
 __isl_give isl_union_map_list *union_map_list::copy() const & {
+auto temp = isl_union_map_list_copy(ptr);
+printf("%s = isl_union_map_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_map_list").c_str(), this->ptr);
   return isl_union_map_list_copy(ptr);
 }
 
@@ -16592,19 +16771,19 @@ union_pw_aff::union_pw_aff(__isl_take isl_union_pw_aff *ptr)
 union_pw_aff::union_pw_aff(isl::pw_aff pa)
 {
   auto res = isl_union_pw_aff_from_pw_aff(pa.copy());
- printf("p_%p = from_pw_aff(p_%p)\n", res, pa.get());
+ printf("%s = isl_union_pw_aff_from_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), pa.get());
   ptr = res;
 }
 union_pw_aff::union_pw_aff(isl::union_set domain, isl::val v)
 {
   auto res = isl_union_pw_aff_val_on_domain(domain.copy(), v.copy());
- printf("p_%p = val_on_domain(p_%p, p_%p)\n", res, domain.get(), v.get());
+ printf("%s = isl_union_pw_aff_val_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), domain.get(), v.get());
   ptr = res;
 }
 union_pw_aff::union_pw_aff(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_union_pw_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_union_pw_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -16614,11 +16793,15 @@ union_pw_aff &union_pw_aff::operator=(isl::union_pw_aff obj) {
 }
 
 union_pw_aff::~union_pw_aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_pw_aff_free(p_%lu);\n", this->ptr);
     isl_union_pw_aff_free(ptr);
+  }
 }
 
 __isl_give isl_union_pw_aff *union_pw_aff::copy() const & {
+auto temp = isl_union_pw_aff_copy(ptr);
+printf("%s = isl_union_pw_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_pw_aff").c_str(), this->ptr);
   return isl_union_pw_aff_copy(ptr);
 }
 
@@ -16661,84 +16844,84 @@ void union_pw_aff::dump() const {
 isl::union_pw_aff union_pw_aff::add(isl::union_pw_aff upa2) const
 {
   auto res = isl_union_pw_aff_add(copy(), upa2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, upa2.get());
+ printf("%s = isl_union_pw_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, upa2.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::add_pw_aff(isl::pw_aff pa) const
 {
   auto res = isl_union_pw_aff_add_pw_aff(copy(), pa.copy());
- printf("p_%p = p_%p.add_pw_aff(p_%p)\n", res, this->ptr, pa.get());
+ printf("%s = isl_union_pw_aff_add_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, pa.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::aff_on_domain(isl::union_set domain, isl::aff aff)
 {
   auto res = isl_union_pw_aff_aff_on_domain(domain.copy(), aff.copy());
- printf("p_%p = aff_on_domain(p_%p, p_%p)\n", res, domain.get(), aff.get());
+ printf("%s = isl_union_pw_aff_aff_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), domain.get(), aff.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::align_params(isl::space model) const
 {
   auto res = isl_union_pw_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_union_pw_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::coalesce() const
 {
   auto res = isl_union_pw_aff_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int union_pw_aff::dim(isl::dim type) const
 {
   auto res = isl_union_pw_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_union_pw_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::union_set union_pw_aff::domain() const
 {
   auto res = isl_union_pw_aff_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_union_pw_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_union_pw_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::empty(isl::space space)
 {
   auto res = isl_union_pw_aff_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_union_pw_aff_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::pw_aff union_pw_aff::extract_pw_aff(isl::space space) const
 {
   auto res = isl_union_pw_aff_extract_pw_aff(get(), space.copy());
- printf("p_%p = p_%p.extract_pw_aff(p_%p)\n", res, this->ptr, space.get());
+ printf("%s = isl_union_pw_aff_extract_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_aff").c_str(), this->ptr, space.get());
   return manage(res);
 }
 
 int union_pw_aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_union_pw_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_union_pw_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::union_pw_aff union_pw_aff::floor() const
 {
   auto res = isl_union_pw_aff_floor(copy());
- printf("p_%p = p_%p.floor()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_floor(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -16753,147 +16936,147 @@ isl::stat union_pw_aff::foreach_pw_aff(const std::function<isl::stat(isl::pw_aff
     return isl_stat(ret);
   };
   auto res = isl_union_pw_aff_foreach_pw_aff(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_pw_aff()\n", res, this->ptr, fn);
+ printf("%s = isl_union_pw_aff_foreach_pw_aff(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::space union_pw_aff::get_space() const
 {
   auto res = isl_union_pw_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::gist(isl::union_set context) const
 {
   auto res = isl_union_pw_aff_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_pw_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::gist_params(isl::set context) const
 {
   auto res = isl_union_pw_aff_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_pw_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::intersect_domain(isl::union_set uset) const
 {
   auto res = isl_union_pw_aff_intersect_domain(copy(), uset.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_pw_aff_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::intersect_params(isl::set set) const
 {
   auto res = isl_union_pw_aff_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_pw_aff_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean union_pw_aff::involves_nan() const
 {
   auto res = isl_union_pw_aff_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::mod_val(isl::val f) const
 {
   auto res = isl_union_pw_aff_mod_val(copy(), f.copy());
- printf("p_%p = p_%p.mod_val(p_%p)\n", res, this->ptr, f.get());
+ printf("%s = isl_union_pw_aff_mod_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, f.get());
   return manage(res);
 }
 
 int union_pw_aff::n_pw_aff() const
 {
   auto res = isl_union_pw_aff_n_pw_aff(get());
- printf("p_%p = p_%p.n_pw_aff()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_n_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::union_pw_aff union_pw_aff::neg() const
 {
   auto res = isl_union_pw_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::param_on_domain_id(isl::union_set domain, isl::id id)
 {
   auto res = isl_union_pw_aff_param_on_domain_id(domain.copy(), id.copy());
- printf("p_%p = param_on_domain_id(p_%p, p_%p)\n", res, domain.get(), id.get());
+ printf("%s = isl_union_pw_aff_param_on_domain_id(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), domain.get(), id.get());
   return manage(res);
 }
 
 isl::boolean union_pw_aff::plain_is_equal(const isl::union_pw_aff &upa2) const
 {
   auto res = isl_union_pw_aff_plain_is_equal(get(), upa2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, upa2.get());
+ printf("%s = isl_union_pw_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, upa2.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::pullback(isl::union_pw_multi_aff upma) const
 {
   auto res = isl_union_pw_aff_pullback_union_pw_multi_aff(copy(), upma.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, upma.get());
+ printf("%s = isl_union_pw_aff_pullback_union_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, upma.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::pw_aff_on_domain(isl::union_set domain, isl::pw_aff pa)
 {
   auto res = isl_union_pw_aff_pw_aff_on_domain(domain.copy(), pa.copy());
- printf("p_%p = pw_aff_on_domain(p_%p, p_%p)\n", res, domain.get(), pa.get());
+ printf("%s = isl_union_pw_aff_pw_aff_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), domain.get(), pa.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::reset_user() const
 {
   auto res = isl_union_pw_aff_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::scale_down_val(isl::val v) const
 {
   auto res = isl_union_pw_aff_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_union_pw_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::scale_val(isl::val v) const
 {
   auto res = isl_union_pw_aff_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_union_pw_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::sub(isl::union_pw_aff upa2) const
 {
   auto res = isl_union_pw_aff_sub(copy(), upa2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, upa2.get());
+ printf("%s = isl_union_pw_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, upa2.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::subtract_domain(isl::union_set uset) const
 {
   auto res = isl_union_pw_aff_subtract_domain(copy(), uset.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_pw_aff_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_aff::union_add(isl::union_pw_aff upa2) const
 {
   auto res = isl_union_pw_aff_union_add(copy(), upa2.copy());
- printf("p_%p = p_%p.union_add(p_%p)\n", res, this->ptr, upa2.get());
+ printf("%s = isl_union_pw_aff_union_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, upa2.get());
   return manage(res);
 }
 
 isl::union_set union_pw_aff::zero_union_set() const
 {
   auto res = isl_union_pw_aff_zero_union_set(copy());
- printf("p_%p = p_%p.zero_union_set()\n", res, this->ptr);
+ printf("%s = isl_union_pw_aff_zero_union_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -16927,11 +17110,15 @@ union_pw_aff_list &union_pw_aff_list::operator=(isl::union_pw_aff_list obj) {
 }
 
 union_pw_aff_list::~union_pw_aff_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_pw_aff_list_free(p_%lu);\n", this->ptr);
     isl_union_pw_aff_list_free(ptr);
+  }
 }
 
 __isl_give isl_union_pw_aff_list *union_pw_aff_list::copy() const & {
+auto temp = isl_union_pw_aff_list_copy(ptr);
+printf("%s = isl_union_pw_aff_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_pw_aff_list").c_str(), this->ptr);
   return isl_union_pw_aff_list_copy(ptr);
 }
 
@@ -16989,31 +17176,31 @@ union_pw_multi_aff::union_pw_multi_aff(__isl_take isl_union_pw_multi_aff *ptr)
 union_pw_multi_aff::union_pw_multi_aff(isl::pw_multi_aff pma)
 {
   auto res = isl_union_pw_multi_aff_from_pw_multi_aff(pma.copy());
- printf("p_%p = from_pw_multi_aff(p_%p)\n", res, pma.get());
+ printf("%s = isl_union_pw_multi_aff_from_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), pma.get());
   ptr = res;
 }
 union_pw_multi_aff::union_pw_multi_aff(isl::union_set uset)
 {
   auto res = isl_union_pw_multi_aff_from_domain(uset.copy());
- printf("p_%p = from_domain(p_%p)\n", res, uset.get());
+ printf("%s = isl_union_pw_multi_aff_from_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), uset.get());
   ptr = res;
 }
 union_pw_multi_aff::union_pw_multi_aff(isl::union_map umap)
 {
   auto res = isl_union_pw_multi_aff_from_union_map(umap.copy());
- printf("p_%p = from_union_map(p_%p)\n", res, umap.get());
+ printf("%s = isl_union_pw_multi_aff_from_union_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), umap.get());
   ptr = res;
 }
 union_pw_multi_aff::union_pw_multi_aff(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_union_pw_multi_aff_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_union_pw_multi_aff_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 union_pw_multi_aff::union_pw_multi_aff(isl::union_pw_aff upa)
 {
   auto res = isl_union_pw_multi_aff_from_union_pw_aff(upa.copy());
- printf("p_%p = from_union_pw_aff(p_%p)\n", res, upa.get());
+ printf("%s = isl_union_pw_multi_aff_from_union_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), upa.get());
   ptr = res;
 }
 
@@ -17023,11 +17210,15 @@ union_pw_multi_aff &union_pw_multi_aff::operator=(isl::union_pw_multi_aff obj) {
 }
 
 union_pw_multi_aff::~union_pw_multi_aff() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_pw_multi_aff_free(p_%lu);\n", this->ptr);
     isl_union_pw_multi_aff_free(ptr);
+  }
 }
 
 __isl_give isl_union_pw_multi_aff *union_pw_multi_aff::copy() const & {
+auto temp = isl_union_pw_multi_aff_copy(ptr);
+printf("%s = isl_union_pw_multi_aff_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return isl_union_pw_multi_aff_copy(ptr);
 }
 
@@ -17070,77 +17261,77 @@ void union_pw_multi_aff::dump() const {
 isl::union_pw_multi_aff union_pw_multi_aff::add(isl::union_pw_multi_aff upma2) const
 {
   auto res = isl_union_pw_multi_aff_add(copy(), upma2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, upma2.get());
+ printf("%s = isl_union_pw_multi_aff_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, upma2.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::add_pw_multi_aff(isl::pw_multi_aff pma) const
 {
   auto res = isl_union_pw_multi_aff_add_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.add_pw_multi_aff(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_union_pw_multi_aff_add_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::align_params(isl::space model) const
 {
   auto res = isl_union_pw_multi_aff_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_union_pw_multi_aff_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::coalesce() const
 {
   auto res = isl_union_pw_multi_aff_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_union_pw_multi_aff_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int union_pw_multi_aff::dim(isl::dim type) const
 {
   auto res = isl_union_pw_multi_aff_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_union_pw_multi_aff_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::union_set union_pw_multi_aff::domain() const
 {
   auto res = isl_union_pw_multi_aff_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_union_pw_multi_aff_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_union_pw_multi_aff_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_union_pw_multi_aff_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::empty(isl::space space)
 {
   auto res = isl_union_pw_multi_aff_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_union_pw_multi_aff_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), space.get());
   return manage(res);
 }
 
 isl::pw_multi_aff union_pw_multi_aff::extract_pw_multi_aff(isl::space space) const
 {
   auto res = isl_union_pw_multi_aff_extract_pw_multi_aff(get(), space.copy());
- printf("p_%p = p_%p.extract_pw_multi_aff(p_%p)\n", res, this->ptr, space.get());
+ printf("%s = isl_union_pw_multi_aff_extract_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_multi_aff").c_str(), this->ptr, space.get());
   return manage(res);
 }
 
 int union_pw_multi_aff::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_union_pw_multi_aff_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_union_pw_multi_aff_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::flat_range_product(isl::union_pw_multi_aff upma2) const
 {
   auto res = isl_union_pw_multi_aff_flat_range_product(copy(), upma2.copy());
- printf("p_%p = p_%p.flat_range_product(p_%p)\n", res, this->ptr, upma2.get());
+ printf("%s = isl_union_pw_multi_aff_flat_range_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, upma2.get());
   return manage(res);
 }
 
@@ -17155,161 +17346,161 @@ isl::stat union_pw_multi_aff::foreach_pw_multi_aff(const std::function<isl::stat
     return isl_stat(ret);
   };
   auto res = isl_union_pw_multi_aff_foreach_pw_multi_aff(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_pw_multi_aff()\n", res, this->ptr, fn);
+ printf("%s = isl_union_pw_multi_aff_foreach_pw_multi_aff(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::from_aff(isl::aff aff)
 {
   auto res = isl_union_pw_multi_aff_from_aff(aff.copy());
- printf("p_%p = from_aff(p_%p)\n", res, aff.get());
+ printf("%s = isl_union_pw_multi_aff_from_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), aff.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::from_multi_union_pw_aff(isl::multi_union_pw_aff mupa)
 {
   auto res = isl_union_pw_multi_aff_from_multi_union_pw_aff(mupa.copy());
- printf("p_%p = from_multi_union_pw_aff(p_%p)\n", res, mupa.get());
+ printf("%s = isl_union_pw_multi_aff_from_multi_union_pw_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), mupa.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::from_union_set(isl::union_set uset)
 {
   auto res = isl_union_pw_multi_aff_from_union_set(uset.copy());
- printf("p_%p = from_union_set(p_%p)\n", res, uset.get());
+ printf("%s = isl_union_pw_multi_aff_from_union_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), uset.get());
   return manage(res);
 }
 
 isl::space union_pw_multi_aff::get_space() const
 {
   auto res = isl_union_pw_multi_aff_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_union_pw_multi_aff_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_aff union_pw_multi_aff::get_union_pw_aff(int pos) const
 {
   auto res = isl_union_pw_multi_aff_get_union_pw_aff(get(), pos);
- printf("p_%p = p_%p.get_union_pw_aff(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_union_pw_multi_aff_get_union_pw_aff(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_aff").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::gist(isl::union_set context) const
 {
   auto res = isl_union_pw_multi_aff_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_pw_multi_aff_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::gist_params(isl::set context) const
 {
   auto res = isl_union_pw_multi_aff_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_pw_multi_aff_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::intersect_domain(isl::union_set uset) const
 {
   auto res = isl_union_pw_multi_aff_intersect_domain(copy(), uset.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_pw_multi_aff_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::intersect_params(isl::set set) const
 {
   auto res = isl_union_pw_multi_aff_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_pw_multi_aff_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean union_pw_multi_aff::involves_nan() const
 {
   auto res = isl_union_pw_multi_aff_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_union_pw_multi_aff_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::multi_val_on_domain(isl::union_set domain, isl::multi_val mv)
 {
   auto res = isl_union_pw_multi_aff_multi_val_on_domain(domain.copy(), mv.copy());
- printf("p_%p = multi_val_on_domain(p_%p, p_%p)\n", res, domain.get(), mv.get());
+ printf("%s = isl_union_pw_multi_aff_multi_val_on_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), domain.get(), mv.get());
   return manage(res);
 }
 
 int union_pw_multi_aff::n_pw_multi_aff() const
 {
   auto res = isl_union_pw_multi_aff_n_pw_multi_aff(get());
- printf("p_%p = p_%p.n_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_union_pw_multi_aff_n_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::neg() const
 {
   auto res = isl_union_pw_multi_aff_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_union_pw_multi_aff_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_pw_multi_aff::plain_is_equal(const isl::union_pw_multi_aff &upma2) const
 {
   auto res = isl_union_pw_multi_aff_plain_is_equal(get(), upma2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, upma2.get());
+ printf("%s = isl_union_pw_multi_aff_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, upma2.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::pullback(isl::union_pw_multi_aff upma2) const
 {
   auto res = isl_union_pw_multi_aff_pullback_union_pw_multi_aff(copy(), upma2.copy());
- printf("p_%p = p_%p.pullback(p_%p)\n", res, this->ptr, upma2.get());
+ printf("%s = isl_union_pw_multi_aff_pullback_union_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, upma2.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::reset_user() const
 {
   auto res = isl_union_pw_multi_aff_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_union_pw_multi_aff_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::scale_down_val(isl::val val) const
 {
   auto res = isl_union_pw_multi_aff_scale_down_val(copy(), val.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, val.get());
+ printf("%s = isl_union_pw_multi_aff_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, val.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::scale_multi_val(isl::multi_val mv) const
 {
   auto res = isl_union_pw_multi_aff_scale_multi_val(copy(), mv.copy());
- printf("p_%p = p_%p.scale_multi_val(p_%p)\n", res, this->ptr, mv.get());
+ printf("%s = isl_union_pw_multi_aff_scale_multi_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, mv.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::scale_val(isl::val val) const
 {
   auto res = isl_union_pw_multi_aff_scale_val(copy(), val.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, val.get());
+ printf("%s = isl_union_pw_multi_aff_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, val.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::sub(isl::union_pw_multi_aff upma2) const
 {
   auto res = isl_union_pw_multi_aff_sub(copy(), upma2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, upma2.get());
+ printf("%s = isl_union_pw_multi_aff_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, upma2.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::subtract_domain(isl::union_set uset) const
 {
   auto res = isl_union_pw_multi_aff_subtract_domain(copy(), uset.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_pw_multi_aff_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_pw_multi_aff::union_add(isl::union_pw_multi_aff upma2) const
 {
   auto res = isl_union_pw_multi_aff_union_add(copy(), upma2.copy());
- printf("p_%p = p_%p.union_add(p_%p)\n", res, this->ptr, upma2.get());
+ printf("%s = isl_union_pw_multi_aff_union_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr, upma2.get());
   return manage(res);
 }
 
@@ -17343,11 +17534,15 @@ union_pw_multi_aff_list &union_pw_multi_aff_list::operator=(isl::union_pw_multi_
 }
 
 union_pw_multi_aff_list::~union_pw_multi_aff_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_pw_multi_aff_list_free(p_%lu);\n", this->ptr);
     isl_union_pw_multi_aff_list_free(ptr);
+  }
 }
 
 __isl_give isl_union_pw_multi_aff_list *union_pw_multi_aff_list::copy() const & {
+auto temp = isl_union_pw_multi_aff_list_copy(ptr);
+printf("%s = isl_union_pw_multi_aff_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_pw_multi_aff_list").c_str(), this->ptr);
   return isl_union_pw_multi_aff_list_copy(ptr);
 }
 
@@ -17405,7 +17600,7 @@ union_pw_qpolynomial::union_pw_qpolynomial(__isl_take isl_union_pw_qpolynomial *
 union_pw_qpolynomial::union_pw_qpolynomial(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_union_pw_qpolynomial_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_union_pw_qpolynomial_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -17415,11 +17610,15 @@ union_pw_qpolynomial &union_pw_qpolynomial::operator=(isl::union_pw_qpolynomial 
 }
 
 union_pw_qpolynomial::~union_pw_qpolynomial() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_pw_qpolynomial_free(p_%lu);\n", this->ptr);
     isl_union_pw_qpolynomial_free(ptr);
+  }
 }
 
 __isl_give isl_union_pw_qpolynomial *union_pw_qpolynomial::copy() const & {
+auto temp = isl_union_pw_qpolynomial_copy(ptr);
+printf("%s = isl_union_pw_qpolynomial_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_pw_qpolynomial").c_str(), this->ptr);
   return isl_union_pw_qpolynomial_copy(ptr);
 }
 
@@ -17458,70 +17657,70 @@ std::string union_pw_qpolynomial::to_str() const {
 isl::union_pw_qpolynomial union_pw_qpolynomial::add(isl::union_pw_qpolynomial upwqp2) const
 {
   auto res = isl_union_pw_qpolynomial_add(copy(), upwqp2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, upwqp2.get());
+ printf("%s = isl_union_pw_qpolynomial_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, upwqp2.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::add_pw_qpolynomial(isl::pw_qpolynomial pwqp) const
 {
   auto res = isl_union_pw_qpolynomial_add_pw_qpolynomial(copy(), pwqp.copy());
- printf("p_%p = p_%p.add_pw_qpolynomial(p_%p)\n", res, this->ptr, pwqp.get());
+ printf("%s = isl_union_pw_qpolynomial_add_pw_qpolynomial(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, pwqp.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::align_params(isl::space model) const
 {
   auto res = isl_union_pw_qpolynomial_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_union_pw_qpolynomial_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::coalesce() const
 {
   auto res = isl_union_pw_qpolynomial_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_union_pw_qpolynomial_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int union_pw_qpolynomial::dim(isl::dim type) const
 {
   auto res = isl_union_pw_qpolynomial_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_union_pw_qpolynomial_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::union_set union_pw_qpolynomial::domain() const
 {
   auto res = isl_union_pw_qpolynomial_domain(copy());
- printf("p_%p = p_%p.domain()\n", res, this->ptr);
+ printf("%s = isl_union_pw_qpolynomial_domain(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::drop_dims(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_union_pw_qpolynomial_drop_dims(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.drop_dims(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_union_pw_qpolynomial_drop_dims(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::val union_pw_qpolynomial::eval(isl::point pnt) const
 {
   auto res = isl_union_pw_qpolynomial_eval(copy(), pnt.copy());
- printf("p_%p = p_%p.eval(p_%p)\n", res, this->ptr, pnt.get());
+ printf("%s = isl_union_pw_qpolynomial_eval(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pnt.get());
   return manage(res);
 }
 
 isl::pw_qpolynomial union_pw_qpolynomial::extract_pw_qpolynomial(isl::space dim) const
 {
   auto res = isl_union_pw_qpolynomial_extract_pw_qpolynomial(get(), dim.copy());
- printf("p_%p = p_%p.extract_pw_qpolynomial(p_%p)\n", res, this->ptr, dim.get());
+ printf("%s = isl_union_pw_qpolynomial_extract_pw_qpolynomial(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_pw_qpolynomial").c_str(), this->ptr, dim.get());
   return manage(res);
 }
 
 int union_pw_qpolynomial::find_dim_by_name(isl::dim type, const std::string &name) const
 {
   auto res = isl_union_pw_qpolynomial_find_dim_by_name(get(), static_cast<enum isl_dim_type>(type), name.c_str());
- printf("p_%p = p_%p.find_dim_by_name(%d, %s)\n", res, this->ptr, type, name.c_str());
+ printf("%s = isl_union_pw_qpolynomial_find_dim_by_name(p_%lu, %d, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, type, name.c_str());
   return res;
 }
 
@@ -17536,133 +17735,133 @@ isl::stat union_pw_qpolynomial::foreach_pw_qpolynomial(const std::function<isl::
     return isl_stat(ret);
   };
   auto res = isl_union_pw_qpolynomial_foreach_pw_qpolynomial(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_pw_qpolynomial()\n", res, this->ptr, fn);
+ printf("%s = isl_union_pw_qpolynomial_foreach_pw_qpolynomial(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::from_pw_qpolynomial(isl::pw_qpolynomial pwqp)
 {
   auto res = isl_union_pw_qpolynomial_from_pw_qpolynomial(pwqp.copy());
- printf("p_%p = from_pw_qpolynomial(p_%p)\n", res, pwqp.get());
+ printf("%s = isl_union_pw_qpolynomial_from_pw_qpolynomial(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), pwqp.get());
   return manage(res);
 }
 
 isl::space union_pw_qpolynomial::get_space() const
 {
   auto res = isl_union_pw_qpolynomial_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_union_pw_qpolynomial_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::gist(isl::union_set context) const
 {
   auto res = isl_union_pw_qpolynomial_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_pw_qpolynomial_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::gist_params(isl::set context) const
 {
   auto res = isl_union_pw_qpolynomial_gist_params(copy(), context.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_pw_qpolynomial_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::intersect_domain(isl::union_set uset) const
 {
   auto res = isl_union_pw_qpolynomial_intersect_domain(copy(), uset.copy());
- printf("p_%p = p_%p.intersect_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_pw_qpolynomial_intersect_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::intersect_params(isl::set set) const
 {
   auto res = isl_union_pw_qpolynomial_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_pw_qpolynomial_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean union_pw_qpolynomial::involves_nan() const
 {
   auto res = isl_union_pw_qpolynomial_involves_nan(get());
- printf("p_%p = p_%p.involves_nan()\n", res, this->ptr);
+ printf("%s = isl_union_pw_qpolynomial_involves_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::mul(isl::union_pw_qpolynomial upwqp2) const
 {
   auto res = isl_union_pw_qpolynomial_mul(copy(), upwqp2.copy());
- printf("p_%p = p_%p.mul(p_%p)\n", res, this->ptr, upwqp2.get());
+ printf("%s = isl_union_pw_qpolynomial_mul(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, upwqp2.get());
   return manage(res);
 }
 
 int union_pw_qpolynomial::n_pw_qpolynomial() const
 {
   auto res = isl_union_pw_qpolynomial_n_pw_qpolynomial(get());
- printf("p_%p = p_%p.n_pw_qpolynomial()\n", res, this->ptr);
+ printf("%s = isl_union_pw_qpolynomial_n_pw_qpolynomial(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::neg() const
 {
   auto res = isl_union_pw_qpolynomial_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_union_pw_qpolynomial_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_pw_qpolynomial::plain_is_equal(const isl::union_pw_qpolynomial &upwqp2) const
 {
   auto res = isl_union_pw_qpolynomial_plain_is_equal(get(), upwqp2.get());
- printf("p_%p = p_%p.plain_is_equal(p_%p)\n", res, this->ptr, upwqp2.get());
+ printf("%s = isl_union_pw_qpolynomial_plain_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, upwqp2.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::reset_user() const
 {
   auto res = isl_union_pw_qpolynomial_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_union_pw_qpolynomial_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::scale_down_val(isl::val v) const
 {
   auto res = isl_union_pw_qpolynomial_scale_down_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_down_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_union_pw_qpolynomial_scale_down_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::scale_val(isl::val v) const
 {
   auto res = isl_union_pw_qpolynomial_scale_val(copy(), v.copy());
- printf("p_%p = p_%p.scale_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_union_pw_qpolynomial_scale_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::sub(isl::union_pw_qpolynomial upwqp2) const
 {
   auto res = isl_union_pw_qpolynomial_sub(copy(), upwqp2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, upwqp2.get());
+ printf("%s = isl_union_pw_qpolynomial_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, upwqp2.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::subtract_domain(isl::union_set uset) const
 {
   auto res = isl_union_pw_qpolynomial_subtract_domain(copy(), uset.copy());
- printf("p_%p = p_%p.subtract_domain(p_%p)\n", res, this->ptr, uset.get());
+ printf("%s = isl_union_pw_qpolynomial_subtract_domain(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, uset.get());
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::to_polynomial(int sign) const
 {
   auto res = isl_union_pw_qpolynomial_to_polynomial(copy(), sign);
- printf("p_%p = p_%p.to_polynomial(%d)\n", res, this->ptr, sign);
+ printf("%s = isl_union_pw_qpolynomial_to_polynomial(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), this->ptr, sign);
   return manage(res);
 }
 
 isl::union_pw_qpolynomial union_pw_qpolynomial::zero(isl::space dim)
 {
   auto res = isl_union_pw_qpolynomial_zero(dim.copy());
- printf("p_%p = zero(p_%p)\n", res, dim.get());
+ printf("%s = isl_union_pw_qpolynomial_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_qpolynomial").c_str(), dim.get());
   return manage(res);
 }
 
@@ -17692,25 +17891,25 @@ union_set::union_set(__isl_take isl_union_set *ptr)
 union_set::union_set(isl::basic_set bset)
 {
   auto res = isl_union_set_from_basic_set(bset.copy());
- printf("p_%p = from_basic_set(p_%p)\n", res, bset.get());
+ printf("%s = isl_union_set_from_basic_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), bset.get());
   ptr = res;
 }
 union_set::union_set(isl::set set)
 {
   auto res = isl_union_set_from_set(set.copy());
- printf("p_%p = from_set(p_%p)\n", res, set.get());
+ printf("%s = isl_union_set_from_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), set.get());
   ptr = res;
 }
 union_set::union_set(isl::point pnt)
 {
   auto res = isl_union_set_from_point(pnt.copy());
- printf("p_%p = from_point(p_%p)\n", res, pnt.get());
+ printf("%s = isl_union_set_from_point(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), pnt.get());
   ptr = res;
 }
 union_set::union_set(isl::ctx ctx, const std::string &str)
 {
   auto res = isl_union_set_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
+ printf("%s = isl_union_set_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -17720,11 +17919,15 @@ union_set &union_set::operator=(isl::union_set obj) {
 }
 
 union_set::~union_set() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_set_free(p_%lu);\n", this->ptr);
     isl_union_set_free(ptr);
+  }
 }
 
 __isl_give isl_union_set *union_set::copy() const & {
+auto temp = isl_union_set_copy(ptr);
+printf("%s = isl_union_set_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_set").c_str(), this->ptr);
   return isl_union_set_copy(ptr);
 }
 
@@ -17767,84 +17970,84 @@ void union_set::dump() const {
 isl::union_set union_set::add_set(isl::set set) const
 {
   auto res = isl_union_set_add_set(copy(), set.copy());
- printf("p_%p = p_%p.add_set(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_set_add_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::union_set union_set::affine_hull() const
 {
   auto res = isl_union_set_affine_hull(copy());
- printf("p_%p = p_%p.affine_hull()\n", res, this->ptr);
+ printf("%s = isl_union_set_affine_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::align_params(isl::space model) const
 {
   auto res = isl_union_set_align_params(copy(), model.copy());
- printf("p_%p = p_%p.align_params(p_%p)\n", res, this->ptr, model.get());
+ printf("%s = isl_union_set_align_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, model.get());
   return manage(res);
 }
 
 isl::union_set union_set::apply(isl::union_map umap) const
 {
   auto res = isl_union_set_apply(copy(), umap.copy());
- printf("p_%p = p_%p.apply(p_%p)\n", res, this->ptr, umap.get());
+ printf("%s = isl_union_set_apply(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, umap.get());
   return manage(res);
 }
 
 isl::union_set union_set::coalesce() const
 {
   auto res = isl_union_set_coalesce(copy());
- printf("p_%p = p_%p.coalesce()\n", res, this->ptr);
+ printf("%s = isl_union_set_coalesce(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::coefficients() const
 {
   auto res = isl_union_set_coefficients(copy());
- printf("p_%p = p_%p.coefficients()\n", res, this->ptr);
+ printf("%s = isl_union_set_coefficients(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::schedule union_set::compute_schedule(isl::union_map validity, isl::union_map proximity) const
 {
   auto res = isl_union_set_compute_schedule(copy(), validity.copy(), proximity.copy());
- printf("p_%p = p_%p.compute_schedule(p_%p, p_%p)\n", res, this->ptr, validity.get(), proximity.get());
+ printf("%s = isl_union_set_compute_schedule(p_%lu, p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_schedule").c_str(), this->ptr, validity.get(), proximity.get());
   return manage(res);
 }
 
 isl::boolean union_set::contains(const isl::space &space) const
 {
   auto res = isl_union_set_contains(get(), space.get());
- printf("p_%p = p_%p.contains(p_%p)\n", res, this->ptr, space.get());
+ printf("%s = isl_union_set_contains(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, space.get());
   return manage(res);
 }
 
 isl::union_set union_set::detect_equalities() const
 {
   auto res = isl_union_set_detect_equalities(copy());
- printf("p_%p = p_%p.detect_equalities()\n", res, this->ptr);
+ printf("%s = isl_union_set_detect_equalities(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 unsigned int union_set::dim(isl::dim type) const
 {
   auto res = isl_union_set_dim(get(), static_cast<enum isl_dim_type>(type));
- printf("p_%p = p_%p.dim(%d)\n", res, this->ptr, type);
+ printf("%s = isl_union_set_dim(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "unsigned int").c_str(), this->ptr, type);
   return res;
 }
 
 isl::union_set union_set::empty(isl::space space)
 {
   auto res = isl_union_set_empty(space.copy());
- printf("p_%p = empty(p_%p)\n", res, space.get());
+ printf("%s = isl_union_set_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), space.get());
   return manage(res);
 }
 
 isl::set union_set::extract_set(isl::space dim) const
 {
   auto res = isl_union_set_extract_set(get(), dim.copy());
- printf("p_%p = p_%p.extract_set(p_%p)\n", res, this->ptr, dim.get());
+ printf("%s = isl_union_set_extract_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr, dim.get());
   return manage(res);
 }
 
@@ -17859,7 +18062,7 @@ isl::stat union_set::foreach_point(const std::function<isl::stat(isl::point)> &f
     return isl_stat(ret);
   };
   auto res = isl_union_set_foreach_point(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_point()\n", res, this->ptr, fn);
+ printf("%s = isl_union_set_foreach_point(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
@@ -17874,301 +18077,301 @@ isl::stat union_set::foreach_set(const std::function<isl::stat(isl::set)> &fn) c
     return isl_stat(ret);
   };
   auto res = isl_union_set_foreach_set(get(), fn_lambda, &fn_data);
- printf("p_%p = p_%p.foreach_set()\n", res, this->ptr, fn);
+ printf("%s = isl_union_set_foreach_set(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "void").c_str(), this->ptr, fn);
   return isl::stat(res);
 }
 
 isl::basic_set_list union_set::get_basic_set_list() const
 {
   auto res = isl_union_set_get_basic_set_list(get());
- printf("p_%p = p_%p.get_basic_set_list()\n", res, this->ptr);
+ printf("%s = isl_union_set_get_basic_set_list(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set_list").c_str(), this->ptr);
   return manage(res);
 }
 
 uint32_t union_set::get_hash() const
 {
   auto res = isl_union_set_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_union_set_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 isl::space union_set::get_space() const
 {
   auto res = isl_union_set_get_space(get());
- printf("p_%p = p_%p.get_space()\n", res, this->ptr);
+ printf("%s = isl_union_set_get_space(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_space").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::gist(isl::union_set context) const
 {
   auto res = isl_union_set_gist(copy(), context.copy());
- printf("p_%p = p_%p.gist(p_%p)\n", res, this->ptr, context.get());
+ printf("%s = isl_union_set_gist(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, context.get());
   return manage(res);
 }
 
 isl::union_set union_set::gist_params(isl::set set) const
 {
   auto res = isl_union_set_gist_params(copy(), set.copy());
- printf("p_%p = p_%p.gist_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_set_gist_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::union_map union_set::identity() const
 {
   auto res = isl_union_set_identity(copy());
- printf("p_%p = p_%p.identity()\n", res, this->ptr);
+ printf("%s = isl_union_set_identity(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_pw_multi_aff union_set::identity_union_pw_multi_aff() const
 {
   auto res = isl_union_set_identity_union_pw_multi_aff(copy());
- printf("p_%p = p_%p.identity_union_pw_multi_aff()\n", res, this->ptr);
+ printf("%s = isl_union_set_identity_union_pw_multi_aff(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_pw_multi_aff").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::intersect(isl::union_set uset2) const
 {
   auto res = isl_union_set_intersect(copy(), uset2.copy());
- printf("p_%p = p_%p.intersect(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_intersect(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_set union_set::intersect_params(isl::set set) const
 {
   auto res = isl_union_set_intersect_params(copy(), set.copy());
- printf("p_%p = p_%p.intersect_params(p_%p)\n", res, this->ptr, set.get());
+ printf("%s = isl_union_set_intersect_params(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, set.get());
   return manage(res);
 }
 
 isl::boolean union_set::is_disjoint(const isl::union_set &uset2) const
 {
   auto res = isl_union_set_is_disjoint(get(), uset2.get());
- printf("p_%p = p_%p.is_disjoint(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_is_disjoint(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::boolean union_set::is_empty() const
 {
   auto res = isl_union_set_is_empty(get());
- printf("p_%p = p_%p.is_empty()\n", res, this->ptr);
+ printf("%s = isl_union_set_is_empty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_set::is_equal(const isl::union_set &uset2) const
 {
   auto res = isl_union_set_is_equal(get(), uset2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::boolean union_set::is_params() const
 {
   auto res = isl_union_set_is_params(get());
- printf("p_%p = p_%p.is_params()\n", res, this->ptr);
+ printf("%s = isl_union_set_is_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean union_set::is_strict_subset(const isl::union_set &uset2) const
 {
   auto res = isl_union_set_is_strict_subset(get(), uset2.get());
- printf("p_%p = p_%p.is_strict_subset(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_is_strict_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::boolean union_set::is_subset(const isl::union_set &uset2) const
 {
   auto res = isl_union_set_is_subset(get(), uset2.get());
- printf("p_%p = p_%p.is_subset(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_is_subset(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_map union_set::lex_ge_union_set(isl::union_set uset2) const
 {
   auto res = isl_union_set_lex_ge_union_set(copy(), uset2.copy());
- printf("p_%p = p_%p.lex_ge_union_set(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_lex_ge_union_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_map union_set::lex_gt_union_set(isl::union_set uset2) const
 {
   auto res = isl_union_set_lex_gt_union_set(copy(), uset2.copy());
- printf("p_%p = p_%p.lex_gt_union_set(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_lex_gt_union_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_map union_set::lex_le_union_set(isl::union_set uset2) const
 {
   auto res = isl_union_set_lex_le_union_set(copy(), uset2.copy());
- printf("p_%p = p_%p.lex_le_union_set(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_lex_le_union_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_map union_set::lex_lt_union_set(isl::union_set uset2) const
 {
   auto res = isl_union_set_lex_lt_union_set(copy(), uset2.copy());
- printf("p_%p = p_%p.lex_lt_union_set(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_lex_lt_union_set(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_set union_set::lexmax() const
 {
   auto res = isl_union_set_lexmax(copy());
- printf("p_%p = p_%p.lexmax()\n", res, this->ptr);
+ printf("%s = isl_union_set_lexmax(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::lexmin() const
 {
   auto res = isl_union_set_lexmin(copy());
- printf("p_%p = p_%p.lexmin()\n", res, this->ptr);
+ printf("%s = isl_union_set_lexmin(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::multi_val union_set::min_multi_union_pw_aff(const isl::multi_union_pw_aff &obj) const
 {
   auto res = isl_union_set_min_multi_union_pw_aff(get(), obj.get());
- printf("p_%p = p_%p.min_multi_union_pw_aff(p_%p)\n", res, this->ptr, obj.get());
+ printf("%s = isl_union_set_min_multi_union_pw_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_multi_val").c_str(), this->ptr, obj.get());
   return manage(res);
 }
 
 int union_set::n_set() const
 {
   auto res = isl_union_set_n_set(get());
- printf("p_%p = p_%p.n_set()\n", res, this->ptr);
+ printf("%s = isl_union_set_n_set(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::set union_set::params() const
 {
   auto res = isl_union_set_params(copy());
- printf("p_%p = p_%p.params()\n", res, this->ptr);
+ printf("%s = isl_union_set_params(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::polyhedral_hull() const
 {
   auto res = isl_union_set_polyhedral_hull(copy());
- printf("p_%p = p_%p.polyhedral_hull()\n", res, this->ptr);
+ printf("%s = isl_union_set_polyhedral_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::preimage(isl::multi_aff ma) const
 {
   auto res = isl_union_set_preimage_multi_aff(copy(), ma.copy());
- printf("p_%p = p_%p.preimage(p_%p)\n", res, this->ptr, ma.get());
+ printf("%s = isl_union_set_preimage_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, ma.get());
   return manage(res);
 }
 
 isl::union_set union_set::preimage(isl::pw_multi_aff pma) const
 {
   auto res = isl_union_set_preimage_pw_multi_aff(copy(), pma.copy());
- printf("p_%p = p_%p.preimage(p_%p)\n", res, this->ptr, pma.get());
+ printf("%s = isl_union_set_preimage_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, pma.get());
   return manage(res);
 }
 
 isl::union_set union_set::preimage(isl::union_pw_multi_aff upma) const
 {
   auto res = isl_union_set_preimage_union_pw_multi_aff(copy(), upma.copy());
- printf("p_%p = p_%p.preimage(p_%p)\n", res, this->ptr, upma.get());
+ printf("%s = isl_union_set_preimage_union_pw_multi_aff(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, upma.get());
   return manage(res);
 }
 
 isl::union_set union_set::product(isl::union_set uset2) const
 {
   auto res = isl_union_set_product(copy(), uset2.copy());
- printf("p_%p = p_%p.product(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_set union_set::project_out(isl::dim type, unsigned int first, unsigned int n) const
 {
   auto res = isl_union_set_project_out(copy(), static_cast<enum isl_dim_type>(type), first, n);
- printf("p_%p = p_%p.project_out(%d, %u, %u)\n", res, this->ptr, type, first, n);
+ printf("%s = isl_union_set_project_out(p_%lu, %d, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, type, first, n);
   return manage(res);
 }
 
 isl::union_set union_set::remove_divs() const
 {
   auto res = isl_union_set_remove_divs(copy());
- printf("p_%p = p_%p.remove_divs()\n", res, this->ptr);
+ printf("%s = isl_union_set_remove_divs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::remove_redundancies() const
 {
   auto res = isl_union_set_remove_redundancies(copy());
- printf("p_%p = p_%p.remove_redundancies()\n", res, this->ptr);
+ printf("%s = isl_union_set_remove_redundancies(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::reset_user() const
 {
   auto res = isl_union_set_reset_user(copy());
- printf("p_%p = p_%p.reset_user()\n", res, this->ptr);
+ printf("%s = isl_union_set_reset_user(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::basic_set union_set::sample() const
 {
   auto res = isl_union_set_sample(copy());
- printf("p_%p = p_%p.sample()\n", res, this->ptr);
+ printf("%s = isl_union_set_sample(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_basic_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::point union_set::sample_point() const
 {
   auto res = isl_union_set_sample_point(copy());
- printf("p_%p = p_%p.sample_point()\n", res, this->ptr);
+ printf("%s = isl_union_set_sample_point(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_point").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::simple_hull() const
 {
   auto res = isl_union_set_simple_hull(copy());
- printf("p_%p = p_%p.simple_hull()\n", res, this->ptr);
+ printf("%s = isl_union_set_simple_hull(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::solutions() const
 {
   auto res = isl_union_set_solutions(copy());
- printf("p_%p = p_%p.solutions()\n", res, this->ptr);
+ printf("%s = isl_union_set_solutions(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_set union_set::subtract(isl::union_set uset2) const
 {
   auto res = isl_union_set_subtract(copy(), uset2.copy());
- printf("p_%p = p_%p.subtract(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_subtract(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_set union_set::unite(isl::union_set uset2) const
 {
   auto res = isl_union_set_union(copy(), uset2.copy());
- printf("p_%p = p_%p.unite(p_%p)\n", res, this->ptr, uset2.get());
+ printf("%s = isl_union_set_union(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr, uset2.get());
   return manage(res);
 }
 
 isl::union_set union_set::universe() const
 {
   auto res = isl_union_set_universe(copy());
- printf("p_%p = p_%p.universe()\n", res, this->ptr);
+ printf("%s = isl_union_set_universe(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_set").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_set::unwrap() const
 {
   auto res = isl_union_set_unwrap(copy());
- printf("p_%p = p_%p.unwrap()\n", res, this->ptr);
+ printf("%s = isl_union_set_unwrap(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::union_map union_set::wrapped_domain_map() const
 {
   auto res = isl_union_set_wrapped_domain_map(copy());
- printf("p_%p = p_%p.wrapped_domain_map()\n", res, this->ptr);
+ printf("%s = isl_union_set_wrapped_domain_map(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_union_map").c_str(), this->ptr);
   return manage(res);
 }
 
@@ -18202,11 +18405,15 @@ union_set_list &union_set_list::operator=(isl::union_set_list obj) {
 }
 
 union_set_list::~union_set_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_union_set_list_free(p_%lu);\n", this->ptr);
     isl_union_set_list_free(ptr);
+  }
 }
 
 __isl_give isl_union_set_list *union_set_list::copy() const & {
+auto temp = isl_union_set_list_copy(ptr);
+printf("%s = isl_union_set_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_union_set_list").c_str(), this->ptr);
   return isl_union_set_list_copy(ptr);
 }
 
@@ -18261,16 +18468,16 @@ val::val(std::nullptr_t)
 val::val(__isl_take isl_val *ptr)
     : ptr(ptr) {}
 
-val::val(isl::ctx ctx, const std::string &str)
-{
-  auto res = isl_val_read_from_str(ctx.copy(), str.c_str());
- printf("p_%p = read_from_str(p_%p, %s)\n", res, ctx.get(), str.c_str());
-  ptr = res;
-}
 val::val(isl::ctx ctx, long i)
 {
   auto res = isl_val_int_from_si(ctx.copy(), i);
- printf("p_%p = int_from_si(p_%p, %ld)\n", res, ctx.get(), i);
+ printf("%s = isl_val_int_from_si(%s, %ld);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0", i);
+  ptr = res;
+}
+val::val(isl::ctx ctx, const std::string &str)
+{
+  auto res = isl_val_read_from_str(ctx.copy(), str.c_str());
+ printf("%s = isl_val_read_from_str(%s, %s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0", str.c_str());
   ptr = res;
 }
 
@@ -18280,11 +18487,15 @@ val &val::operator=(isl::val obj) {
 }
 
 val::~val() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_val_free(p_%lu);\n", this->ptr);
     isl_val_free(ptr);
+  }
 }
 
 __isl_give isl_val *val::copy() const & {
+auto temp = isl_val_copy(ptr);
+printf("%s = isl_val_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_val").c_str(), this->ptr);
   return isl_val_copy(ptr);
 }
 
@@ -18327,371 +18538,371 @@ void val::dump() const {
 isl::val val::two_exp() const
 {
   auto res = isl_val_2exp(copy());
- printf("p_%p = p_%p.two_exp()\n", res, this->ptr);
+ printf("%s = isl_val_2exp(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val val::abs() const
 {
   auto res = isl_val_abs(copy());
- printf("p_%p = p_%p.abs()\n", res, this->ptr);
+ printf("%s = isl_val_abs(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::abs_eq(const isl::val &v2) const
 {
   auto res = isl_val_abs_eq(get(), v2.get());
- printf("p_%p = p_%p.abs_eq(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_abs_eq(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::add(isl::val v2) const
 {
   auto res = isl_val_add(copy(), v2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::add_ui(unsigned long v2) const
 {
   auto res = isl_val_add_ui(copy(), v2);
- printf("p_%p = p_%p.add_ui()\n", res, this->ptr, v2);
+ printf("%s = isl_val_add_ui(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2);
   return manage(res);
 }
 
 isl::val val::ceil() const
 {
   auto res = isl_val_ceil(copy());
- printf("p_%p = p_%p.ceil()\n", res, this->ptr);
+ printf("%s = isl_val_ceil(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 int val::cmp_si(long i) const
 {
   auto res = isl_val_cmp_si(get(), i);
- printf("p_%p = p_%p.cmp_si(%ld)\n", res, this->ptr, i);
+ printf("%s = isl_val_cmp_si(p_%lu, %ld);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, i);
   return res;
 }
 
 isl::val val::div(isl::val v2) const
 {
   auto res = isl_val_div(copy(), v2.copy());
- printf("p_%p = p_%p.div(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_div(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::div_ui(unsigned long v2) const
 {
   auto res = isl_val_div_ui(copy(), v2);
- printf("p_%p = p_%p.div_ui()\n", res, this->ptr, v2);
+ printf("%s = isl_val_div_ui(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2);
   return manage(res);
 }
 
 isl::boolean val::eq(const isl::val &v2) const
 {
   auto res = isl_val_eq(get(), v2.get());
- printf("p_%p = p_%p.eq(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_eq(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::floor() const
 {
   auto res = isl_val_floor(copy());
- printf("p_%p = p_%p.floor()\n", res, this->ptr);
+ printf("%s = isl_val_floor(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val val::gcd(isl::val v2) const
 {
   auto res = isl_val_gcd(copy(), v2.copy());
- printf("p_%p = p_%p.gcd(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_gcd(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::boolean val::ge(const isl::val &v2) const
 {
   auto res = isl_val_ge(get(), v2.get());
- printf("p_%p = p_%p.ge(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_ge(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 uint32_t val::get_hash() const
 {
   auto res = isl_val_get_hash(get());
- printf("p_%p = p_%p.get_hash()\n", res, this->ptr);
+ printf("%s = isl_val_get_hash(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "uint32_t").c_str(), this->ptr);
   return res;
 }
 
 long val::get_num_si() const
 {
   auto res = isl_val_get_num_si(get());
- printf("p_%p = p_%p.get_num_si()\n", res, this->ptr);
+ printf("%s = isl_val_get_num_si(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "long").c_str(), this->ptr);
   return res;
 }
 
 isl::boolean val::gt(const isl::val &v2) const
 {
   auto res = isl_val_gt(get(), v2.get());
- printf("p_%p = p_%p.gt(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_gt(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::boolean val::gt_si(long i) const
 {
   auto res = isl_val_gt_si(get(), i);
- printf("p_%p = p_%p.gt_si(%ld)\n", res, this->ptr, i);
+ printf("%s = isl_val_gt_si(p_%lu, %ld);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, i);
   return manage(res);
 }
 
 isl::val val::infty(isl::ctx ctx)
 {
   auto res = isl_val_infty(ctx.copy());
- printf("p_%p = infty(p_%p)\n", res, ctx.get());
+ printf("%s = isl_val_infty(%s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0");
   return manage(res);
 }
 
 isl::val val::int_from_ui(isl::ctx ctx, unsigned long u)
 {
   auto res = isl_val_int_from_ui(ctx.copy(), u);
- printf("p_%p = int_from_ui(p_%p, )\n", res, ctx.get(), u);
+ printf("%s = isl_val_int_from_ui(%s, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0", u);
   return manage(res);
 }
 
 isl::val val::inv() const
 {
   auto res = isl_val_inv(copy());
- printf("p_%p = p_%p.inv()\n", res, this->ptr);
+ printf("%s = isl_val_inv(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_divisible_by(const isl::val &v2) const
 {
   auto res = isl_val_is_divisible_by(get(), v2.get());
- printf("p_%p = p_%p.is_divisible_by(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_is_divisible_by(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::boolean val::is_infty() const
 {
   auto res = isl_val_is_infty(get());
- printf("p_%p = p_%p.is_infty()\n", res, this->ptr);
+ printf("%s = isl_val_is_infty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_int() const
 {
   auto res = isl_val_is_int(get());
- printf("p_%p = p_%p.is_int()\n", res, this->ptr);
+ printf("%s = isl_val_is_int(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_nan() const
 {
   auto res = isl_val_is_nan(get());
- printf("p_%p = p_%p.is_nan()\n", res, this->ptr);
+ printf("%s = isl_val_is_nan(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_neg() const
 {
   auto res = isl_val_is_neg(get());
- printf("p_%p = p_%p.is_neg()\n", res, this->ptr);
+ printf("%s = isl_val_is_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_neginfty() const
 {
   auto res = isl_val_is_neginfty(get());
- printf("p_%p = p_%p.is_neginfty()\n", res, this->ptr);
+ printf("%s = isl_val_is_neginfty(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_negone() const
 {
   auto res = isl_val_is_negone(get());
- printf("p_%p = p_%p.is_negone()\n", res, this->ptr);
+ printf("%s = isl_val_is_negone(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_nonneg() const
 {
   auto res = isl_val_is_nonneg(get());
- printf("p_%p = p_%p.is_nonneg()\n", res, this->ptr);
+ printf("%s = isl_val_is_nonneg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_nonpos() const
 {
   auto res = isl_val_is_nonpos(get());
- printf("p_%p = p_%p.is_nonpos()\n", res, this->ptr);
+ printf("%s = isl_val_is_nonpos(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_one() const
 {
   auto res = isl_val_is_one(get());
- printf("p_%p = p_%p.is_one()\n", res, this->ptr);
+ printf("%s = isl_val_is_one(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_pos() const
 {
   auto res = isl_val_is_pos(get());
- printf("p_%p = p_%p.is_pos()\n", res, this->ptr);
+ printf("%s = isl_val_is_pos(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_rat() const
 {
   auto res = isl_val_is_rat(get());
- printf("p_%p = p_%p.is_rat()\n", res, this->ptr);
+ printf("%s = isl_val_is_rat(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::is_zero() const
 {
   auto res = isl_val_is_zero(get());
- printf("p_%p = p_%p.is_zero()\n", res, this->ptr);
+ printf("%s = isl_val_is_zero(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::boolean val::le(const isl::val &v2) const
 {
   auto res = isl_val_le(get(), v2.get());
- printf("p_%p = p_%p.le(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_le(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::boolean val::lt(const isl::val &v2) const
 {
   auto res = isl_val_lt(get(), v2.get());
- printf("p_%p = p_%p.lt(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_lt(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::max(isl::val v2) const
 {
   auto res = isl_val_max(copy(), v2.copy());
- printf("p_%p = p_%p.max(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_max(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::min(isl::val v2) const
 {
   auto res = isl_val_min(copy(), v2.copy());
- printf("p_%p = p_%p.min(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_min(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::mod(isl::val v2) const
 {
   auto res = isl_val_mod(copy(), v2.copy());
- printf("p_%p = p_%p.mod(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_mod(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::mul(isl::val v2) const
 {
   auto res = isl_val_mul(copy(), v2.copy());
- printf("p_%p = p_%p.mul(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_mul(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::mul_ui(unsigned long v2) const
 {
   auto res = isl_val_mul_ui(copy(), v2);
- printf("p_%p = p_%p.mul_ui()\n", res, this->ptr, v2);
+ printf("%s = isl_val_mul_ui(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2);
   return manage(res);
 }
 
 size_t val::n_abs_num_chunks(size_t size) const
 {
   auto res = isl_val_n_abs_num_chunks(get(), size);
- printf("p_%p = p_%p.n_abs_num_chunks()\n", res, this->ptr, size);
+ printf("%s = isl_val_n_abs_num_chunks(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "size_t").c_str(), this->ptr, size);
   return res;
 }
 
 isl::val val::nan(isl::ctx ctx)
 {
   auto res = isl_val_nan(ctx.copy());
- printf("p_%p = nan(p_%p)\n", res, ctx.get());
+ printf("%s = isl_val_nan(%s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0");
   return manage(res);
 }
 
 isl::boolean val::ne(const isl::val &v2) const
 {
   auto res = isl_val_ne(get(), v2.get());
- printf("p_%p = p_%p.ne(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_ne(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::neg() const
 {
   auto res = isl_val_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_val_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val val::neginfty(isl::ctx ctx)
 {
   auto res = isl_val_neginfty(ctx.copy());
- printf("p_%p = neginfty(p_%p)\n", res, ctx.get());
+ printf("%s = isl_val_neginfty(%s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0");
   return manage(res);
 }
 
 isl::val val::negone(isl::ctx ctx)
 {
   auto res = isl_val_negone(ctx.copy());
- printf("p_%p = negone(p_%p)\n", res, ctx.get());
+ printf("%s = isl_val_negone(%s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0");
   return manage(res);
 }
 
 isl::val val::one(isl::ctx ctx)
 {
   auto res = isl_val_one(ctx.copy());
- printf("p_%p = one(p_%p)\n", res, ctx.get());
+ printf("%s = isl_val_one(%s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0");
   return manage(res);
 }
 
 isl::val val::set_si(long i) const
 {
   auto res = isl_val_set_si(copy(), i);
- printf("p_%p = p_%p.set_si(%ld)\n", res, this->ptr, i);
+ printf("%s = isl_val_set_si(p_%lu, %ld);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, i);
   return manage(res);
 }
 
 int val::sgn() const
 {
   auto res = isl_val_sgn(get());
- printf("p_%p = p_%p.sgn()\n", res, this->ptr);
+ printf("%s = isl_val_sgn(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::val val::sub(isl::val v2) const
 {
   auto res = isl_val_sub(copy(), v2.copy());
- printf("p_%p = p_%p.sub(p_%p)\n", res, this->ptr, v2.get());
+ printf("%s = isl_val_sub(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2.get());
   return manage(res);
 }
 
 isl::val val::sub_ui(unsigned long v2) const
 {
   auto res = isl_val_sub_ui(copy(), v2);
- printf("p_%p = p_%p.sub_ui()\n", res, this->ptr, v2);
+ printf("%s = isl_val_sub_ui(p_%lu, );\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, v2);
   return manage(res);
 }
 
 isl::val val::trunc() const
 {
   auto res = isl_val_trunc(copy());
- printf("p_%p = p_%p.trunc()\n", res, this->ptr);
+ printf("%s = isl_val_trunc(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::val val::zero(isl::ctx ctx)
 {
   auto res = isl_val_zero(ctx.copy());
- printf("p_%p = zero(p_%p)\n", res, ctx.get());
+ printf("%s = isl_val_zero(%s);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), "ctx_0");
   return manage(res);
 }
 
@@ -18725,11 +18936,15 @@ val_list &val_list::operator=(isl::val_list obj) {
 }
 
 val_list::~val_list() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_val_list_free(p_%lu);\n", this->ptr);
     isl_val_list_free(ptr);
+  }
 }
 
 __isl_give isl_val_list *val_list::copy() const & {
+auto temp = isl_val_list_copy(ptr);
+printf("%s = isl_val_list_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_val_list").c_str(), this->ptr);
   return isl_val_list_copy(ptr);
 }
 
@@ -18791,11 +19006,15 @@ vec &vec::operator=(isl::vec obj) {
 }
 
 vec::~vec() {
-  if (ptr)
+  if (ptr) {
+    printf("isl_vec_free(p_%lu);\n", this->ptr);
     isl_vec_free(ptr);
+  }
 }
 
 __isl_give isl_vec *vec::copy() const & {
+auto temp = isl_vec_copy(ptr);
+printf("%s = isl_vec_copy(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(temp), "isl_vec").c_str(), this->ptr);
   return isl_vec_copy(ptr);
 }
 
@@ -18829,168 +19048,168 @@ void vec::dump() const {
 isl::vec vec::add(isl::vec vec2) const
 {
   auto res = isl_vec_add(copy(), vec2.copy());
- printf("p_%p = p_%p.add(p_%p)\n", res, this->ptr, vec2.get());
+ printf("%s = isl_vec_add(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, vec2.get());
   return manage(res);
 }
 
 isl::vec vec::add_els(unsigned int n) const
 {
   auto res = isl_vec_add_els(copy(), n);
- printf("p_%p = p_%p.add_els(%u)\n", res, this->ptr, n);
+ printf("%s = isl_vec_add_els(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, n);
   return manage(res);
 }
 
 isl::vec vec::alloc(isl::ctx ctx, unsigned int size)
 {
   auto res = isl_vec_alloc(ctx.copy(), size);
- printf("p_%p = alloc(p_%p, %u)\n", res, ctx.get(), size);
+ printf("%s = isl_vec_alloc(%s, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), "ctx_0", size);
   return manage(res);
 }
 
 isl::vec vec::ceil() const
 {
   auto res = isl_vec_ceil(copy());
- printf("p_%p = p_%p.ceil()\n", res, this->ptr);
+ printf("%s = isl_vec_ceil(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::vec vec::clr() const
 {
   auto res = isl_vec_clr(copy());
- printf("p_%p = p_%p.clr()\n", res, this->ptr);
+ printf("%s = isl_vec_clr(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr);
   return manage(res);
 }
 
 int vec::cmp_element(const isl::vec &vec2, int pos) const
 {
   auto res = isl_vec_cmp_element(get(), vec2.get(), pos);
- printf("p_%p = p_%p.cmp_element(p_%p, %d)\n", res, this->ptr, vec2.get(), pos);
+ printf("%s = isl_vec_cmp_element(p_%lu, p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr, vec2.get(), pos);
   return res;
 }
 
 isl::vec vec::concat(isl::vec vec2) const
 {
   auto res = isl_vec_concat(copy(), vec2.copy());
- printf("p_%p = p_%p.concat(p_%p)\n", res, this->ptr, vec2.get());
+ printf("%s = isl_vec_concat(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, vec2.get());
   return manage(res);
 }
 
 isl::vec vec::drop_els(unsigned int pos, unsigned int n) const
 {
   auto res = isl_vec_drop_els(copy(), pos, n);
- printf("p_%p = p_%p.drop_els(%u, %u)\n", res, this->ptr, pos, n);
+ printf("%s = isl_vec_drop_els(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, pos, n);
   return manage(res);
 }
 
 isl::vec vec::extend(unsigned int size) const
 {
   auto res = isl_vec_extend(copy(), size);
- printf("p_%p = p_%p.extend(%u)\n", res, this->ptr, size);
+ printf("%s = isl_vec_extend(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, size);
   return manage(res);
 }
 
 isl::val vec::get_element_val(int pos) const
 {
   auto res = isl_vec_get_element_val(get(), pos);
- printf("p_%p = p_%p.get_element_val(%d)\n", res, this->ptr, pos);
+ printf("%s = isl_vec_get_element_val(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_val").c_str(), this->ptr, pos);
   return manage(res);
 }
 
 isl::vec vec::insert_els(unsigned int pos, unsigned int n) const
 {
   auto res = isl_vec_insert_els(copy(), pos, n);
- printf("p_%p = p_%p.insert_els(%u, %u)\n", res, this->ptr, pos, n);
+ printf("%s = isl_vec_insert_els(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, pos, n);
   return manage(res);
 }
 
 isl::vec vec::insert_zero_els(unsigned int pos, unsigned int n) const
 {
   auto res = isl_vec_insert_zero_els(copy(), pos, n);
- printf("p_%p = p_%p.insert_zero_els(%u, %u)\n", res, this->ptr, pos, n);
+ printf("%s = isl_vec_insert_zero_els(p_%lu, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, pos, n);
   return manage(res);
 }
 
 isl::boolean vec::is_equal(const isl::vec &vec2) const
 {
   auto res = isl_vec_is_equal(get(), vec2.get());
- printf("p_%p = p_%p.is_equal(p_%p)\n", res, this->ptr, vec2.get());
+ printf("%s = isl_vec_is_equal(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "bool").c_str(), this->ptr, vec2.get());
   return manage(res);
 }
 
 isl::vec vec::mat_product(isl::mat mat) const
 {
   auto res = isl_vec_mat_product(copy(), mat.copy());
- printf("p_%p = p_%p.mat_product(p_%p)\n", res, this->ptr, mat.get());
+ printf("%s = isl_vec_mat_product(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, mat.get());
   return manage(res);
 }
 
 isl::vec vec::move_els(unsigned int dst_col, unsigned int src_col, unsigned int n) const
 {
   auto res = isl_vec_move_els(copy(), dst_col, src_col, n);
- printf("p_%p = p_%p.move_els(%u, %u, %u)\n", res, this->ptr, dst_col, src_col, n);
+ printf("%s = isl_vec_move_els(p_%lu, %u, %u, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, dst_col, src_col, n);
   return manage(res);
 }
 
 isl::vec vec::neg() const
 {
   auto res = isl_vec_neg(copy());
- printf("p_%p = p_%p.neg()\n", res, this->ptr);
+ printf("%s = isl_vec_neg(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::vec vec::set_element_si(int pos, int v) const
 {
   auto res = isl_vec_set_element_si(copy(), pos, v);
- printf("p_%p = p_%p.set_element_si(%d, %d)\n", res, this->ptr, pos, v);
+ printf("%s = isl_vec_set_element_si(p_%lu, %d, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, pos, v);
   return manage(res);
 }
 
 isl::vec vec::set_element_val(int pos, isl::val v) const
 {
   auto res = isl_vec_set_element_val(copy(), pos, v.copy());
- printf("p_%p = p_%p.set_element_val(%d, p_%p)\n", res, this->ptr, pos, v.get());
+ printf("%s = isl_vec_set_element_val(p_%lu, %d, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, pos, v.get());
   return manage(res);
 }
 
 isl::vec vec::set_si(int v) const
 {
   auto res = isl_vec_set_si(copy(), v);
- printf("p_%p = p_%p.set_si(%d)\n", res, this->ptr, v);
+ printf("%s = isl_vec_set_si(p_%lu, %d);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, v);
   return manage(res);
 }
 
 isl::vec vec::set_val(isl::val v) const
 {
   auto res = isl_vec_set_val(copy(), v.copy());
- printf("p_%p = p_%p.set_val(p_%p)\n", res, this->ptr, v.get());
+ printf("%s = isl_vec_set_val(p_%lu, p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, v.get());
   return manage(res);
 }
 
 int vec::size() const
 {
   auto res = isl_vec_size(get());
- printf("p_%p = p_%p.size()\n", res, this->ptr);
+ printf("%s = isl_vec_size(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "int").c_str(), this->ptr);
   return res;
 }
 
 isl::vec vec::sort() const
 {
   auto res = isl_vec_sort(copy());
- printf("p_%p = p_%p.sort()\n", res, this->ptr);
+ printf("%s = isl_vec_sort(p_%lu);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr);
   return manage(res);
 }
 
 isl::vec vec::zero(isl::ctx ctx, unsigned int size)
 {
   auto res = isl_vec_zero(ctx.copy(), size);
- printf("p_%p = zero(p_%p, %u)\n", res, ctx.get(), size);
+ printf("%s = isl_vec_zero(%s, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), "ctx_0", size);
   return manage(res);
 }
 
 isl::vec vec::zero_extend(unsigned int size) const
 {
   auto res = isl_vec_zero_extend(copy(), size);
- printf("p_%p = p_%p.zero_extend(%u)\n", res, this->ptr, size);
+ printf("%s = isl_vec_zero_extend(p_%lu, %u);\n", isl::noexceptions::getVar(reinterpret_cast<const void*>(res), "isl_vec").c_str(), this->ptr, size);
   return manage(res);
 }
 } // namespace noexceptions
