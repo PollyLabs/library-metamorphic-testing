@@ -16,10 +16,10 @@ inputs:
       range: '(1,3]'
     - name: 'constraints'
       type: 'unsigned int'
-      range: '[15,20]'
+      range: '[10,15]'
     - name: 'depth_max'
       type: 'unsigned int'
-      range: '[20,20]'
+      range: '[10,15]'
 
 types:
     - name: 'isl::val'
@@ -174,11 +174,11 @@ funcs:
       param_types: ['isl::set']
       conditions: []
       special: true
-    - name: 'get_point_with_coordinates'
-      member_type: ''
-      return_type: 'isl::point'
-      param_types: ['isl::space']
-      conditions: []
+    #- name: 'get_point_with_coordinates'
+      #member_type: ''
+      #return_type: 'isl::point'
+      #param_types: ['isl::space', '<rand>']
+      #conditions: []
 # Funcs for metamorphic relations
     - name: 'complement'
       member_type: 'isl::set'
@@ -240,7 +240,7 @@ constructors:
       param_types: ['isl::ctx', '<input=params>', '<input=dims>']
     - name: 'get_point_with_coordinates'
       return_type: 'isl::point'
-      param_types: ['isl::space']
+      param_types: ['isl::space', '<rand>']
     - name: 'isl::local_space'
       param_types: ['isl::space']
     - name: 'isl::val'

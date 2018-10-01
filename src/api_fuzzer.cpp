@@ -668,6 +668,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         {
             return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
         }
+        if (type_str.find("rand") != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+        }
         assert (type_str.find(delim_mid) != std::string::npos);
         if (type_str.find(fmt::format("input{}", delim_mid)) != std::string::npos)
         {
@@ -985,11 +989,13 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
                 dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
                 this->seed);
         }
-        //else if (expl_type->getDefinition().find("rand") != std::string::npos)
-        //{
-            //return new PrimitiveObject<unsigned int>(
-                //dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
-                //this->getRandInt
+        else if (expl_type->getDefinition().find("rand") != std::string::npos)
+        {
+            std::cout << std::numeric_limits<int>::max() << std::endl;
+            return new PrimitiveObject<unsigned int>(
+                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
+                this->getRandInt(0, std::numeric_limits<int>::max()));
+        }
         else
         {
             return expl_type->retrieveObj();

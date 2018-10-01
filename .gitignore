@@ -1,6 +1,7 @@
 build/
-env
+env/
 out/
 third_party/
 config_files/config.yaml
+compile_commands.json
 *.swp
