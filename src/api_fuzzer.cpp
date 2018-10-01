@@ -132,8 +132,7 @@ int
 ApiFuzzer::getRandInt(int min, int max)
 {
     assert(max >= min);
-    return std::uniform_int_distribution<int>(min, max)(*this->rng);
-    return (*this->rng)() % max + min;
+    return (*this->rng)() % (max + 1) + min;
 }
 
 unsigned int
