@@ -1,26 +1,27 @@
 #pragma once
 
-#include <cstdlib>
+#include <vector>
 #include "isl-noexceptions.h"
 
-static size_t point_count = 0;
-
 isl::point
-get_point_with_coordinates(isl::space point_space, size_t seed)
+get_point_with_coordinates(isl::space point_space, isl::val val0,
+    isl::val val1, isl::val val2, isl::val val3, isl::val val4, isl::val val5,
+    isl::val val6, isl::val val7, isl::val val8, isl::val val9)
 {
-    std::srand(seed);
     isl::point point_out(point_space);
     isl::ctx ctx = point_space.get_ctx();
+    size_t index = 0;
+    std::vector<isl::val> vals {val0, val1, val2, val3, val4, val5, val6, val7,
+        val8, val9};
     for (size_t i = 0; i < point_space.dim(isl::dim::set); ++i)
     {
-        isl::val coord_val(ctx, std::rand());
-        point_out = point_out.set_coordinate_val(isl::dim::set, i, coord_val);
+        point_out = point_out.set_coordinate_val(isl::dim::set, i, vals.at(index++));
+        assert(index < 10);
     }
     for (size_t i = 0; i < point_space.dim(isl::dim::param); ++i)
     {
-        isl::val coord_val(ctx, std::rand());
-        point_out = point_out.set_coordinate_val(isl::dim::param, i, coord_val);
+        point_out = point_out.set_coordinate_val(isl::dim::param, i, vals.at(index++));
+        assert(index < 10);
     }
-    ++point_count;
     return point_out;
 }

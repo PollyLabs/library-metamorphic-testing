@@ -240,7 +240,8 @@ constructors:
       param_types: ['isl::ctx', '<input=params>', '<input=dims>']
     - name: 'get_point_with_coordinates'
       return_type: 'isl::point'
-      param_types: ['isl::space', '<rand>']
+      param_types: ['isl::space', 'isl::val', 'isl::val', 'isl::val', 'isl::val',
+        'isl::val', 'isl::val', 'isl::val', 'isl::val', 'isl::val', 'isl::val']
     - name: 'isl::local_space'
       param_types: ['isl::space']
     - name: 'isl::val'
