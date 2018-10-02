@@ -49,27 +49,27 @@ else:
         exit(1)
 with open(config_file_path, 'r') as config_file_fd:
     config_file = yaml.load(config_file_fd)
-os.chdir(config_file["working_dir"])
+working_dir = config_file["working_dir"]
+assert working_dir[-1] == os.sep
+os.chdir(working_dir)
 
-runner_config_file = config_file["meta_runner"]
-isl_tester_path = runner_config_file["test_emitter_path"]
-lib_path = runner_config_file["lib_path"]
-test_compile_dir = runner_config_file["test_compile_dir"]
-test_compile_bin = runner_config_file["test_compile_bin"]
-test_source_path = runner_config_file["test_source_path"]
-test_run_path = runner_config_file["test_run_path"]
-log_file = runner_config_file["log_file_path"]
-stat_log_file = runner_config_file["stat_log_file_path"]
-output_tests_folder = runner_config_file["output_tests_folder"]
-
-
-coverage_output_dir = "./out/coverage/"
-input_sets_file = "./input_tests/input_sets_autotuner"
-input_sets_temp = os.path.abspath("./input_tests/input_sets_temp")
-coverage_source_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/isl_coalesce.c"
-coverage_notes_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcno"
-coverage_data_file = "/home/sentenced/Documents/Internships/2018_ETH/isl_contrib/isl/.libs/isl_coalesce.gcda"
-coverage_target = 40
+runner_config_data = config_file["meta_runner"]
+# Path setup
+test_emitter_path = runner_config_data["test_emitter_path"]
+lib_path = runner_config_data["lib_path"]
+test_compile_dir = runner_config_data["test_compile_dir"]
+# Test runtime setup
+test_compile_bin = runner_config_data["test_compile_bin"]
+test_source_path = runner_config_data["test_source_path"]
+test_run_path = runner_config_data["test_run_path"]
+# Output setup
+output_folder = runner_config_data["output_folder"]
+if not output_folder[-1] == os.sep:
+    output_folder += os.sep
+log_file = output_folder + runner_config_data["log_file_path"]
+stat_log_file = output_folder + runner_config_data["stat_log_file_path"]
+output_tests_folder = output_folder + runner_config_data["output_tests_folder"]
+coverage_output_file = output_folder + runner_config_data["coverage_output_file"]
 
 ###############################################################################
 # Helper functions
@@ -80,7 +80,7 @@ def generate_test(seed, timeout, input_file_path = None):
     timeout = str(timeout)
     global test_count
     test_count += 1
-    generator_cmd = [isl_tester_path, "-s", seed, "-o", test_source_path]
+    generator_cmd = [test_emitter_path, "-s", seed, "-o", test_source_path]
     if input_file_path:
         generator_cmd.extend(["--input-sets-file", input_file_path])
     # print("CMD is " + " ".join(generator_cmd))
@@ -101,7 +101,8 @@ def compile_test(test_compile_bin, test_compile_dir):
         # Path below is hack
         compile_cmd = [test_compile_bin, test_source_path.rsplit("/", 1)[1]]
         # print("CMD is " + " ".join(compile_cmd))
-        compile_proc = subprocess.run(compile_cmd, check=True, cwd=test_compile_dir)
+        compile_proc = subprocess.run(compile_cmd, check=True, cwd=test_compile_dir,
+            stdout=subprocess.DEVNULL)
         return True
     except subprocess.CalledProcessError:
         log_writer.write("!!! Compilation Failure\n")
@@ -137,34 +138,36 @@ def execute_test(timeout, test_run_path):
         log_writer.write("STDERR:\n" + err + "\n")
     return test_proc.returncode == 0
 
+def check_single_stat(regex, input_str):
+    result_list = []
+    for match in regex.finditer(input_str):
+        result_list.append(int(match.group(0).split("= ")[1]))
+    return result_list
+
 def check_stats(err):
-    # Empty set check
+    # Global declarations
     global set_empty_regex
+    global dim_set_regex
+    global dim_set_list
+    global dim_param_regex
+    global dim_param_list
+    global n_basic_set_regex
+    global n_basic_set_list
+    global n_constraint_regex
+    global n_constraint_list
     # pdb.set_trace()
     for set_empty_match in set_empty_regex.finditer(err):
         global set_empty_count
         if "true" in set_empty_match.group(0):
             set_empty_count += 1
-    # Set dim recording
-    global dim_set_regex
-    for dim_set_match in dim_set_regex.finditer(err):
-        global dim_set_list
-        dim_set_list.append(int(dim_set_match.group(0).split("= ")[1]))
-    # Set param recording
-    global dim_param_regex
-    for dim_param_match in dim_param_regex.finditer(err):
-        global dim_param_list
-        dim_param_list.append(int(dim_param_match.group(0).split("= ")[1]))
-    # N basic_set recording
-    global n_basic_set_regex
-    for n_basic_set_match in n_basic_set_regex.finditer(err):
-        global n_basic_set_list
-        n_basic_set_list.append(int(n_basic_set_match.group(0).split("= ")[1]))
-    # N constraint recording
-    global n_constraint_regex
-    for n_constraint_match in n_constraint_regex.finditer(err):
-        global n_constraint_list
-        n_constraint_list.append(int(n_constraint_match.group(0).split("= ")[1]))
+    dim_set_list.extend(check_single_stat(dim_set_regex, err))
+    dim_param_list.extend(check_single_stat(dim_param_regex, err))
+    n_basic_set_list.extend(check_single_stat(n_basic_set_regex, err))
+    n_constraint_list.extend(check_single_stat(n_constraint_regex, err))
+
+def write_single_stat(writer, stat_name, stat_data):
+    writer.write("\t* {} mean: {}\n".format(stat_name, statistics.mean(stat_data)))
+    writer.write("\t* {} median: {}\n".format(stat_name, statistics.median(stat_data)))
 
 def write_stats():
     with open(stat_log_file, 'a') as stat_log_writer:
@@ -178,41 +181,34 @@ def write_stats():
             timeout_count, test_count, timeout_count * 100 / test_count))
         # Dim set stats
         if dim_set_list:
-            stat_log_writer.write("\t* Dim set average: {}\n".format(
-                statistics.mean(dim_set_list)))
-            stat_log_writer.write("\t* Dim set median: {}\n".format(
-                statistics.median(dim_set_list)))
+            write_single_stat(stat_log_writer, "Dim set", dim_set_list)
         # Dim param stats
         if dim_param_list:
-            stat_log_writer.write("\t* Dim param average: {}\n".format(
-                statistics.mean(dim_param_list)))
-            stat_log_writer.write("\t* Dim param median: {}\n".format(
-                statistics.median(dim_param_list)))
+            write_single_stat(stat_log_writer, "Dim param", dim_param_list)
         # N basic set stats
         if n_basic_set_list:
-            stat_log_writer.write("\t* N basic set average: {}\n".format(
-                statistics.mean(n_basic_set_list)))
-            stat_log_writer.write("\t* N basic set median: {}\n".format(
-                statistics.median(n_basic_set_list)))
+            write_single_stat(stat_log_writer, "N basic set", n_basic_set_list)
         # N constraint stats
         if n_constraint_list:
-            stat_log_writer.write("\t* N constraint average: {}\n".format(
-                statistics.mean(n_constraint_list)))
-            stat_log_writer.write("\t* N constraint median: {}\n".format(
-                statistics.median(n_constraint_list)))
+            write_single_stat(stat_log_writer, "N constraint", n_constraint_list)
 
-def gather_coverage_files():
-    shutil.copy(coverage_source_file, coverage_output_dir)
-    shutil.copy(coverage_notes_file, coverage_output_dir)
+def write_version_id(writer, path, id_name):
+    try:
+        if not path[-1] == os.sep:
+            path += os.sep
+        path += ".git"
+        id_cmd = ["git", "--git-dir", path, "log", "--format=\"%H\"", "-n", "1"]
+        id_proc = subprocess.run(id_cmd, check=True, encoding="utf-8",
+            capture_output=True)
+        writer.write("{} VERSION: {}".format(id_name, id_proc.stdout))
+    except subprocess.CalledProcessError:
+        pass
 
 def get_coverage():
-    shutil.copy(coverage_data_file, coverage_output_dir)
-    cmd = ["gcov", coverage_output_dir + "isl_coalesce"]
-    gcov_output = subprocess.check_output(cmd, encoding="UTF-8", stderr = subprocess.DEVNULL)
-    gcov_output = [x for x in gcov_output.split("\n\n") if "coalesce" in x]
-    gcov_output = [x for x in gcov_output[0].split("\n") if "Lines executed" in x]
-    gcov_output = gcov_output[0].split(":")[1].split("%")[0]
-    return float(gcov_output)
+    coverage_cmd = ["gcov", "*.gcno"]
+    coverage_proc = subprocess.run(coverage_cmd, check=False, cwd=lib_path,
+        capture_output=True, encoding="utf-8")
+    return coverage_proc.stdout,coverage_proc.stderr
 
 def int_handler(sig, frame):
     print("Received SIGINT, dumping logged data and stopping...")
@@ -240,27 +236,27 @@ def bounded_testing(seed_min, seed_max):
             shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(seed) + ".cpp")
         log_writer.flush()
 
-def coverage_testing(coverage_target):
-    curr_coverage = 0
-    seed = 0
-    if (os.path.exists(coverage_output_dir)):
-        shutil.rmtree(coverage_output_dir)
-    os.mkdir(coverage_output_dir)
-    if (os.path.exists(coverage_data_file)):
-        os.remove(coverage_data_file)
-    gather_coverage_files()
-    while (curr_coverage < coverage_target and seed < 50):
-        print("=== Running seed " + str(seed), end='\r')
-        generate_test(seed, args.timeout, isl_tester_path)
-        compile_test(test_compile_bin, test_compile_dir)
-        execute_test(args.timeout, test_run_path)
-        new_coverage = get_coverage()
-        if new_coverage > curr_coverage:
-            shutil.move(test_run_path + ".cpp", coverage_output_dir + "test_" + str(seed) + ".cpp")
-            curr_coverage = new_coverage
-            print("New coverage at " + str(curr_coverage))
-        seed += 1
-    gather_coverage_files()
+# def coverage_testing(coverage_target):
+    # curr_coverage = 0
+    # seed = 0
+    # if (os.path.exists(coverage_output_dir)):
+        # shutil.rmtree(coverage_output_dir)
+    # os.mkdir(coverage_output_dir)
+    # if (os.path.exists(coverage_data_file)):
+        # os.remove(coverage_data_file)
+    # gather_coverage_files()
+    # while (curr_coverage < coverage_target and seed < 50):
+        # print("=== Running seed " + str(seed), end='\r')
+        # generate_test(seed, args.timeout, test_emitter_path)
+        # compile_test(test_compile_bin, test_compile_dir)
+        # execute_test(args.timeout, test_run_path)
+        # new_coverage = get_coverage()
+        # if new_coverage > curr_coverage:
+            # shutil.move(test_run_path + ".cpp", coverage_output_dir + "test_" + str(seed) + ".cpp")
+            # curr_coverage = new_coverage
+            # print("New coverage at " + str(curr_coverage))
+        # seed += 1
+    # gather_coverage_files()
 
 # TODO: log generating command, log time to execute, timeout y/n, any other thing?
 def continuous_testing():
@@ -297,7 +293,7 @@ def targeted_testing():
         print("%s Running set %d of %d\n"
             % (date_time, input_cnt + 1, len(input_sets)),
                 end='\r')
-        if not generate_test(seed, args.timeout, isl_tester_path, input_sets_temp):
+        if not generate_test(seed, args.timeout, test_emitter_path, input_sets_temp):
             continue
         if not compile_test(test_compile_bin, test_compile_dir):
             shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(input_cnt) + ".cpp")
@@ -320,6 +316,10 @@ if args.append_id:
     output_tests_folder = append_id_to_string(output_tests_folder, internal_seed)
     test_source_path = append_id_to_string(test_source_path, internal_seed)
     test_run_path = append_id_to_string(test_run_path, internal_seed)
+    coverage_output_file = allend_id_to_string(coverage_output_file, internal_seed)
+
+if not os.path.exists(output_folder):
+    os.mkdir(output_folder)
 
 if os.path.exists(output_tests_folder):
     print("Found existing output folder {}, deleting...".format(output_tests_folder))
@@ -333,9 +333,6 @@ os.environ["LD_LIBRARY_PATH"] = lib_path
 
 log_writer = open(log_file, 'w')
 
-log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
-log_writer.write("MODE: " + args.mode + "\n")
-# log_writer.write("FUZZER_MODE: " + args.tester_mode + "\n")
 log_writer.write("START TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 log_writer.write("\n")
 
@@ -355,16 +352,29 @@ n_constraint_regex = re.compile("^N CONSTRAINTS = [0-9]+$", re.M)
 with open(stat_log_file, 'w') as stat_log_writer:
     stat_log_writer.write("MODE: " + args.mode + "\n")
     stat_log_writer.write("INTERNAL SEED: " + str(internal_seed) + "\n")
+    stat_log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
+    stat_log_writer.write("FUZZER_MODE: " + args.mode + "\n")
+    # pdb.set_trace()
+    write_version_id(stat_log_writer, working_dir, "METALIB")
+    write_version_id(stat_log_writer, lib_path, "LIB")
 
 if args.mode == "bounded":
     bounded_testing(args.seed_min, args.seed_max)
 elif args.mode == "coverage":
+    assert False
     coverage_testing(coverage_target)
 elif args.mode == "continuous":
     continuous_testing()
 elif args.mode == "targeted":
+    assert False
     targeted_testing()
 
+cov_stdout,cov_stderr = get_coverage()
+with open(coverage_output_file, 'w') as coverage_writer:
+    coverage_writer.write("=== STDOUT\n")
+    coverage_writer.write(cov_stdout)
+    coverage_writer.write("=== STDERR\n")
+    coverage_writer.write(cov_stderr)
 log_writer.close()
 write_stats()
 

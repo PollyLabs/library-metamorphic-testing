@@ -17,7 +17,7 @@ RUN \
     git clone git://repo.or.cz/isl.git && \
     cd isl && ./autogen.sh && \
     CFLAGS="-fprofile-arcs -ftest-coverage" ./configure && \
-    make -j && git log --format="%H" -n 1 
+    make -j
 
 # Pull repo
 RUN \
@@ -47,11 +47,6 @@ RUN \
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j
 RUN cp /home/isl/.libs/libisl* ./libs
-
-# Emit repo version info
-RUN \
-    git log --format="%H" -n 1 >> /output/metalib_version &&
-    git --git-dir /home/isl/.git log --format="%H" -n 1 >> /output/isl_version
 
 # Set command to run experiments
 CMD ["python3.7", "./scripts/meta_runner.py", "bounded", "--append-id",\
