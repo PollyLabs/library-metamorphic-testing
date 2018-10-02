@@ -34,11 +34,8 @@ RUN \
     cp ./config_files/config.yaml.template ./config_files/config_isl.yaml && \
     sed "/^working_dir:/c\working_dir: \"`pwd`/\"" \
         < ./config_files/config.yaml.template \
-        > ./config_files/config_isl.yaml && \
-    sed -i '/output_tests_folder/s|/out/|/output/|' \
-        ./config_files/config_isl.yaml && \
-    sed -i '/log_file_path/s|/out/|/output/|' \
-        ./config_files/config_isl.yaml
+        > ./config_files/config_isl.yaml &&
+    sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl.yaml
 
 # Update config file path in test_emitter
 RUN \
