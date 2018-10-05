@@ -1,12 +1,13 @@
 ---
 working_dir: "/home/sentenced/Documents/Internships/2018_ETH/work/sets/"
-api_fuzzer_file: "./config_files/api_fuzzer_isl_point.yaml"
+api_fuzzer_file: "./config_files/api_fuzzer_isl.yaml"
 meta_test_file: "./config_files/set_meta_tests_isl.yaml"
 test_emitter_output_file: "./out/test.cpp"
 meta_runner:
 # Path setup
     test_emitter_path: "./build/test_emitter"
     lib_path: "./libs"
+    lib_build_dir: "/home/sentenced/Documents/Internships/2018_ETH/isl"
     test_compile_dir: "./out"
 # Test runtime setup
     test_compile_bin: "./compile_isl.sh"

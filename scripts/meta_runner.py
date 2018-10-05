@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import datetime
+import glob
 import subprocess
 import shutil
 import os
@@ -27,6 +28,8 @@ parser.add_argument("--seed-min", type=int, default=0,
     help = "[bounded] Set the starting seed (default 0)")
 parser.add_argument("--config-file", type=str,
     help = "Overwrite default config file to use.")
+parser.add_argument("--lib-path", type=str,
+    help = "Overwrite library path specified in config file")
 parser.add_argument("--timeout", type=int, default=60,
     help = "The amount of time (in seconds) to run each test before giving up.")
 parser.add_argument("--append-id", action='store_true',
@@ -57,6 +60,7 @@ runner_config_data = config_file["meta_runner"]
 # Path setup
 test_emitter_path = runner_config_data["test_emitter_path"]
 lib_path = runner_config_data["lib_path"]
+lib_build_dir = runner_config_data["lib_build_dir"]
 test_compile_dir = runner_config_data["test_compile_dir"]
 # Test runtime setup
 test_compile_bin = runner_config_data["test_compile_bin"]
@@ -206,7 +210,7 @@ def write_version_id(writer, path, id_name):
 
 def get_coverage():
     coverage_cmd = ["gcov", "*.gcno"]
-    coverage_proc = subprocess.run(coverage_cmd, check=False, cwd=lib_path,
+    coverage_proc = subprocess.run(coverage_cmd, check=False, cwd=lib_build_dir,
         capture_output=True, encoding="utf-8")
     return coverage_proc.stdout,coverage_proc.stderr
 
@@ -316,7 +320,7 @@ if args.append_id:
     output_tests_folder = append_id_to_string(output_tests_folder, internal_seed)
     test_source_path = append_id_to_string(test_source_path, internal_seed)
     test_run_path = append_id_to_string(test_run_path, internal_seed)
-    coverage_output_file = allend_id_to_string(coverage_output_file, internal_seed)
+    coverage_output_file = append_id_to_string(coverage_output_file, internal_seed)
 
 if not os.path.exists(output_folder):
     os.mkdir(output_folder)
@@ -326,8 +330,17 @@ if os.path.exists(output_tests_folder):
     shutil.rmtree(output_tests_folder)
 os.mkdir(output_tests_folder)
 
+if lib_build_dir:
+    prev_cov_files = glob.glob(lib_build_dir + "/**/*.gcda")
+    for prev_cov_file in prev_cov_files:
+        print("Removing " + prev_cov_file)
+        # os.remove(prev_cov_file)
+    # exit(1)
+
+if args.lib_path:
+    lib_path = args.lib_path
 if not os.path.exists(lib_path):
-    print("Could not find given library folder: {}".format(lib_path))
+    print("Could not find given lib path " + lib_path)
     exit(1)
 os.environ["LD_LIBRARY_PATH"] = lib_path
 
@@ -356,7 +369,7 @@ with open(stat_log_file, 'w') as stat_log_writer:
     stat_log_writer.write("FUZZER_MODE: " + args.mode + "\n")
     # pdb.set_trace()
     write_version_id(stat_log_writer, working_dir, "METALIB")
-    write_version_id(stat_log_writer, lib_path, "LIB")
+    write_version_id(stat_log_writer, lib_build_dir, "LIB")
 
 if args.mode == "bounded":
     bounded_testing(args.seed_min, args.seed_max)
@@ -369,7 +382,9 @@ elif args.mode == "targeted":
     assert False
     targeted_testing()
 
-cov_stdout,cov_stderr = get_coverage()
+if lib_build_dir:
+    assert os.path.exists(lib_build_dir)
+    cov_stdout,cov_stderr = get_coverage()
 with open(coverage_output_file, 'w') as coverage_writer:
     coverage_writer.write("=== STDOUT\n")
     coverage_writer.write(cov_stdout)

@@ -484,6 +484,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     }
     assert(!this->output_vars.empty());
 
+    /* Metamorphic tests generation */
     // TODO Ideally, meta_vars should be vector of const, but need to rethink
     // generator initialization process
     std::vector<const MetaVarObject*> meta_vars_const(this->meta_vars.begin(),
@@ -588,20 +589,29 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
 {
     std::string func_name = func_yaml["name"].as<std::string>();
     logDebug("Adding func with name " + func_name);
-    std::string member_str = func_yaml["member_type"].as<std::string>();
-    const ApiType* member_type =
-        member_str == "" ? nullptr :
-        this->parseTypeStr(member_str);
-    std::string return_str = func_yaml["return_type"].as<std::string>();
-    const ApiType* return_type =
-        return_str == "" ? nullptr :
-        this->parseTypeStr(return_str);
-    YAML::Node param_types_list_yaml = func_yaml["param_types"];
-    std::vector<const ApiType*> param_type_list;
-    for (YAML::Node param_type_yaml : param_types_list_yaml)
+    const ApiType* member_type = nullptr;
+    if (func_yaml["member_type"].IsDefined())
     {
-        param_type_list.push_back(
-            this->parseTypeStr(param_type_yaml.as<std::string>()));
+        std::string member_str = func_yaml["member_type"].as<std::string>();
+        member_type = member_str == "" ? nullptr :
+            this->parseTypeStr(member_str);
+    }
+    const ApiType* return_type = nullptr;
+    if (func_yaml["return_type"].IsDefined())
+    {
+        std::string return_str = func_yaml["return_type"].as<std::string>();
+        return_type = return_str == "" ? nullptr :
+            this->parseTypeStr(return_str);
+    }
+    std::vector<const ApiType*> param_type_list;
+    if (func_yaml["param_types"].IsDefined())
+    {
+        YAML::Node param_types_list_yaml = func_yaml["param_types"];
+        for (YAML::Node param_type_yaml : param_types_list_yaml)
+        {
+            param_type_list.push_back(
+                this->parseTypeStr(param_type_yaml.as<std::string>()));
+        }
     }
     YAML::Node cond_list_yaml = func_yaml["conditions"];
     std::vector<std::string> cond_list;
