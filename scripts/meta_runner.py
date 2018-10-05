@@ -209,10 +209,10 @@ def write_version_id(writer, path, id_name):
         pass
 
 def get_coverage():
-    coverage_cmd = ["gcovr", "-s", "-r", lib_build_dir, "-o", coverage_output_file]
+    coverage_cmd = ["gcovr", "-s", "-r", "."]
     try:
         coverage_proc = subprocess.run(coverage_cmd, check=True,
-            capture_output=True, encoding="utf-8")
+            capture_output=True, encoding="utf-8", cwd=lib_build_dir)
         return coverage_proc.stdout,coverage_proc.stderr
     except subprocess.CalledProcessError:
         return ("", "Error running gcovr!")
