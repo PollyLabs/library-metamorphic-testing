@@ -209,10 +209,13 @@ def write_version_id(writer, path, id_name):
         pass
 
 def get_coverage():
-    coverage_cmd = ["gcov", "*.gcno"]
-    coverage_proc = subprocess.run(coverage_cmd, check=False, cwd=lib_build_dir,
-        capture_output=True, encoding="utf-8")
-    return coverage_proc.stdout,coverage_proc.stderr
+    coverage_cmd = ["gcovr", "-s", "-r", lib_build_dir, "-o", coverage_output_file]
+    try:
+        coverage_proc = subprocess.run(coverage_cmd, check=True,
+            capture_output=True, encoding="utf-8")
+        return coverage_proc.stdout,coverage_proc.stderr
+    except subprocess.CalledProcessError:
+        return ("", "Error running gcovr!")
 
 def int_handler(sig, frame):
     print("Received SIGINT, dumping logged data and stopping...")
