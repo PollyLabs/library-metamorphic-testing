@@ -11,6 +11,7 @@ import signal
 import statistics
 import sys
 import time
+import traceback
 import yaml
 
 import pdb
@@ -216,12 +217,26 @@ def get_coverage():
         return coverage_proc.stdout,coverage_proc.stderr
     except subprocess.CalledProcessError:
         return ("", "Error running gcovr!")
+    except FileNotFoundError:
+        return ("", traceback.format_exc())
 
 def int_handler(sig, frame):
     print("Received SIGINT, dumping logged data and stopping...")
+    finalize_experiments()
+    exit(0)
+
+def finalize_experiments():
+    cov_stdout,cov_stderr=("", "Did not run")
+    if lib_build_dir:
+        assert os.path.exists(lib_build_dir)
+        cov_stdout,cov_stderr = get_coverage()
+    with open(coverage_output_file, 'w') as coverage_writer:
+        coverage_writer.write("=== STDOUT\n")
+        coverage_writer.write(cov_stdout)
+        coverage_writer.write("=== STDERR\n")
+        coverage_writer.write(cov_stderr)
     write_stats()
     log_writer.close()
-    exit(0)
 
 ###############################################################################
 # Testing mode functions
@@ -385,15 +400,6 @@ elif args.mode == "targeted":
     assert False
     targeted_testing()
 
-if lib_build_dir:
-    assert os.path.exists(lib_build_dir)
-    cov_stdout,cov_stderr = get_coverage()
-with open(coverage_output_file, 'w') as coverage_writer:
-    coverage_writer.write("=== STDOUT\n")
-    coverage_writer.write(cov_stdout)
-    coverage_writer.write("=== STDERR\n")
-    coverage_writer.write(cov_stderr)
-log_writer.close()
-write_stats()
+finalize_experiments()
 
 exit(0)
