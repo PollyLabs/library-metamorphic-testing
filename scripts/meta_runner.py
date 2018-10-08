@@ -348,12 +348,12 @@ if os.path.exists(output_tests_folder):
     shutil.rmtree(output_tests_folder)
 os.mkdir(output_tests_folder)
 
-if lib_build_dir:
-    prev_cov_files = glob.glob(lib_build_dir + "/**/*.gcda")
-    for prev_cov_file in prev_cov_files:
-        print("Removing " + prev_cov_file)
-        # os.remove(prev_cov_file)
-    # exit(1)
+# if lib_build_dir:
+    # prev_cov_files = glob.glob(lib_build_dir + "/**/*.gcda")
+    # for prev_cov_file in prev_cov_files:
+        # print("Removing " + prev_cov_file)
+        # # os.remove(prev_cov_file)
+    # # exit(1)
 
 if args.lib_path:
     lib_path = args.lib_path
@@ -385,7 +385,6 @@ with open(stat_log_file, 'w') as stat_log_writer:
     stat_log_writer.write("INTERNAL SEED: " + str(internal_seed) + "\n")
     stat_log_writer.write("TIMEOUT: " + str(args.timeout) + "\n")
     stat_log_writer.write("FUZZER_MODE: " + args.mode + "\n")
-    # pdb.set_trace()
     write_version_id(stat_log_writer, working_dir, "METALIB")
     write_version_id(stat_log_writer, lib_build_dir, "LIB")
 
