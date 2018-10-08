@@ -34,8 +34,12 @@ RUN \
     cp ./config_files/config.yaml.template ./config_files/config_isl.yaml && \
     sed "/^working_dir:/c\working_dir: \"`pwd`/\"" \
         < ./config_files/config.yaml.template \
-        > ./config_files/config_isl.yaml &&
-    sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl.yaml
+        > ./config_files/config_isl.yaml && \
+    sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl.yaml && \
+    sed -i 's|api_fuzzer_<name>|api_fuzzer_isl|' ./config_files/config_isl.yaml && \
+    sed -i 's|meta_tests_<lib>|meta_tests_isl|' ./config_files/config_isl.yaml && \
+    sed -i 's|<work_dir>|/home/library-metamorphic-testing|' ./config_files/config_isl.yaml && \
+    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/isl"|' ./config_files/config_isl.yaml
 
 # Update config file path in test_emitter
 RUN \
