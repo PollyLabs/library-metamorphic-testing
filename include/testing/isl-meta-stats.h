@@ -1,7 +1,7 @@
 #ifndef ISL_META_STATS_HPP
 #define ISL_META_STATS_HPP
 
-static unsigned int c_cnt;
+static size_t c_cnt;
 
 isl::stat
 getBSConstraints(isl::basic_set bs)
@@ -20,7 +20,7 @@ printStats(isl::set s)
 	fprintf(stderr, "SET EMPTY = %s\n", s.is_empty() ? "true" : "false");
     fprintf(stderr, "N BASIC SET = %d\n", s.n_basic_set());
     s.foreach_basic_set(getBSConstraints);
-    fprintf(stderr, "N CONSTRAINTS = %d\n", c_cnt);
+    fprintf(stderr, "N CONSTRAINTS = %zu\n", c_cnt);
 }
 
 #endif

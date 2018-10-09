@@ -5,7 +5,7 @@ RUN \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get -y upgrade && \
-    apt-get install -y g++ python3.7 git make && \
+    apt-get install -y g++ python3.7 git make gcovr && \
     curl https://bootstrap.pypa.io/get-pip.py | python3.7 && \
     pip3.7 install pyyaml cmake
 
