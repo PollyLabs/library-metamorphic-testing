@@ -213,6 +213,7 @@ def finalize_experiments(runtime_data, par_data):
 def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
     runtime_data["test_source_path"] = append_id_to_string(runtime_data["test_source_path"], test_id)
     runtime_data["test_run_path"] += "_" + str(test_id)
+    last_test_count = 0
     for seed in range(seed_min, seed_max):
         log_data = io.StringIO()
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -236,8 +237,9 @@ def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
         finally:
             par_data["log_lock"].release()
         log_data.close()
-        if test_id == 0 and par_data["stats"]["test_count"] % 10 == 0:
+        if test_id == 0 and par_data["stats"]["test_count"] - last_test_count > 10:
             finalize_experiments(runtime_data, par_data)
+            last_test_count = par_data["stats"]["test_count"]
 
 # def coverage_testing(coverage_target):
     # curr_coverage = 0
