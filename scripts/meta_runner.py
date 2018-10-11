@@ -144,7 +144,6 @@ def write_stats(stat_log_file, stats):
         stat_log_writer.write(stats["preamble"].getvalue())
         stat_log_writer.write("END TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
         stat_log_writer.write("Statistics:\n")
-        print(stats)
 
         for k,v in stats.items():
             if isinstance(k, str):
