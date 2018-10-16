@@ -16,10 +16,10 @@ inputs:
       range: '(3,5]'
     - name: 'constraints'
       type: 'unsigned int'
-      range: '[10,15]'
+      range: '[5,15]'
     - name: 'depth_max'
       type: 'unsigned int'
-      range: '[10,15]'
+      range: '[7,12]'
 
 types:
     - name: 'isl::val'
