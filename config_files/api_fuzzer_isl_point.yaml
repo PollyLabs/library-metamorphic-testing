@@ -141,11 +141,11 @@ funcs:
       return_type: 'isl::point'
       param_types: ['<string=isl::dim::set>', '<range=[0,<input=dims>)>', 'isl::val']
       condition: []
-    - name: 'set_coordinate_val'
-      member_type: 'isl::point'
-      return_type: 'isl::point'
-      param_types: ['<string=isl::dim::param>', '<range=[0,<input=params>)>', 'isl::val']
-      condition: []
+    #- name: 'set_coordinate_val'
+      #member_type: 'isl::point'
+      #return_type: 'isl::point'
+      #param_types: ['<string=isl::dim::param>', '<range=[0,<input=params>]>', 'isl::val']
+      #condition: []
     # Start special funcs
     - name: 'universe'
       member_type: 'isl::set'
