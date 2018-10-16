@@ -112,7 +112,7 @@ def execute_test(runtime_data, log_data, par_data):
         log_data.write("RUNTIME: " + str(time.time() - start_time) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
-    return test_proc.returncode == 0 || test_proc.returncode == 124
+    return test_proc.returncode == 0 or test_proc.returncode == 124
 
 def check_single_list_stat(regex, input_str):
     result_list = []
@@ -210,7 +210,8 @@ def finalize_experiments(runtime_data, par_data):
 ###############################################################################
 
 def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
-    runtime_data["test_source_path"] = append_id_to_string(runtime_data["test_source_path"], test_id)
+    runtime_data["test_source_path"] =\
+        append_id_to_string(runtime_data["test_source_path"], test_id)
     runtime_data["test_run_path"] += "_" + str(test_id)
     last_test_count = 0
     for seed in range(seed_min, seed_max):
@@ -224,7 +225,8 @@ def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
         if not generate_test(seed, test_id, runtime_data, log_data, par_data):
             continue
         if not compile_test(runtime_data, log_data):
-            shutil.copy(test_source_path, output_tests_folder + "/test_compile_" + str(seed) + ".cpp")
+            shutil.copy(test_source_path, output_tests_folder + "/test_compile_"\
+                + str(seed) + ".cpp")
             continue
         if not execute_test(runtime_data, log_data, par_data):
             shutil.copy(test_source_path, output_tests_folder + "/test_run_" + str(seed) + ".cpp")
@@ -240,46 +242,40 @@ def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
             finalize_experiments(runtime_data, par_data)
             last_test_count = par_data["stats"]["test_count"]
 
-# def coverage_testing(coverage_target):
-    # curr_coverage = 0
-    # seed = 0
-    # if (os.path.exists(coverage_output_dir)):
-        # shutil.rmtree(coverage_output_dir)
-    # os.mkdir(coverage_output_dir)
-    # if (os.path.exists(coverage_data_file)):
-        # os.remove(coverage_data_file)
-    # gather_coverage_files()
-    # while (curr_coverage < coverage_target and seed < 50):
-        # print("=== Running seed " + str(seed), end='\r')
-        # generate_test(seed, timeout, test_emitter_path)
-        # compile_test(test_compile_bin, test_compile_dir)
-        # execute_test(timeout, test_run_path)
-        # new_coverage = get_coverage()
-        # if new_coverage > curr_coverage:
-            # shutil.move(test_run_path + ".cpp", coverage_output_dir + "test_" + str(seed) + ".cpp")
-            # curr_coverage = new_coverage
-            # print("New coverage at " + str(curr_coverage))
-        # seed += 1
-    # gather_coverage_files()
-
-# TODO: log generating command, log time to execute, timeout y/n, any other thing?
-def continuous_testing():
+def continuous_testing(test_id, runtime_data, par_data):
+    runtime_data["test_source_path"] =\
+        append_id_to_string(runtime_data["test_source_path"], test_id)
+    runtime_data["test_run_path"] += "_" + str(test_id)
+    last_test_count = 0
     while True:
+        log_data = io.StringIO()
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         seed = random.randint(0, sys.maxsize)
-        log_writer.write(80 * "=" + "\n")
-        log_writer.write("SEED: " + str(seed) + "\n")
+        log_data.write(80 * "=" + "\n")
+        log_data.write("SEED: " + str(seed) + "\n")
         print(date_time + " Running seed " + str(seed), end='\r')
-        if not generate_test(seed, timeout):
+        test_source_path = runtime_data["test_source_path"]
+        output_tests_folder = runtime_data["output_tests_folder"]
+        if not generate_test(seed, test_id, runtime_data, log_data, par_data):
             continue
-        if not compile_test(test_compile_bin, test_compile_dir):
+        if not compile_test(runtime_data, log_data):
             shutil.copy(test_source_path, output_tests_folder + "/test_compile_"\
                 + str(seed) + ".cpp")
             continue
-        if not execute_test(timeout, test_run_path):
+        if not execute_test(runtime_data, log_data, par_data):
             shutil.copy(test_source_path, output_tests_folder + "/test_run_"\
                 + str(seed) + ".cpp")
-        log_writer.flush()
+        par_data["log_lock"].acquire()
+        try:
+            with open(par_data["log_file"], 'a') as log_writer:
+                log_writer.write(log_data.getvalue())
+                log_writer.flush()
+        finally:
+            par_data["log_lock"].release()
+        log_data.close()
+        if test_id == 0 and par_data["stats"]["test_count"] - last_test_count > 10:
+            finalize_experiments(runtime_data, par_data)
+            last_test_count = par_data["stats"]["test_count"]
 
 def targeted_testing():
     max_tests_per_set = 10
@@ -451,11 +447,13 @@ if __name__ == '__main__':
                 proc_list[-1].start()
             for proc in proc_list:
                 proc.join()
-        elif args.mode == "coverage":
-            assert False
-            coverage_testing(coverage_target)
         elif args.mode == "continuous":
-            continuous_testing()
+            proc_args = []
+            for i in range(0, proc_count):
+                proc_list.append(ctx.Process(target=continuous_testing, \
+                    args=(i, runtime_data, par_data)))
+            for proc in proc_list:
+                proc.join()
         elif args.mode == "targeted":
             assert False
             targeted_testing()

@@ -9,10 +9,10 @@ pre_setup:
 inputs:
     - name: 'params'
       type: 'unsigned int'
-      range: '(0,5]'
+      range: '(0,0]'
     - name: 'dims'
       type: 'unsigned int'
-      range: '(0,5]'
+      range: '(0,8]'
     - name: 'constraints'
       type: 'unsigned int'
       range: '[1,3]'
