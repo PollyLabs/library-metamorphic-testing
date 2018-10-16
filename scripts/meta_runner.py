@@ -219,7 +219,7 @@ def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         log_data.write(80 * "=" + "\n")
         log_data.write("SEED: " + str(seed) + "\n")
-        print(date_time + " Running seed " + str(seed), end='\r')
+        print(date_time + " Running seed " + str(seed) + " on " + str(test_id), end='\r')
         test_source_path = runtime_data["test_source_path"]
         output_tests_folder = runtime_data["output_tests_folder"]
         if not generate_test(seed, test_id, runtime_data, log_data, par_data):
@@ -253,7 +253,7 @@ def continuous_testing(test_id, runtime_data, par_data):
         seed = random.randint(0, sys.maxsize)
         log_data.write(80 * "=" + "\n")
         log_data.write("SEED: " + str(seed) + "\n")
-        print(date_time + " Running seed " + str(seed), end='\r')
+        print(date_time + " Running seed " + str(seed) + " on " + str(test_id), end='\r')
         test_source_path = runtime_data["test_source_path"]
         output_tests_folder = runtime_data["output_tests_folder"]
         if not generate_test(seed, test_id, runtime_data, log_data, par_data):
