@@ -453,6 +453,7 @@ if __name__ == '__main__':
             for i in range(0, proc_count):
                 proc_list.append(ctx.Process(target=continuous_testing, \
                     args=(i, runtime_data, par_data)))
+                proc_list[-1].start()
             for proc in proc_list:
                 proc.join()
         elif args.mode == "targeted":
