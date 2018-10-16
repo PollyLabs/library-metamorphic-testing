@@ -112,7 +112,7 @@ def execute_test(runtime_data, log_data, par_data):
         log_data.write("RUNTIME: " + str(time.time() - start_time) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
-    return test_proc.returncode == 0
+    return test_proc.returncode == 0 || test_proc.returncode == 124
 
 def check_single_list_stat(regex, input_str):
     result_list = []
@@ -384,10 +384,6 @@ if __name__ == '__main__':
         exit(1)
     os.environ["LD_LIBRARY_PATH"] = lib_path
 
-    with open(log_file, 'w') as log_writer:
-        log_writer.write("START TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        log_writer.write("\n")
-
     dim_set_regex = re.compile("^DIM SET = [0-9]+$", re.M)
     dim_param_regex = re.compile("^DIM PARAM = [0-9]+$", re.M)
     set_empty_regex = re.compile("^SET EMPTY = true$", re.M)
@@ -401,6 +397,8 @@ if __name__ == '__main__':
     stat_data.write("FUZZER_MODE: " + args.mode + "\n")
     write_version_id(stat_data, working_dir, "METALIB")
     write_version_id(stat_data, lib_build_dir, "LIB")
+    stat_data.write("START TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    stat_data.write("\n")
 
 # Execution declarations
     ctx = multiprocessing.get_context("spawn")
