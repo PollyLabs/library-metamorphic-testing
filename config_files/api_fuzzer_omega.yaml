@@ -83,7 +83,27 @@ funcs:
       return_type: 'omega::Relation'
       param_types: ['omega::Relation', 'omega::Relation']
       special: true
+    - name: 'Difference'
+      member_type: ''
+      return_type: 'omega::Relation'
+      param_types: ['omega::Relation', 'omega::Relation']
+      special: true
+    - name: 'Intersection'
+      member_type: ''
+      return_type: 'omega::Relation'
+      param_types: ['omega::Relation', 'omega::Relation']
+      special: true
     - name: 'ConvexHull'
+      member_type: ''
+      return_type: 'omega::Relation'
+      param_types: ['omega::Relation']
+      special: true
+    - name: 'Complement'
+      member_type: ''
+      return_type: 'omega::Relation'
+      param_types: ['omega::Relation']
+      special: true
+    - name: 'copy'
       member_type: ''
       return_type: 'omega::Relation'
       param_types: ['omega::Relation']
@@ -94,6 +114,9 @@ funcs:
       #param_types: ['<input=var_count>']
 
 set_gen:
+    - type: 'func'
+      func: 'makeTupleRelation'
+      return: '<output_var>'
     - type: 'for'
       counter: '[0,<input=constraints>]'
       func: 'Union'
