@@ -19,4 +19,5 @@ meta_runner:
     log_file_path: "./meta_test.log"
     stat_log_file_path: "./meta_test_stats.log"
     output_tests_folder: "./out_tests/"
-    coverage_output_file: "./coverage.log"
+    coverage_temp_file: "covinfo.log"
+    coverage_output_dir: "./coverage/"
