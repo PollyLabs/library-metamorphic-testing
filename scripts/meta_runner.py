@@ -96,12 +96,15 @@ def execute_test(runtime_data, log_data, par_data):
     start_time = time.time()
     # print("CMD is " + " ".join(test_cmd))
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
+    end_time = time.time()
     out, err = test_proc.communicate()
     par_data["stat_lock"].acquire()
     try:
         par_data["stats"] = update_stats(err, par_data["stats"])
     finally:
         par_data["stat_lock"].release()
+    log_data.write("SIZE: " + str(os.path.getsize(runtime_data["test_run_path"])) + "\n")
+    log_data.write("RUNTIME: " + str(end_time - start_time) + "\n")
     if test_proc.returncode != 0:
         log_data.write("!!! Execution fail\n")
         if test_proc.returncode == 124:
@@ -109,7 +112,6 @@ def execute_test(runtime_data, log_data, par_data):
         else:
             log_data.write("Non-timeout\n")
         log_data.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
-        log_data.write("RUNTIME: " + str(time.time() - start_time) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
     return test_proc.returncode == 0 or test_proc.returncode == 124
@@ -162,6 +164,8 @@ def write_stats(stat_log_file, stats):
 
 def write_version_id(writer, path, id_name):
     try:
+        if not path:
+            return
         if not path[-1] == os.sep:
             path += os.sep
         path += ".git"
@@ -173,14 +177,16 @@ def write_version_id(writer, path, id_name):
         pass
 
 def get_coverage(runtime_data):
-    coverage_cmd = ["gcovr", "-s", "-r", "."]
+    coverage_run_cmd = ["lcov", "-c", "-o", runtime_data["coverage_temp_file"], "-d", "."]
+    coverage_gen_cmd = ["genhtml", "-o", runtime_data["coverage_output_dir"],\
+        runtime_data["coverage_temp_file"]]
     try:
-        coverage_proc = subprocess.run(coverage_cmd, check=True,
-            capture_output=True, encoding="utf-8",
-            cwd=runtime_data["lib_build_dir"])
-        return coverage_proc.stdout,coverage_proc.stderr
+        coverage_proc = subprocess.run(coverage_run_cmd, check=True,
+            capture_output=False, cwd=runtime_data["lib_build_dir"])
+        coverage_proc = subprocess.run(coverage_gen_cmd, check=True,
+            capture_output=False, cwd=runtime_data["lib_build_dir"])
     except subprocess.CalledProcessError:
-        return ("", "Error running gcovr!")
+        return ("", "Error running lcov!")
     except FileNotFoundError:
         return ("", traceback.format_exc())
 
@@ -197,12 +203,7 @@ def finalize_experiments(runtime_data, par_data):
     cov_stdout,cov_stderr=("", "Did not run")
     if runtime_data["lib_build_dir"]:
         assert os.path.exists(runtime_data["lib_build_dir"])
-        cov_stdout,cov_stderr = get_coverage(runtime_data)
-    with open(runtime_data["coverage_output_file"], 'w') as coverage_writer:
-        coverage_writer.write("=== STDOUT\n")
-        coverage_writer.write(cov_stdout)
-        coverage_writer.write("=== STDERR\n")
-        coverage_writer.write(cov_stderr)
+        get_coverage(runtime_data)
     write_stats(runtime_data["stat_log_file"], par_data["stats"])
 
 ###############################################################################
@@ -349,7 +350,8 @@ if __name__ == '__main__':
     log_file = output_folder + runner_config_data["log_file_path"]
     stat_log_file = output_folder + runner_config_data["stat_log_file_path"]
     output_tests_folder = output_folder + runner_config_data["output_tests_folder"]
-    coverage_output_file = output_folder + runner_config_data["coverage_output_file"]
+    coverage_temp_file = runner_config_data["coverage_temp_file"]
+    coverage_output_dir = output_folder + runner_config_data["coverage_output_dir"]
 
 # Signal handler setup
     signal.signal(signal.SIGINT, int_handler)
@@ -363,7 +365,7 @@ if __name__ == '__main__':
         output_tests_folder = append_id_to_string(output_tests_folder, internal_seed)
         test_source_path = append_id_to_string(test_source_path, internal_seed)
         test_run_path = append_id_to_string(test_run_path, internal_seed)
-        coverage_output_file = append_id_to_string(coverage_output_file, internal_seed)
+        coverage_output_dir = append_id_to_string(coverage_output_dir, internal_seed)
 
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
@@ -420,7 +422,8 @@ if __name__ == '__main__':
             "output_tests_folder": output_tests_folder,
             "test_emitter_path": test_emitter_path,
             "lib_build_dir": lib_build_dir,
-            "coverage_output_file": coverage_output_file,
+            "coverage_temp_file": coverage_temp_file,
+            "coverage_output_dir": coverage_output_dir,
             "stat_log_file": stat_log_file
         }
         par_data = manager.dict({
