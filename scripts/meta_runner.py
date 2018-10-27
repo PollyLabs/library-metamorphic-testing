@@ -9,6 +9,7 @@ import os
 import multiprocessing
 import random
 import re
+import pathlib
 import signal
 import statistics
 import sys
@@ -100,7 +101,7 @@ def execute_test(runtime_data, log_data, par_data):
     out, err = test_proc.communicate()
     par_data["stat_lock"].acquire()
     try:
-        par_data["stats"] = update_stats(err, par_data["stats"])
+        par_data["stats"] = update_stats(err, par_data["stats"], log_data)
     finally:
         par_data["stat_lock"].release()
     log_data.write("SIZE: " + str(os.path.getsize(runtime_data["test_run_path"])) + "\n")
@@ -125,14 +126,18 @@ def check_single_list_stat(regex, input_str):
 def check_single_count_stat(regex, input_str):
     return len(regex.findall(input_str))
 
-def update_stats(err, stats):
+def update_stats(err, stats, log_data):
     for key in stats.keys():
         if not isinstance(key, tuple):
             continue;
         if key[1] == "count":
-            stats[key] += check_single_count_stat(key[0], err)
+            count_stat = check_single_count_stat(key[0], err)
+            log_data.write("STAT {}: {}\n".format(key[2], count_stat))
+            stats[key] += count_stat
         elif key[1] == "extend":
-            stats[key] = stats[key] + check_single_list_stat(key[0], err)
+            list_stat = check_single_list_stat(key[0], err)
+            log_data.write("STAT {}: {}\n".format(key[2], list_stat))
+            stats[key] = stats[key] + list_stat
         else:
             assert(false)
     return stats
@@ -177,18 +182,16 @@ def write_version_id(writer, path, id_name):
         pass
 
 def get_coverage(runtime_data):
-    coverage_run_cmd = ["lcov", "-c", "-o", runtime_data["coverage_temp_file"], "-d", "."]
-    coverage_gen_cmd = ["genhtml", "-o", runtime_data["coverage_output_dir"],\
-        runtime_data["coverage_temp_file"]]
-    try:
-        coverage_proc = subprocess.run(coverage_run_cmd, check=True,
-            capture_output=False, cwd=runtime_data["lib_build_dir"])
-        coverage_proc = subprocess.run(coverage_gen_cmd, check=True,
-            capture_output=False, cwd=runtime_data["lib_build_dir"])
-    except subprocess.CalledProcessError:
-        return ("", "Error running lcov!")
-    except FileNotFoundError:
-        return ("", traceback.format_exc())
+    cwd = os.getcwd()
+    print(cwd)
+    os.chdir(lib_build_dir)
+    gcda_list = pathlib.Path('.').glob("./**/*.gcda")
+    for gcda_file in gcda_list:
+        dst_dir = cwd + "/" + runtime_data["coverage_output_dir"] + os.path.dirname(gcda_file)
+        os.makedirs(dst_dir, exist_ok=True)
+        shutil.copy(str(gcda_file), dst_dir)
+        shutil.copy(str(gcda_file).replace(".gcda", ".gcno"), dst_dir)
+    os.chdir(cwd)
 
 def int_handler(sig, frame):
     print("Received SIGINT, dumping logged data and stopping...")
@@ -397,6 +400,7 @@ if __name__ == '__main__':
     write_version_id(stat_data, lib_build_dir, "LIB")
     stat_data.write("START TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     stat_data.write("\n")
+
 
 # Execution declarations
     ctx = multiprocessing.get_context("spawn")
