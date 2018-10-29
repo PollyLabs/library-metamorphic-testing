@@ -183,7 +183,6 @@ def write_version_id(writer, path, id_name):
 
 def get_coverage(runtime_data):
     cwd = os.getcwd()
-    print(cwd)
     os.chdir(runtime_data["lib_build_dir"])
     gcda_list = pathlib.Path('.').glob("./**/*.gcda")
     for gcda_file in gcda_list:
