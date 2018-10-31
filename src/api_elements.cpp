@@ -252,13 +252,13 @@ MetaRelation::concretizeVars(const ApiObject* curr_meta_variant,
 }
 
 const ApiInstruction*
-MetaRelation::toApiInstruction(bool new_obj_decl) const
+MetaRelation::toApiInstruction() const
 {
     const ApiFunc* func = this->getBaseFunc()->getFunc();
     const std::vector<const ApiObject*> params = this->getBaseFunc()->getParams();
     const ApiObject* target_obj = this->getBaseFunc()->getTarget();
     const ApiObject* result_obj = this->getStoreVar();
-    return new ApiInstruction(func, result_obj, target_obj, params, new_obj_decl);
+    return new ApiInstruction(func, result_obj, target_obj, params);
 }
 
 std::string
@@ -376,17 +376,19 @@ ApiInstruction::toStr() const
         std::vector<std::string> arg_strings;
         for (const ApiObject* func_param : this->getFuncParams())
         {
-            arg_strings.push_back(func_param->toStrWithType());
+            //arg_strings.push_back(func_param->toStrWithType());
+            arg_strings.push_back(func_param->toStr());
         }
         std::cout << std::endl << "\tGiven types: ";
         std::cout << getStringWithDelims(arg_strings, ',') << std::endl;
-        exit(1);
+        assert(false);
     }
     if (this->getResultObj() != nullptr)
     {
-        if (this->isNewObjDecl() || this->getFunc()->isCtor())
+        if (!this->getResultObj()->isDeclared())
         {
             instr_ss << result_obj->toStrWithType();
+            result_obj->declared = true;
         }
         else
         {

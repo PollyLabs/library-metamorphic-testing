@@ -6,7 +6,7 @@
 # formula names taken from
 # https://www.allaboutcircuits.com/technical-articles/boolean-identities/
 ---
-input_count: 3
+input_count: 6
 meta_var_type: "isl::set"
 meta_check:
     - "assert(%m.is_equal(%m0))"

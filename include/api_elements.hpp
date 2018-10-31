@@ -115,13 +115,17 @@ class ApiObject {
         const ApiType* type;
 
     public:
+        mutable bool declared;
+
         ApiObject(std::string _name, unsigned int _id, const ApiType* _type) :
-            id(_id), name(_name), type(_type) {};
+            id(_id), name(_name), type(_type), declared(false) {};
 
         const ApiType* getType() const { return this->type; };
+        void setDeclared() { this->declared = true; };
         size_t getID() const { return this->id; };
 
         bool isPrimitive() const { return this->getType()->isPrimitive(); };
+        bool isDeclared() const { return this->declared; };
         bool hasName(std::string name_check) const {
             return !this->name.compare(name_check);
         };
@@ -199,15 +203,18 @@ class ApiFunc {
     const bool special;
     const bool statik;
     const bool ctor;
+    const bool max_depth;
 
     public:
-        ApiFunc(std::string _name, const ApiType* _member_type, const ApiType* _return_type,
+        ApiFunc(std::string _name, const ApiType* _member_type,
+            const ApiType* _return_type,
             std::vector<const ApiType*> _param_types,
             std::vector<std::string> _conditions, bool _special = false,
-            bool _statik = false, bool _ctor = false) :
+            bool _statik = false, bool _ctor = false, bool _max_depth = false) :
             name(_name), member_type(_member_type), return_type(_return_type),
             param_types(_param_types), conditions(_conditions),
-            special(_special), statik(_statik), ctor(_ctor) {};
+            special(_special), statik(_statik), ctor(_ctor),
+            max_depth(_max_depth) {};
 
         std::string getName() const { return this->name; };
         std::vector<const ApiType*> getParamTypes() const {
@@ -239,6 +246,7 @@ class ApiFunc {
         bool isStatic() const { return this->statik; };
         bool isCtor() const { return this->ctor; };
         bool notIsCtor() const { return !this->ctor; };
+        bool notIsMaxDepth() const { return !this->max_depth; };
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
@@ -285,15 +293,14 @@ class ApiInstruction : public ApiInstructionInterface
     const ApiObject* target_obj;
     const ApiObject* result_obj;
     std::vector<const ApiObject*> func_params;
-    const bool new_obj_decl;
 
     public:
         ApiInstruction(const ApiFunc* _func, const ApiObject* _result = nullptr,
             const ApiObject* _target = nullptr,
             std::vector<const ApiObject*> _params =
-            std::vector<const ApiObject*>(), bool _new_obj_decl = false) :
+            std::vector<const ApiObject*>()) :
             func(_func), target_obj(_target), result_obj(_result),
-            func_params(_params), new_obj_decl(_new_obj_decl) {};
+            func_params(_params) {};
 
         const ApiFunc* getFunc() const { return this->func; }
         const ApiObject* getTargetObj() const { return this->target_obj; };
@@ -302,8 +309,6 @@ class ApiInstruction : public ApiInstructionInterface
         {
             return this->func_params;
         };
-
-        bool isNewObjDecl() const { return this->new_obj_decl; };
 
         std::string toStr() const;
 };
@@ -347,7 +352,7 @@ class MetaRelation {
         const MetaRelation* concretizeVars(const ApiObject*,
             const std::vector<const ApiObject*>&,
             const std::vector<const ApiObject*>&) const;
-        const ApiInstruction* toApiInstruction(bool = false) const;
+        const ApiInstruction* toApiInstruction() const;
 
         std::string getAbstractRelation() const { return this->abstract_relation; }
         const FuncObject* getBaseFunc() const { return this->base_func; }
