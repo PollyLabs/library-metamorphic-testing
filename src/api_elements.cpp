@@ -96,6 +96,17 @@ ExplicitType::retrieveObj() const
         return new PrimitiveObject<std::string>(
             (PrimitiveType*) this->getUnderlyingType(), data);
     }
+    else if (this->definition.find(fmt::format("uint{}", delim_mid))
+            != std::string::npos)
+    {
+        assert(this->getUnderlyingType()->isPrimitive());
+        assert(((PrimitiveType *) this->getUnderlyingType())->getTypeEnum()
+            == UINT);
+        std::string data = this->definition.substr(this->definition.find(delim_mid) + 1,
+            this->definition.find(delim_back) - this->definition.find(delim_mid) - 1);
+        return new PrimitiveObject<unsigned int>(
+            (PrimitiveType*) this->getUnderlyingType(), std::stoi(data));
+    }
     else if (this->definition.find(fmt::format("input{}", delim_mid))
             != std::string::npos)
     {

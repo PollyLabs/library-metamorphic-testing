@@ -2,6 +2,7 @@
 includes:
     - "isl-noexceptions.h"
     - "testing/isl-meta-stats.h"
+    - "testing/isl-project-helper.h"
 
 pre_setup:
     - "isl_ctx *ctx_ptr = isl_ctx_alloc();"
@@ -159,11 +160,6 @@ funcs:
       return_type: ''
       param_types: []
       conditions: []
-    - name: 'intersect'
-      member_type: 'isl::set'
-      return_type: 'isl::set'
-      param_types: ['isl::set']
-      conditions: []
     # Start special funcs
     - name: 'universe'
       member_type: 'isl::set'
@@ -247,6 +243,11 @@ funcs:
       param_types: ['bool']
       condition: []
       special: true
+    - name: 'make_project'
+      member_type: ''
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      condition: []
 
 constructors:
     - name: 'isl::space'

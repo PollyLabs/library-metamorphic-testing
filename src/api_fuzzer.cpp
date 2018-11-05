@@ -735,6 +735,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         {
             return new ExplicitType(type_str, this->getTypeByName("string"));
         }
+        else if (type_str.find(fmt::format("uint{}", delim_mid)) != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+        }
         else if (type_str.find(fmt::format("new{}", delim_mid)) != std::string::npos)
         {
             std::string type_substr = this->getGeneratorData(type_str);
