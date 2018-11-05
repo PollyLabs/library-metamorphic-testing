@@ -248,6 +248,7 @@ funcs:
       return_type: 'isl::set'
       param_types: ['isl::set']
       condition: []
+      special: true
 
 constructors:
     - name: 'isl::space'
