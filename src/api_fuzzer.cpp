@@ -504,7 +504,6 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         this->generateSet();
     }
     assert(!this->output_vars.empty());
-    assert(this->output_vars.size() == 6);
     std::vector<const ApiObject*> unite_output_vars;
     for (size_t i = 0; i < 3; i++)
     {
