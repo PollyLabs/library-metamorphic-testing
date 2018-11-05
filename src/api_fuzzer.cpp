@@ -505,15 +505,6 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     }
     assert(!this->output_vars.empty());
     std::vector<const ApiObject*> unite_output_vars;
-    for (size_t i = 0; i < 3; i++)
-    {
-        const ApiObject* new_out_var = this->generateApiObject("new_out", 
-            this->meta_variant_type, this->getAnyFuncByName("unite"),
-            this->output_vars.at(i), {this->output_vars.at(i+1)});
-        unite_output_vars.push_back(new_out_var);
-    }
-    this->output_vars = unite_output_vars;
-
 
     /* Metamorphic tests generation */
     // TODO Ideally, meta_vars should be vector of const, but need to rethink
