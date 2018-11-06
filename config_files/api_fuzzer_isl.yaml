@@ -13,7 +13,7 @@ inputs:
       range: '[0,0]'
     - name: 'dims'
       type: 'unsigned int'
-      range: '(0,6]'
+      range: '(3,6]'
     - name: 'constraints'
       type: 'unsigned int'
       range: '[1,6]'
