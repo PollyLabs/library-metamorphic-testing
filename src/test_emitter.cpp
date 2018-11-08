@@ -2,7 +2,8 @@
 
 static unsigned int indent = 0;
 const std::string config_file_path =
-    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl.yaml";
+    //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl_cons_project.yaml";
+    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl_point_project.yaml";
     //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_z3.yaml";
     //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_omega.yaml";
 
