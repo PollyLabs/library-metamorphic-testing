@@ -1,0 +1,298 @@
+---
+includes:
+    - "isl-noexceptions.h"
+    - "testing/isl-meta-stats.h"
+    - "testing/isl-project-helper.h"
+
+pre_setup:
+    - "isl_ctx *ctx_ptr = isl_ctx_alloc();"
+
+inputs:
+    - name: 'params'
+      type: 'unsigned int'
+      range: '[0,0]'
+    - name: 'dims'
+      type: 'unsigned int'
+      range: '(3,6]'
+    - name: 'constraints'
+      type: 'unsigned int'
+      range: '[1,6]'
+    - name: 'depth_max'
+      type: 'unsigned int'
+      range: '[10,15]'
+
+types:
+    - name: 'isl::val'
+    - name: 'isl::pw_aff'
+    - name: 'isl::set'
+
+singleton_types:
+    - name: 'isl::space'
+      singleton: true
+    - name: 'isl::local_space'
+      singleton: true
+    - name: 'isl::ctx'
+      singleton: true
+
+funcs:
+    - name: 'two_exp'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: []
+      conditions: ['<member>.is_int()']
+    - name: 'abs'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: []
+      conditions: []
+    - name: 'ceil'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: []
+      conditions: []
+    - name: 'floor'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: []
+      conditions: []
+    - name: 'inv'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: []
+      conditions: ['false']
+    - name: 'neg'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: []
+      conditions: []
+    - name: 'trunc'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: []
+      conditions: []
+    - name: 'add'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: ['isl::val']
+      conditions: []
+    - name: 'div'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: ['isl::val']
+      conditions: ['!<param=1>.is_zero()']
+    - name: 'max'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: ['isl::val']
+      conditions: []
+    - name: 'min'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: ['isl::val']
+      conditions: []
+    - name: 'mul'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: ['isl::val']
+      conditions: []
+    - name: 'sub'
+      member_type: 'isl::val'
+      return_type: 'isl::val'
+      param_types: ['isl::val']
+      conditions: []
+    - name: 'mod'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::val']
+      conditions: ['false']
+    - name: 'scale'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::val']
+      conditions: ['false']
+    - name: 'add'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'sub'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'max'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'min'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'le_set'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::set'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'ge_set'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::set'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'lt_set'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::set'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'gt_set'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::set'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'ne_set'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::set'
+      param_types: ['isl::pw_aff']
+      conditions: []
+    - name: 'dump'
+      member_type: 'isl::set'
+      return_type: ''
+      param_types: []
+      conditions: []
+    # Start special funcs
+    - name: 'universe'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::space']
+      conditions: []
+      special: true
+      static: true
+    - name: 'empty'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::space']
+      conditions: []
+      special: true
+      static: true
+    - name: 'var_on_domain'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::local_space', 'string', 'unsigned int']
+      conditions: []
+      special: true
+      static: true
+    - name: 'printStats'
+      member_type: ''
+      return_type: ''
+      param_types: ['isl::set']
+      conditions: []
+      special: true
+    # Funcs for metamorphic relations
+    - name: 'complement'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'unite'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      conditions: []
+      special: true
+    - name: 'subtract'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      conditions: []
+      special: true
+    - name: 'intersect'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      conditions: []
+      special: true
+    - name: 'detect_equalities'
+      member_type: 'isl::set'
+      return_type: ''
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'coalesce'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'convex_hull'
+      member_type: 'isl::set'
+      return_type: 'isl::set'
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'is_equal'
+      member_type: 'isl::set'
+      return_type: 'bool'
+      param_types: ['isl::set']
+      condition: []
+      special: true
+    - name: 'assert'
+      member_type: ''
+      return_type: ''
+      param_types: ['bool']
+      condition: []
+      special: true
+    - name: 'make_project'
+      member_type: ''
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      condition: []
+      special: true
+
+constructors:
+    - name: 'isl::space'
+      param_types: ['isl::ctx', '<input=params>', '<input=dims>']
+    - name: 'isl::local_space'
+      param_types: ['isl::space']
+    - name: 'isl::val'
+      param_types: ['isl::ctx', 'unsigned int']
+    - name: 'isl::pw_aff'
+      param_types: ['<string=u>','isl::val']
+    - name: 'isl::ctx'
+      param_types: ['<string=ctx_ptr>']
+
+set_gen:
+    - type: 'func'
+      func: 'universe'
+      return: '<var=u>'
+    - type: 'for'
+      counter: '[0,<input=dims>)'
+      func: 'var_on_domain'
+      return: '<new=isl::pw_aff>'
+      func_params:
+          - 'isl::local_space'
+          - '<string=isl::dim::set>'
+          - '<loop_counter>'
+    - type: 'func'
+      func: 'universe'
+      return: '<output_var>'
+    - type: 'for'
+      counter: '[0,<input=constraints>)'
+      func: 'intersect'
+      target: '<output_var>'
+      return: '<output_var>'
+      func_params:
+          - '<new=isl::set>'
+    - type: 'func'
+      func: 'make_project'
+      return: '<output_var>'
+      func_params:
+          - '<output_var>'
+    - type: 'func'
+      func: 'dump'
+      target: '<output_var>'
+    - type: 'func'
+      func: 'printStats'
+      func_params:
+          - '<output_var>'

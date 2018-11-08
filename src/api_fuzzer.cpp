@@ -492,7 +492,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
 
     /* Object fuzzing */
     size_t input_var_count = meta_test_data["input_count"].as<size_t>();
-    for (int i = 1; i <= input_var_count; ++i)
+    for (int i = 1; i <= input_var_count * 2; ++i)
     {
         this->current_output_var =
             this->generateApiObjectDecl("out", this->meta_variant_type, false);
@@ -504,7 +504,17 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         this->generateSet();
     }
     assert(!this->output_vars.empty());
+    assert(this->output_vars.size() == input_var_count * 2);
     std::vector<const ApiObject*> unite_output_vars;
+    for (size_t i = 0; i < input_var_count; i++)
+    {
+        const ApiObject* new_out_var = this->generateApiObject("new_out",
+            this->meta_variant_type, this->getAnyFuncByName("unite"),
+            this->output_vars.at(i * 2), {this->output_vars.at(i * 2 + 1)});
+        unite_output_vars.push_back(new_out_var);
+    }
+    this->output_vars = unite_output_vars;
+
 
     /* Metamorphic tests generation */
     // TODO Ideally, meta_vars should be vector of const, but need to rethink
@@ -724,10 +734,6 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         else if (type_str.find(fmt::format("string{}", delim_mid)) != std::string::npos)
         {
             return new ExplicitType(type_str, this->getTypeByName("string"));
-        }
-        else if (type_str.find(fmt::format("uint{}", delim_mid)) != std::string::npos)
-        {
-            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
         }
         else if (type_str.find(fmt::format("new{}", delim_mid)) != std::string::npos)
         {
