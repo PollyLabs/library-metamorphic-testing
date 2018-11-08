@@ -111,14 +111,26 @@ def execute_test(runtime_data, log_data, par_data):
     test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
     start_time = time.time()
     # print("CMD is " + " ".join(test_cmd))
+    if runtime_data["debug"]:
+        print("*** execute_test > subprocess.Popen START - " + datetime.datetime.now().strftime("%H:%M:%S"))
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
-    end_time = time.time()
+    if runtime_data["debug"]:
+        print("*** execute_test > subprocess.Popen END - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    if runtime_data["debug"]:
+        print("*** execute_test > subprocess.communicate START - " + datetime.datetime.now().strftime("%H:%M:%S"))
     out, err = test_proc.communicate()
+    end_time = time.time()
+    if runtime_data["debug"]:
+        print("*** execute_test > subprocess.communicate END - " + datetime.datetime.now().strftime("%H:%M:%S"))
     par_data["stat_lock"].acquire()
+    if runtime_data["debug"]:
+        print("*** execute_test > update_stats START - " + datetime.datetime.now().strftime("%H:%M:%S"))
     try:
         par_data["stats"] = update_stats(err, par_data["stats"], log_data)
     finally:
         par_data["stat_lock"].release()
+    if runtime_data["debug"]:
+        print("*** execute_test > update_stats END - " + datetime.datetime.now().strftime("%H:%M:%S"))
     log_data.write("SIZE: " + str(os.path.getsize(runtime_data["test_run_path"])) + "\n")
     log_data.write("RUNTIME: " + str(end_time - start_time) + "\n")
     if test_proc.returncode != 0:
@@ -131,7 +143,7 @@ def execute_test(runtime_data, log_data, par_data):
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
     if runtime_data["debug"]:
-        print("*** execute_test RUNTIME - " + str(end_time - start_time) + "\n")
+        print("*** execute_test RUNTIME - " + str(end_time - start_time))
         print("*** execute_test END - " + datetime.datetime.now().strftime("%H:%M:%S"))
     return test_proc.returncode == 0 or test_proc.returncode == 124
 
