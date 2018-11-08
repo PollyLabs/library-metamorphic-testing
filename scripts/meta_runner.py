@@ -39,6 +39,9 @@ parser.add_argument("--timeout", type=int,
 parser.add_argument("--append-id", action='store_true',
     help = "If set, the produced file names will contain special IDs meant to\
         distinguish between various runs.")
+parser.add_argument("--debug", action='store_true',
+    help = "If set, produces additional runtime information for debugging\
+    purposes.")
 parser.add_argument("--max-par-proc", type=int, default=1,
     help = "The number of maximum jobs to issue in parallel (default: 1)")
 
@@ -47,6 +50,8 @@ parser.add_argument("--max-par-proc", type=int, default=1,
 ###############################################################################
 
 def generate_test(seed, test_id, runtime_data, log_data, par_data):
+    if args.debug:
+        print("*** generate_test START - " + time.time)
     seed = str(seed)
     timeout = str(runtime_data["timeout"])
     par_data["stat_lock"].acquire()
@@ -67,9 +72,13 @@ def generate_test(seed, test_id, runtime_data, log_data, par_data):
         log_data.write("RETURNCODE: " + str(generator_proc.returncode) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
+    if args.debug:
+        print("*** generate_test END - " + time.time)
     return generator_proc.returncode == 0
 
 def compile_test(runtime_data, log_data):
+    if args.debug:
+        print("*** compile_test START - " + time.time)
     try:
         # Path below is hack
         compile_cmd = [runtime_data["test_compile_bin"],
@@ -77,9 +86,13 @@ def compile_test(runtime_data, log_data):
         # print("CMD is " + " ".join(compile_cmd))
         compile_proc = subprocess.run(compile_cmd, check=True,
             cwd=runtime_data["test_compile_dir"], stdout=subprocess.DEVNULL)
+        if args.debug:
+            print("*** compile_test END True - " + time.time)
         return True
     except subprocess.CalledProcessError:
         log_data.write("!!! Compilation Failure\n")
+        if args.debug:
+            print("*** compile_test END False - " + time.time)
         return False
 
 def append_id_to_string(string, run_id):
@@ -92,6 +105,8 @@ def append_id_to_string(string, run_id):
     return string + id_string
 
 def execute_test(runtime_data, log_data, par_data):
+    if args.debug:
+        print("*** execute_test START - " + time.time)
     timeout = str(runtime_data["timeout"])
     test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
     start_time = time.time()
@@ -115,6 +130,8 @@ def execute_test(runtime_data, log_data, par_data):
         log_data.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
+    if args.debug:
+        print("*** execute_test END - " + time.time)
     return test_proc.returncode == 0 or test_proc.returncode == 124
 
 def check_single_list_stat(regex, input_str):
@@ -222,7 +239,11 @@ def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
         date_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         log_data.write(80 * "=" + "\n")
         log_data.write("SEED: " + str(seed) + "\n")
-        print(date_time + " Running seed " + str(seed) + " on " + str(test_id), end='\r')
+        end_char = '\r'
+        if args.debug:
+            end_char = '\n'
+        print(date_time + " Running seed " + str(seed) + " on " + str(test_id),
+            end= end_char)
         test_source_path = runtime_data["test_source_path"]
         output_tests_folder = runtime_data["output_tests_folder"]
         if not generate_test(seed, test_id, runtime_data, log_data, par_data):
