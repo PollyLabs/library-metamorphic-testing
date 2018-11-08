@@ -94,11 +94,11 @@ def append_id_to_string(string, run_id):
 def execute_test(runtime_data, log_data, par_data):
     timeout = str(runtime_data["timeout"])
     test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
-    start_time = time.time()
     # print("CMD is " + " ".join(test_cmd))
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
-    end_time = time.time()
+    start_time = time.time()
     out, err = test_proc.communicate()
+    end_time = time.time()
     par_data["stat_lock"].acquire()
     try:
         par_data["stats"] = update_stats(err, par_data["stats"], log_data)
