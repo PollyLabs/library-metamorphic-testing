@@ -50,7 +50,7 @@ parser.add_argument("--max-par-proc", type=int, default=1,
 ###############################################################################
 
 def generate_test(seed, test_id, runtime_data, log_data, par_data):
-    if args.debug:
+    if runtime_data["debug"]:
         print("*** generate_test START - " + time.time)
     seed = str(seed)
     timeout = str(runtime_data["timeout"])
@@ -72,12 +72,12 @@ def generate_test(seed, test_id, runtime_data, log_data, par_data):
         log_data.write("RETURNCODE: " + str(generator_proc.returncode) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
-    if args.debug:
+    if runtime_data["debug"]:
         print("*** generate_test END - " + time.time)
     return generator_proc.returncode == 0
 
 def compile_test(runtime_data, log_data):
-    if args.debug:
+    if runtime_data["debug"]:
         print("*** compile_test START - " + time.time)
     try:
         # Path below is hack
@@ -86,12 +86,12 @@ def compile_test(runtime_data, log_data):
         # print("CMD is " + " ".join(compile_cmd))
         compile_proc = subprocess.run(compile_cmd, check=True,
             cwd=runtime_data["test_compile_dir"], stdout=subprocess.DEVNULL)
-        if args.debug:
+        if runtime_data["debug"]:
             print("*** compile_test END True - " + time.time)
         return True
     except subprocess.CalledProcessError:
         log_data.write("!!! Compilation Failure\n")
-        if args.debug:
+        if runtime_data["debug"]:
             print("*** compile_test END False - " + time.time)
         return False
 
@@ -105,7 +105,7 @@ def append_id_to_string(string, run_id):
     return string + id_string
 
 def execute_test(runtime_data, log_data, par_data):
-    if args.debug:
+    if runtime_data["debug"]:
         print("*** execute_test START - " + time.time)
     timeout = str(runtime_data["timeout"])
     test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
@@ -130,7 +130,7 @@ def execute_test(runtime_data, log_data, par_data):
         log_data.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
-    if args.debug:
+    if runtime_data["debug"]:
         print("*** execute_test END - " + time.time)
     return test_proc.returncode == 0 or test_proc.returncode == 124
 
@@ -240,7 +240,7 @@ def bounded_testing(seed_min, seed_max, test_id, runtime_data, par_data):
         log_data.write(80 * "=" + "\n")
         log_data.write("SEED: " + str(seed) + "\n")
         end_char = '\r'
-        if args.debug:
+        if runtime_data["debug"]:
             end_char = '\n'
         print(date_time + " Running seed " + str(seed) + " on " + str(test_id),
             end= end_char)
@@ -448,7 +448,8 @@ if __name__ == '__main__':
             "lib_build_dir": lib_build_dir,
             "coverage_temp_file": coverage_temp_file,
             "coverage_output_dir": coverage_output_dir,
-            "stat_log_file": stat_log_file
+            "stat_log_file": stat_log_file,
+            "debug": args.debug,
         }
         par_data = manager.dict({
             "log_lock": log_lock,
