@@ -51,7 +51,7 @@ parser.add_argument("--max-par-proc", type=int, default=1,
 
 def generate_test(seed, test_id, runtime_data, log_data, par_data):
     if runtime_data["debug"]:
-        print("*** generate_test START - " + time.time)
+        print("*** generate_test START - " + datetime.datetime.now().strftime("%H:%M:%S"))
     seed = str(seed)
     timeout = str(runtime_data["timeout"])
     par_data["stat_lock"].acquire()
@@ -73,12 +73,12 @@ def generate_test(seed, test_id, runtime_data, log_data, par_data):
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
     if runtime_data["debug"]:
-        print("*** generate_test END - " + time.time)
+        print("*** generate_test END - " + datetime.datetime.now().strftime("%H:%M:%S"))
     return generator_proc.returncode == 0
 
 def compile_test(runtime_data, log_data):
     if runtime_data["debug"]:
-        print("*** compile_test START - " + time.time)
+        print("*** compile_test START - " + datetime.datetime.now().strftime("%H:%M:%S"))
     try:
         # Path below is hack
         compile_cmd = [runtime_data["test_compile_bin"],
@@ -87,12 +87,12 @@ def compile_test(runtime_data, log_data):
         compile_proc = subprocess.run(compile_cmd, check=True,
             cwd=runtime_data["test_compile_dir"], stdout=subprocess.DEVNULL)
         if runtime_data["debug"]:
-            print("*** compile_test END True - " + time.time)
+            print("*** compile_test END True - " + datetime.datetime.now().strftime("%H:%M:%S"))
         return True
     except subprocess.CalledProcessError:
         log_data.write("!!! Compilation Failure\n")
         if runtime_data["debug"]:
-            print("*** compile_test END False - " + time.time)
+            print("*** compile_test END False - " + datetime.datetime.now().strftime("%H:%M:%S"))
         return False
 
 def append_id_to_string(string, run_id):
@@ -106,7 +106,7 @@ def append_id_to_string(string, run_id):
 
 def execute_test(runtime_data, log_data, par_data):
     if runtime_data["debug"]:
-        print("*** execute_test START - " + time.time)
+        print("*** execute_test START - " + datetime.datetime.now().strftime("%H:%M:%S"))
     timeout = str(runtime_data["timeout"])
     test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
     start_time = time.time()
@@ -131,7 +131,8 @@ def execute_test(runtime_data, log_data, par_data):
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
     if runtime_data["debug"]:
-        print("*** execute_test END - " + time.time)
+        print("*** execute_test RUNTIME - " + str(end_time - start_time) + "\n")
+        print("*** execute_test END - " + datetime.datetime.now().strftime("%H:%M:%S"))
     return test_proc.returncode == 0 or test_proc.returncode == 124
 
 def check_single_list_stat(regex, input_str):
