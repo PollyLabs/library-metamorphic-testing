@@ -82,7 +82,7 @@ class ApiFuzzer {
         template<typename T> std::vector<const ApiObject*> filterObjs(
             bool (ApiObject::*)(T) const, T);
         template<typename T> std::vector<const ApiObject*> filterAllObjs(
-            bool (ApiObject::*)(T) const, T);
+            bool (ApiObject::*)(T) const, T) const;
         template<typename T> std::set<const ApiFunc*> filterFuncs(
             bool (ApiFunc::*)(T) const, T) const;
         const ApiFunc* getFuncByName(std::string) const;

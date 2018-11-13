@@ -294,7 +294,7 @@ ApiFuzzer::filterObjs(bool (ApiObject::*filter_func)(T) const, T filter_check)
 
 template<typename T>
 std::vector<const ApiObject*>
-ApiFuzzer::filterAllObjs(bool (ApiObject::*filter_func)(T) const, T filter_check)
+ApiFuzzer::filterAllObjs(bool (ApiObject::*filter_func)(T) const, T filter_check) const
 {
     return filterObjList(this->getAllObjList(), filter_func, filter_check);
 }
@@ -609,8 +609,17 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
         YAML::Node param_types_list_yaml = func_yaml["param_types"];
         for (YAML::Node param_type_yaml : param_types_list_yaml)
         {
-            param_type_list.push_back(
-                this->parseTypeStr(param_type_yaml.as<std::string>()));
+            // TODO move this to parseTypeStr()
+            if (param_type_yaml.as<std::string>().find("var_name") != std::string::npos)
+            {
+                assert(return_type);
+                param_type_list.push_back(new ExplicitType(param_type_yaml.as<std::string>(), return_type));
+            }
+            else
+            {
+                param_type_list.push_back(
+                    this->parseTypeStr(param_type_yaml.as<std::string>()));
+            }
         }
     }
     YAML::Node cond_list_yaml = func_yaml["conditions"];
@@ -652,8 +661,18 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         YAML::Node param_types_list_yaml = ctor_yaml["param_types"];
         std::vector<const ApiType *> param_types_list;
         for (YAML::Node param_types_yaml : param_types_list_yaml)
-            param_types_list.push_back(
-                this->parseTypeStr(param_types_yaml.as<std::string>()));
+        {
+            if (param_types_yaml.as<std::string>().find("var_name") != std::string::npos)
+            {
+                assert(return_type);
+                param_types_list.push_back(new ExplicitType(param_types_yaml.as<std::string>(), return_type));
+            }
+            else
+            {
+                param_types_list.push_back(
+                    this->parseTypeStr(param_types_yaml.as<std::string>()));
+            }
+        }
         std::vector<std::string> cond_list;
         bool new_func_special = false;
         bool new_func_statik = false;
@@ -841,6 +860,17 @@ ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr) const
     {
         return parseRelationStringVar(rel_substr);
     }
+    else if (rel_substr.front() == delim_front &&
+        rel_substr.back() == delim_back)
+    {
+        // TODO develop for more comprehensions and move to own function
+        assert(rel_substr.find("string-") != std::string::npos);
+        std::string string_data = rel_substr.substr(rel_substr.find('-') + 1,
+            rel_substr.find(delim_back) - rel_substr.find('-') - 1);
+        return new PrimitiveObject<std::string>(
+            dynamic_cast<const PrimitiveType*>(this->getTypeByName("string")),
+            string_data);
+    }
     else
     {
         std::cout << "Could not parse relation func param " << rel_substr;
@@ -899,6 +929,10 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
             func_name = accumulator;
             accumulator.clear();
             break;
+        }
+        else if (*r_it == ';')
+        {
+            continue;
         }
         else
         {
@@ -1000,10 +1034,15 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         }
         else if (expl_type->getDefinition().find("rand") != std::string::npos)
         {
-            std::cout << std::numeric_limits<int>::max() << std::endl;
             return new PrimitiveObject<unsigned int>(
                 dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
                 this->getRandInt(0, std::numeric_limits<int>::max()));
+        }
+        else if (expl_type->getDefinition().find("var_name") != std::string::npos)
+        {
+            return new PrimitiveObject<std::string>(
+                dynamic_cast<const PrimitiveType*>(this->getTypeByName("string")),
+                "var_" + this->getNextID());
         }
         else
         {
