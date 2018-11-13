@@ -1,5 +1,6 @@
 ---
 input_count: 3
+variant_count: 4
 meta_var_type: "z3::expr"
 meta_check:
     - "assert(checkValid(%m,%m0,<var-ctx>));"

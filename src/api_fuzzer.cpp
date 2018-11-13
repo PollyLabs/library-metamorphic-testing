@@ -485,6 +485,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     YAML::Node meta_test_data = YAML::LoadFile(meta_test_path);
     this->meta_variant_type = this->getTypeByName(
         meta_test_data["meta_var_type"].as<std::string>());
+    this->meta_variant_count = meta_test_data["variant_count"].as<size_t>();
     this->initMetaVariantVars();
     this->initMetaVarObjs(meta_test_data["generators"],
         meta_test_data["input_count"]);
