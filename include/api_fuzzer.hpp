@@ -143,6 +143,7 @@ class ApiFuzzerNew : public ApiFuzzer {
         void initConstructors(YAML::Node);
         void initGenConfig(YAML::Node);
         void runGeneration(YAML::Node);
+        void generateDecl(YAML::Node);
         void generateForLoop(YAML::Node);
         void generateFunc(YAML::Node, int = -1);
 

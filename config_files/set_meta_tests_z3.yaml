@@ -1,0 +1,84 @@
+---
+input_count: 3
+meta_var_type: "z3::expr"
+meta_check:
+    - "assert(checkValid(%m,%m0,<var-ctx>));"
+
+generators:
+    one:
+        identifier: 'o'
+        relations:
+            #- "1"
+            - "z3::operator/(%1,%1)"
+            - "z3::pw(%1,%z)"
+            - "z3::operator*(%1,z3::operator/(%o,%1))"
+
+    zero:
+        identifier: 'z'
+        relations:
+            #- "0"
+            - "z3::operator*(%1,%z)"
+            - "z3::operator-(%1,%1)"
+relations:
+    identity:
+        - "%m=z3::operator+(%1,%z)"
+        - "%m=z3::operator-(%1,%z)"
+        - "%m=z3::operator*(%1,%o)"
+        - "%m=z3::operator/(%1,%o)"
+        - "%m=z3::pw(%1,%o)"
+
+    exponentiation_add:
+        - "%m=z3::pw(%1,z3::operator+(%2,%3))"
+        - "%m=z3::operator*(z3::pw(%1,%2),z3::pw(%1,%3))"
+
+    exponentiation_mul:
+        - "%m=z3::pw(z3::operator*(%1,%2),%3)"
+        - "%m=z3::operator*(z3::pw(%1,%3),z3::pw(%2,%3))"
+
+    exponentiation_pw:
+        - "%m=z3::pw(z3::pw(%1,%2),%3)"
+        - "%m=z3::pw(%1,z3::operator*(%2,%3))"
+
+    addition_assoc:
+        - "%m=z3::operator+(z3::operator+(%1,%2),%3)"
+        - "%m=z3::operator+(%1,z3::operator+(%2,%3))"
+
+    multiplication_assoc:
+        - "%m=z3::operator*(z3::operator*(%1,%2),%3)"
+        - "%m=z3::operator*(%1,z3::operator*(%2,%3))"
+
+    addition_commut:
+        - "%m=z3::operator+(%1,%2)"
+        - "%m=z3::operator+(%2,%1)"
+
+    multiplication_commut:
+        - "%m=z3::operator*(%1,%2)"
+        - "%m=z3::operator*(%2,%1)"
+
+
+    #complement:
+        #- "%m=%1.complement()"
+        #- "%m=%u.subtract(%1)"
+
+    #subtract:
+        #- "%m=z3::operator-(%1, %2)"
+        #- "%m=%1.intersect(%2.complement())"
+
+    #union:
+        #- "%m=%1.unite(%2)"
+        #- "%m=%2.unite(%1)" # commutativity
+        #- "%m=%1.complement().intersect(%2.complement()).complement()" # DeMorgan
+
+    #intersect:
+        #- "%m=%1.intersect(%2)"
+        #- "%m=%2.intersect(%1)" # commutativity
+        #- "%m=%1.complement().unite(%2.complement()).complement()" # DeMorgan
+
+    #associativity_union:
+        #- "%m=%1.unite(%2).unite(%3)"
+        #- "%m=%1.unite(%2.unite(%3))"
+
+    #associativity_intersect:
+        #- "%m=%1.intersect(%2).intersect(%3)"
+        #- "%m=%1.intersect(%2.intersect(%3))"
+

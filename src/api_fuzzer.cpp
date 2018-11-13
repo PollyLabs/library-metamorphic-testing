@@ -367,6 +367,8 @@ const ApiObject*
 ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
     bool emit_instr)
 {
+    assert(!type->isSingleton() ||
+        this->filterAllObjs(&ApiObject::hasType, type).size() == 0);
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
     this->addObj(new_obj);
     if (emit_instr)
@@ -488,7 +490,6 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         meta_test_data["input_count"]);
     this->initMetaGenerators(meta_test_data["generators"]);
     this->initMetaRelations(meta_test_data["relations"]);
-    this->initMetaChecks(meta_test_data["meta_check"]);
 
     /* Object fuzzing */
     size_t input_var_count = meta_test_data["input_count"].as<size_t>();
@@ -505,6 +506,9 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     }
     assert(!this->output_vars.empty());
 
+    // TODO reconsider how meta checks are generated; perhaps only generate
+    // them when required
+    this->initMetaChecks(meta_test_data["meta_check"]);
 
     /* Metamorphic tests generation */
     // TODO Ideally, meta_vars should be vector of const, but need to rethink
@@ -631,17 +635,8 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
         YAML::Node param_types_list_yaml = func_yaml["param_types"];
         for (YAML::Node param_type_yaml : param_types_list_yaml)
         {
-            // TODO move this to parseTypeStr()
-            if (param_type_yaml.as<std::string>().find("var_name") != std::string::npos)
-            {
-                assert(return_type);
-                param_type_list.push_back(new ExplicitType(param_type_yaml.as<std::string>(), return_type));
-            }
-            else
-            {
-                param_type_list.push_back(
-                    this->parseTypeStr(param_type_yaml.as<std::string>()));
-            }
+            param_type_list.push_back(
+                this->parseTypeStr(param_type_yaml.as<std::string>()));
         }
     }
     YAML::Node cond_list_yaml = func_yaml["conditions"];
@@ -689,16 +684,8 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         std::vector<const ApiType *> param_types_list;
         for (YAML::Node param_types_yaml : param_types_list_yaml)
         {
-            if (param_types_yaml.as<std::string>().find("var_name") != std::string::npos)
-            {
-                assert(return_type);
-                param_types_list.push_back(new ExplicitType(param_types_yaml.as<std::string>(), return_type));
-            }
-            else
-            {
-                param_types_list.push_back(
-                    this->parseTypeStr(param_types_yaml.as<std::string>()));
-            }
+            param_types_list.push_back(
+                this->parseTypeStr(param_types_yaml.as<std::string>()));
         }
         std::vector<std::string> cond_list;
         bool new_func_special = false;
@@ -902,12 +889,13 @@ ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr) const
         rel_substr.back() == delim_back)
     {
         // TODO develop for more comprehensions and move to own function
-        assert(rel_substr.find("string-") != std::string::npos);
-        std::string string_data = rel_substr.substr(rel_substr.find('-') + 1,
+        assert(rel_substr.find("var-") != std::string::npos);
+        std::string var_name = rel_substr.substr(rel_substr.find('-') + 1,
             rel_substr.find(delim_back) - rel_substr.find('-') - 1);
-        return new PrimitiveObject<std::string>(
-            dynamic_cast<const PrimitiveType*>(this->getTypeByName("string")),
-            string_data);
+        std::vector<const ApiObject*> candidate_objs =
+            this->filterAllObjs(&ApiObject::hasName, var_name);
+        assert(candidate_objs.size() == 1);
+        return candidate_objs.at(0);
     }
     else
     {
@@ -1249,12 +1237,35 @@ ApiFuzzerNew::generateSet()
         else if (!gen_instr_type.compare("decl"))
         {
             logDebug("Make decl");
-            assert(false);
+            this->generateDecl(gen_instr_yaml);
         }
         else
         {
             assert(false);
         }
+    }
+}
+
+void
+ApiFuzzerNew::generateDecl(YAML::Node instr_config)
+{
+    const ApiType* var_type =
+        this->getTypeByName(instr_config["var_type"].as<std::string>());
+    if (var_type->isSingleton() && this->filterAllObjs(&ApiObject::hasType,
+            var_type).size() != 0)
+    {
+        return;
+    }
+    std::string var_name = instr_config["var_name"].as<std::string>();
+    bool init = instr_config["init"].IsDefined() && instr_config["init"].as<bool>();
+    if (instr_config["init"].IsDefined() && instr_config["init"].as<bool>())
+    {
+        //TODO pipe this through generateNewObject possibly?
+        assert(false);
+    }
+    else
+    {
+        this->generateApiObjectDecl(var_name, var_type, true);
     }
 }
 
