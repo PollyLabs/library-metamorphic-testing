@@ -70,3 +70,6 @@ relations:
     associativity_intersect:
         - "%m = %1.intersect(%2).intersect(%3)"
         - "%m = %1.intersect(%2.intersect(%3))"
+
+    project:
+        - "%m =make_project(%1)"

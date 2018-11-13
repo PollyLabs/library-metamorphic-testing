@@ -80,12 +80,14 @@ class ApiFuzzer {
 
         const ApiType* getTypeByName(std::string) const;
         template<typename T> std::vector<const ApiObject*> filterObjs(
-            bool (ApiObject::*)(T) const, T);
+            bool (ApiObject::*)(T) const, T) const;
         template<typename T> std::vector<const ApiObject*> filterAllObjs(
             bool (ApiObject::*)(T) const, T) const;
         template<typename T> std::set<const ApiFunc*> filterFuncs(
             bool (ApiFunc::*)(T) const, T) const;
-        const ApiFunc* getFuncByName(std::string) const;
+        const ApiFunc* getAnyFuncByName(std::string) const;
+        const ApiFunc* getSingleFuncByName(std::string) const;
+        const ApiFunc* getFuncBySignature(std::string, std::vector<const ApiType*>) const;
 
         void addInstr(const ApiInstructionInterface*);
         void addObj(const ApiObject*);
@@ -99,7 +101,8 @@ class ApiFuzzer {
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
         const ApiObject* generateApiObject(std::string, const ApiType*,
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
-        const ApiObject* generateApiObjectDecl(std::string, const ApiType*);
+        const ApiObject* generateApiObjectDecl(std::string, const ApiType*,
+            bool = true);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
             std::vector<const ApiObject*>);

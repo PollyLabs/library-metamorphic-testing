@@ -2,6 +2,7 @@
 includes:
     - "isl-noexceptions.h"
     - "testing/isl-meta-stats.h"
+    - "testing/isl-project-helper.h"
 
 pre_setup:
     - "isl_ctx *ctx_ptr = isl_ctx_alloc();"
@@ -242,6 +243,12 @@ funcs:
       param_types: ['bool']
       condition: []
       special: true
+    - name: 'make_project'
+      member_type: ''
+      return_type: 'isl::set'
+      param_types: ['isl::set']
+      condition: []
+      special: true
 
 constructors:
     - name: 'isl::space'
@@ -267,14 +274,6 @@ set_gen:
           - 'isl::local_space'
           - '<string=isl::dim::set>'
           - '<loop_counter>'
-    #- type: 'for'
-      #counter: '[0,<input=params>)'
-      #func: 'var_on_domain'
-      #return: '<new=isl::pw_aff>'
-      #func_params:
-          #- 'isl::local_space'
-          #- '<string=isl::dim::param>'
-          #- '<loop_counter>'
     - type: 'func'
       func: 'universe'
       return: '<output_var>'
@@ -285,6 +284,11 @@ set_gen:
       return: '<output_var>'
       func_params:
           - '<new=isl::set>'
+    - type: 'func'
+      func: 'make_project'
+      return: '<output_var>'
+      func_params:
+          - '<output_var>'
     - type: 'func'
       func: 'dump'
       target: '<output_var>'

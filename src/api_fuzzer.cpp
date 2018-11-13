@@ -287,7 +287,7 @@ ApiFuzzer::getTypeByName(std::string type_check) const
 
 template<typename T>
 std::vector<const ApiObject*>
-ApiFuzzer::filterObjs(bool (ApiObject::*filter_func)(T) const, T filter_check)
+ApiFuzzer::filterObjs(bool (ApiObject::*filter_func)(T) const, T filter_check) const
 {
     return filterObjList(this->getObjList(), filter_func, filter_check);
 }
@@ -301,19 +301,39 @@ ApiFuzzer::filterAllObjs(bool (ApiObject::*filter_func)(T) const, T filter_check
 
 template<typename T>
 std::set<const ApiFunc*>
-ApiFuzzer::filterFuncs(bool (ApiFunc::*filter_func)(T) const, T filter_check)
-    const
+ApiFuzzer::filterFuncs(bool (ApiFunc::*filter_func)(T) const, T filter_check) const
 {
     return filterFuncList(this->getFuncList(), filter_func, filter_check);
 }
 
 const ApiFunc*
-ApiFuzzer::getFuncByName(std::string name) const
+ApiFuzzer::getAnyFuncByName(std::string name) const
 {
     std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
-    logDebug("Searching for func name " + name);
-    assert(filtered_funcs.size() > 0);
+    logDebug("Searching for any func name " + name);
     return getRandomSetElem(filtered_funcs, this->getRNG());
+}
+
+const ApiFunc*
+ApiFuzzer::getSingleFuncByName(std::string name) const
+{
+    std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
+    logDebug("Searching for single func name " + name);
+    assert(filtered_funcs.size() == 1);
+    return getRandomSetElem(filtered_funcs, this->getRNG());
+}
+
+const ApiFunc*
+ApiFuzzer::getFuncBySignature(std::string name,
+    std::vector<const ApiType*> param_types) const
+{
+    logDebug("Searching for func signature with name " + name + " and types " +
+        makeArgString(param_types));
+    std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
+    filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasParamTypes,
+        param_types);
+    assert(filtered_funcs.size() == 1);
+    return *(filtered_funcs.begin());
 }
 
 const ApiObject*
@@ -324,7 +344,7 @@ ApiFuzzer::generateNamedObject(std::string name, const ApiType* type,
     bool new_obj_decl = true;
     const NamedObject* new_obj = new NamedObject(name, type);
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
-        target_obj, init_func_args, new_obj_decl);
+        target_obj, init_func_args);
     this->addObj(new_obj);
     this->addInstr(new_instr);
     return new_obj;
@@ -335,23 +355,26 @@ ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
     const ApiFunc* init_func, const ApiObject* target_obj,
     std::vector<const ApiObject*> init_func_args)
 {
-    bool new_obj_decl = true;
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
-        target_obj, init_func_args, new_obj_decl);
+        target_obj, init_func_args);
     this->addObj(new_obj);
     this->addInstr(new_instr);
     return new_obj;
 }
 
 const ApiObject*
-ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type)
+ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
+    bool emit_instr)
 {
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
-    const ApiInstructionInterface* new_instr =
-        new ObjectDeclInstruction(new_obj);
     this->addObj(new_obj);
-    this->addInstr(new_instr);
+    if (emit_instr)
+    {
+        const ApiInstructionInterface* new_instr =
+            new ObjectDeclInstruction(new_obj);
+        this->addInstr(new_instr);
+    }
     return new_obj;
 }
 
@@ -367,9 +390,7 @@ void
 ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
     const ApiObject* result_obj, std::vector<const ApiObject*> func_args)
 {
-    bool new_obj_decl = false;
-    this->addInstr(new ApiInstruction(func, result_obj, target_obj, func_args,
-        new_obj_decl));
+    this->addInstr(new ApiInstruction(func, result_obj, target_obj, func_args));
 }
 
 std::string
@@ -474,7 +495,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     for (int i = 1; i <= input_var_count; ++i)
     {
         this->current_output_var =
-            this->generateApiObjectDecl("out", this->meta_variant_type);
+            this->generateApiObjectDecl("out", this->meta_variant_type, false);
         this->objs.clear();
         this->output_vars.push_back(this->current_output_var);
         this->addInstr(new ApiComment(fmt::format(
@@ -483,6 +504,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         this->generateSet();
     }
     assert(!this->output_vars.empty());
+
 
     /* Metamorphic tests generation */
     // TODO Ideally, meta_vars should be vector of const, but need to rethink
@@ -645,6 +667,11 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         assert(ctor_yaml["param_types"].IsDefined());
         std::string func_name = ctor_yaml["name"].as<std::string>();
         const ApiType* member_type = nullptr;
+        if (ctor_yaml["member_type"].IsDefined())
+        {
+            member_type =
+                this->parseTypeStr(ctor_yaml["member_type"].as<std::string>());
+        }
         // TODO could we handle this better?
         // this is used to not run out of functions when reaching depth limit,
         // in case we want to use a specific function to generate certain objects
@@ -677,6 +704,8 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         bool new_func_special = false;
         bool new_func_statik = false;
         bool new_func_ctor = true;
+        bool max_depth = ctor_yaml["max_depth"].IsDefined() &&
+            ctor_yaml["max_depth"].as<bool>();
         this->addFunc(new ApiFunc(func_name, member_type, return_type,
             param_types_list, cond_list, new_func_special, new_func_statik,
             new_func_ctor));
@@ -699,6 +728,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         if (type_str.find("rand") != std::string::npos)
         {
             return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+        }
+        if (type_str.find("var_name") != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("string"));
         }
         assert (type_str.find(delim_mid) != std::string::npos);
         if (type_str.find(fmt::format("input{}", delim_mid)) != std::string::npos)
@@ -817,25 +850,30 @@ ApiFuzzerNew::initMetaChecks(YAML::Node check_list_yaml)
 const ApiObject*
 ApiFuzzerNew::parseRelationStringVar(std::string rel_string_var) const
 {
-    assert(rel_string_var.length() <= 3);
-    assert(rel_string_var.length() >= 1);
-    assert(rel_string_var[0] == '%');
-    // TODO maybe move this whole logic to getMetaVar?
-    if (std::isdigit(rel_string_var[1]))
+    if (rel_string_var[0] == '%')
     {
-        assert(rel_string_var.size() == 2);
-        return this->getMetaVar(rel_string_var.substr(1));
-    }
-    if (rel_string_var[1] == 'm')
-    {
-        if (std::isdigit(rel_string_var[2]))
+        assert(rel_string_var.length() <= 3);
+        assert(rel_string_var.length() >= 1);
+        if (std::isdigit(rel_string_var[1]))
         {
-            return this->getMetaVariant(stoi(rel_string_var.substr(2)));
+            assert(rel_string_var.size() == 2);
+            return this->getMetaVar(rel_string_var.substr(1));
         }
-        return this->getMetaVar("<m_curr>");
+        if (rel_string_var[1] == 'm')
+        {
+            if (std::isdigit(rel_string_var[2]))
+            {
+                return this->getMetaVariant(stoi(rel_string_var.substr(2)));
+            }
+            return this->getMetaVar("<m_curr>");
+        }
+        assert(rel_string_var.size() == 2);
+        return this->getMetaVar(std::string(1, rel_string_var[1]));
     }
-    assert(rel_string_var.size() == 2);
-    return this->getMetaVar(std::string(1, rel_string_var[1]));
+    std::vector<const ApiObject*> filtered_objs = this->filterAllObjs(
+        &ApiObject::hasName, rel_string_var);
+    assert(filtered_objs.size() == 1);
+    return filtered_objs.at(0);
 }
 
 const ApiObject*
@@ -873,9 +911,7 @@ ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr) const
     }
     else
     {
-        std::cout << "Could not parse relation func param " << rel_substr;
-        std::cout << std::endl;
-        assert(false);
+        return parseRelationStringVar(rel_substr);
     }
 }
 
@@ -886,6 +922,7 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
     std::stack<std::string> funcs;
     std::vector<std::string> params;
     std::vector<const ApiObject*> param_objs;
+    std::vector<const ApiType*> param_types;
     std::string func_name;
     std::string accumulator = "";
     std::string::reverse_iterator r_it = rel_string.rbegin();
@@ -952,11 +989,13 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
         target = this->parseRelationStringSubstr(
             rel_string.substr(0, rel_string.size() - it_count));
     }
-    const ApiFunc* func = this->getFuncByName(func_name);
     for (std::string param : params)
     {
-        param_objs.push_back(this->parseRelationStringSubstr(param));
+        const ApiObject* func_param = this->parseRelationStringSubstr(param);
+        param_objs.push_back(func_param);
+        param_types.push_back(func_param->getType());
     }
+    const ApiFunc* func = this->getFuncBySignature(func_name, param_types);
     return new FuncObject(func, target, param_objs);
 }
 
@@ -967,7 +1006,9 @@ ApiFuzzerNew::parseRelationString(std::string rel_string, std::string rel_name)
     const ApiObject* store_result_var = nullptr;
 
     size_t eq_pos = rel_string.find('=');
-    if (eq_pos != std::string::npos)
+    // TODO properly parse strings with multiple equals that are not assignments
+    if (eq_pos != std::string::npos &&
+            rel_string.find('=', eq_pos + 1) == std::string::npos)
     {
         store_result_var = this->parseRelationStringVar(
             rel_string.substr(0, eq_pos));
@@ -1034,6 +1075,7 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         }
         else if (expl_type->getDefinition().find("rand") != std::string::npos)
         {
+            assert(expl_type->getUnderlyingType()->isPrimitive());
             return new PrimitiveObject<unsigned int>(
                 dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
                 this->getRandInt(0, std::numeric_limits<int>::max()));
@@ -1041,8 +1083,8 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         else if (expl_type->getDefinition().find("var_name") != std::string::npos)
         {
             return new PrimitiveObject<std::string>(
-                dynamic_cast<const PrimitiveType*>(this->getTypeByName("string")),
-                "var_" + this->getNextID());
+                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
+                "\"p_" + std::to_string(this->getNextID()) + "\"");
         }
         else
         {
@@ -1091,6 +1133,8 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
     {
         ctor_func_candidates = filterFuncList(ctor_func_candidates,
             &ApiFunc::notIsSpecial);
+        ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            &ApiFunc::notIsMaxDepth);
         std::set<const ApiFunc*> non_ctor_func_cands = filterFuncList(ctor_func_candidates,
             &ApiFunc::notIsCtor);
         // TODO this currently forces tests to be produced with full depth
@@ -1099,6 +1143,7 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
             ctor_func_candidates = non_ctor_func_cands;
         }
     }
+    assert(ctor_func_candidates.size() != 0);
     logDebug("Candidate funcs:");
     for (const ApiFunc* func_cand : ctor_func_candidates)
     {
@@ -1201,6 +1246,11 @@ ApiFuzzerNew::generateSet()
             logDebug("Make func");
             this->generateFunc(gen_instr_yaml);
         }
+        else if (!gen_instr_type.compare("decl"))
+        {
+            logDebug("Make decl");
+            assert(false);
+        }
         else
         {
             assert(false);
@@ -1291,7 +1341,28 @@ void
 ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
 {
     std::string func_name = instr_config["func"].as<std::string>();
-    const ApiFunc* func = this->getFuncByName(func_name);
+    const ApiFunc* func;
+    if (instr_config["func_params"].IsDefined())
+    {
+        std::vector<const ApiType*> param_types;
+        for (YAML::Node func_param_yaml : instr_config["func_params"])
+        {
+            if (func_param_yaml.as<std::string>().find("<loop_counter>") != std::string::npos)
+            {
+                param_types.push_back(this->getTypeByName("unsigned int"));
+            }
+            else
+            {
+                param_types.push_back(
+                    this->parseTypeStr(func_param_yaml.as<std::string>()));
+            }
+        }
+        func = this->getFuncBySignature(func_name, param_types);
+    }
+    else
+    {
+        func = this->getAnyFuncByName(func_name);
+    }
     // Set target object, if any declared
     const ApiObject* target_obj = nullptr;
     if (instr_config["target"].IsDefined())
@@ -1415,7 +1486,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     }
     else
     {
-        this->applyFunc(this->getFuncByName(func_name), target_obj, return_obj,
+        this->applyFunc(func, target_obj, return_obj,
             func_params);
     }
     if (this->getRandInt(0, 1))

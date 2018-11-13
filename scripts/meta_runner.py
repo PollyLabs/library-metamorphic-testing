@@ -109,7 +109,6 @@ def execute_test(runtime_data, log_data, par_data):
         print("*** execute_test START - " + datetime.datetime.now().strftime("%H:%M:%S"))
     timeout = str(runtime_data["timeout"])
     test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
-    start_time = time.time()
     # print("CMD is " + " ".join(test_cmd))
     if runtime_data["debug"]:
         print("*** execute_test > subprocess.Popen START - " + datetime.datetime.now().strftime("%H:%M:%S"))
@@ -118,6 +117,7 @@ def execute_test(runtime_data, log_data, par_data):
         print("*** execute_test > subprocess.Popen END - " + datetime.datetime.now().strftime("%H:%M:%S"))
     if runtime_data["debug"]:
         print("*** execute_test > subprocess.communicate START - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    start_time = time.time()
     out, err = test_proc.communicate()
     end_time = time.time()
     if runtime_data["debug"]:

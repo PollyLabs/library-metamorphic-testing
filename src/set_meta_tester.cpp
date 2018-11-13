@@ -49,21 +49,13 @@ std::vector<const ApiInstructionInterface*>
 MetaTest::getApiInstructions() const
 {
     std::vector<const ApiInstructionInterface*> api_instructions;
-    bool first = true;
     std::for_each(this->concrete_relations.begin(), this->concrete_relations.end(),
         [&](const MetaRelation* rel)
         {
-            api_instructions.push_back(rel->toApiInstruction(first));
-            first = false;
+            api_instructions.push_back(rel->toApiInstruction());
         });
     return api_instructions;
 }
-
-//void
-//MetaTest::updateFirstInputVarName()
-//{
-    //this->input_var_names.at(0) = this->getFullMetaVarName();
-//}
 
 void
 SetMetaTesterNew::finalizeTest(MetaTest* new_test) const
@@ -88,9 +80,14 @@ SetMetaTesterNew::makeAbstractMetaRelChain(unsigned int rel_count)
     {
         std::set<std::string>::const_iterator it = abstract_relations.begin();
         std::advance(it, getRandInt(this->rng, 0, abstract_relations.size()));
+        if (!(*it).compare("project"))
+        {
+            continue;
+        }
         this->abstract_rel_chain.push(*it);
         rel_count--;
     }
+    this->abstract_rel_chain.push("project");
     return this->abstract_rel_chain;
 }
 
