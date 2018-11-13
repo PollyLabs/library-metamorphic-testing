@@ -13,13 +13,13 @@ inputs:
       range: '[0,0]'
     - name: 'dims'
       type: 'unsigned int'
-      range: '(3,6]'
+      range: '(0,8]'
     - name: 'constraints'
       type: 'unsigned int'
-      range: '[1,6]'
+      range: '[1,3]'
     - name: 'depth_max'
       type: 'unsigned int'
-      range: '[10,15]'
+      range: '[10,10]'
 
 types:
     - name: 'isl::val'
