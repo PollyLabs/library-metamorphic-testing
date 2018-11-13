@@ -7,7 +7,6 @@ getRandInt(std::mt19937* rng, int min, int max)
     return (*rng)() % max + min;
 }
 
-
 std::string
 getRandSetElem(std::mt19937* rng, std::set<std::string>& set_in)
 {
@@ -80,14 +79,9 @@ SetMetaTesterNew::makeAbstractMetaRelChain(unsigned int rel_count)
     {
         std::set<std::string>::const_iterator it = abstract_relations.begin();
         std::advance(it, getRandInt(this->rng, 0, abstract_relations.size()));
-        if (!(*it).compare("project"))
-        {
-            continue;
-        }
         this->abstract_rel_chain.push(*it);
         rel_count--;
     }
-    this->abstract_rel_chain.push("project");
     return this->abstract_rel_chain;
 }
 
