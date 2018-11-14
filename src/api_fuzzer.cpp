@@ -934,7 +934,7 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
             {
                 if (accumulator != "")
                 {
-                    params.push_back(accumulator);
+                    params.insert(params.begin(), accumulator);
                     accumulator.clear();
                 }
             }
@@ -946,7 +946,7 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
         else if (*r_it == ',' && paren_count == 1)
         {
             assert(accumulator != "");
-            params.push_back(accumulator);
+            params.insert(params.begin(), accumulator);
             accumulator.clear();
         }
         else if (*r_it == '.' && paren_count == 0)
