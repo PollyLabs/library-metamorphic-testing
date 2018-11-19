@@ -4,7 +4,7 @@
 #include "z3++.h"
 
 bool
-checkValid(z3::context ctx, z3::expr e1, z3::expr e2)
+checkValid(z3::context& ctx, z3::expr& e1, z3::expr& e2)
 {
     z3::solver solver(ctx);
     z3::expr conjecture = z3::operator==(e1, e2);

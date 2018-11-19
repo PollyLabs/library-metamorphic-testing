@@ -47,7 +47,7 @@ class ApiFuzzer {
         // TODO change these to sets
         const ApiType* meta_variant_type;
         const std::string meta_variant_name = "r";
-        const size_t meta_variant_count = 20;
+        size_t meta_variant_count;
         std::vector<MetaVarObject*> meta_vars;
         std::vector<const MetaRelation*> relations;
         std::vector<const MetaRelation*> meta_checks;
