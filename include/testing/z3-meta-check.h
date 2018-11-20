@@ -3,6 +3,16 @@
 
 #include "z3++.h"
 
+z3::expr
+divWrap(z3::expr e1, z3::expr e2)
+{
+    if (e2 == 0)
+    {
+        return e1;
+    }
+    return e1/e2;
+}
+
 bool
 checkValid(z3::expr& e1, z3::expr& e2, z3::context& ctx)
 {
