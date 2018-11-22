@@ -49,9 +49,12 @@ parser.add_argument("--max-par-proc", type=int, default=1,
 # Helper functions
 ###############################################################################
 
+def print_debug(message, debug):
+    if debug:
+        print("*** {} - {}".format(message, datetime.datetime.now().strftime("%H:%M:%S")))
+
 def generate_test(seed, test_id, runtime_data, log_data, par_data):
-    if runtime_data["debug"]:
-        print("*** generate_test START - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("generate_test START", runtime_data["debug"])
     seed = str(seed)
     timeout = str(runtime_data["timeout"])
     par_data["stat_lock"].acquire()
@@ -72,13 +75,11 @@ def generate_test(seed, test_id, runtime_data, log_data, par_data):
         log_data.write("RETURNCODE: " + str(generator_proc.returncode) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
-    if runtime_data["debug"]:
-        print("*** generate_test END - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("generate_test END", runtime_data["debug"])
     return generator_proc.returncode == 0
 
 def compile_test(runtime_data, log_data):
-    if runtime_data["debug"]:
-        print("*** compile_test START - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("compile_test START", runtime_data["debug"])
     try:
         # Path below is hack
         compile_cmd = [runtime_data["test_compile_bin"],
@@ -86,13 +87,11 @@ def compile_test(runtime_data, log_data):
         # print("CMD is " + " ".join(compile_cmd))
         compile_proc = subprocess.run(compile_cmd, check=True,
             cwd=runtime_data["test_compile_dir"], stdout=subprocess.DEVNULL)
-        if runtime_data["debug"]:
-            print("*** compile_test END True - " + datetime.datetime.now().strftime("%H:%M:%S"))
+        print_debug("compile_test END True", runtime_data["debug"])
         return True
     except subprocess.CalledProcessError:
         log_data.write("!!! Compilation Failure\n")
-        if runtime_data["debug"]:
-            print("*** compile_test END False - " + datetime.datetime.now().strftime("%H:%M:%S"))
+        print_debug("compile_test END False", runtime_data["debug"])
         return False
 
 def append_id_to_string(string, run_id):
@@ -105,46 +104,43 @@ def append_id_to_string(string, run_id):
     return string + id_string
 
 def execute_test(runtime_data, log_data, par_data):
-    if runtime_data["debug"]:
-        print("*** execute_test START - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("execute_test START", runtime_data["debug"])
     timeout = str(runtime_data["timeout"])
     test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
     # print("CMD is " + " ".join(test_cmd))
-    if runtime_data["debug"]:
-        print("*** execute_test > subprocess.Popen START - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("execute_test > subprocess.Popen START", runtime_data["debug"])
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
-    if runtime_data["debug"]:
-        print("*** execute_test > subprocess.Popen END - " + datetime.datetime.now().strftime("%H:%M:%S"))
-    if runtime_data["debug"]:
-        print("*** execute_test > subprocess.communicate START - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("execute_test > subprocess.Popen END", runtime_data["debug"])
+    print_debug("execute_test > subprocess.communicate START", runtime_data["debug"])
     start_time = time.time()
     out, err = test_proc.communicate()
     end_time = time.time()
-    if runtime_data["debug"]:
-        print("*** execute_test > subprocess.communicate END - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("execute_test > subprocess.communicate END", runtime_data["debug"])
     par_data["stat_lock"].acquire()
-    if runtime_data["debug"]:
-        print("*** execute_test > update_stats START - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("execute_test > update_stats START", runtime_data["debug"])
     try:
         par_data["stats"] = update_stats(err, par_data["stats"], log_data)
     finally:
         par_data["stat_lock"].release()
-    if runtime_data["debug"]:
-        print("*** execute_test > update_stats END - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("execute_test > update_stats END", runtime_data["debug"])
     log_data.write("SIZE: " + str(os.path.getsize(runtime_data["test_run_path"])) + "\n")
     log_data.write("RUNTIME: " + str(end_time - start_time) + "\n")
     if test_proc.returncode != 0:
         log_data.write("!!! Execution fail\n")
-        if test_proc.returncode == 124:
-            par_data["stats"]["timeout_count"] += 1
-        else:
-            log_data.write("Non-timeout\n")
+        par_data["stat_lock"].acquire()
+        try:
+            if test_proc.returncode == 124:
+                par_data["stats"]["timeout_count"] += 1
+            else:
+                par_data["stats"]["non_to_fail_count"] += 1
+                log_data.write("Non-timeout\n")
+        finally:
+            par_data["stat_lock"].release()
         log_data.write("RETURNCODE: " + str(test_proc.returncode) + "\n")
         log_data.write("STDOUT:\n" + out + "\n")
         log_data.write("STDERR:\n" + err + "\n")
-    if runtime_data["debug"]:
-        print("*** execute_test RUNTIME - " + str(end_time - start_time))
-        print("*** execute_test END - " + datetime.datetime.now().strftime("%H:%M:%S"))
+    print_debug("execute_test END", runtime_data["debug"])
+    # print("*** execute_test RUNTIME - " + str(end_time - start_time))
     return test_proc.returncode == 0 or test_proc.returncode == 124
 
 def check_single_list_stat(regex, input_str):
@@ -177,6 +173,7 @@ def write_single_stat(writer, stat_name, stat_data):
     writer.write("\t* {} median: {}\n".format(stat_name, statistics.median(stat_data)))
 
 def write_stats(stat_log_file, stats):
+    # pdb.set_trace()
     with open(stat_log_file, 'w') as stat_log_writer:
         stat_log_writer.write(stats["preamble"].getvalue())
         stat_log_writer.write("END TIME: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
@@ -218,8 +215,11 @@ def get_coverage(runtime_data):
     for gcda_file in gcda_list:
         dst_dir = cwd + "/" + runtime_data["coverage_output_dir"] + os.path.dirname(gcda_file)
         os.makedirs(dst_dir, exist_ok=True)
-        shutil.copy(str(gcda_file), dst_dir)
-        shutil.copy(str(gcda_file).replace(".gcda", ".gcno"), dst_dir)
+        try:
+            shutil.copy(str(gcda_file), dst_dir)
+            shutil.copy(str(gcda_file).replace(".gcda", ".gcno"), dst_dir)
+        except FileNotFoundError:
+            continue
     os.chdir(cwd)
 
 def int_handler(sig, frame):
@@ -444,6 +444,7 @@ if __name__ == '__main__':
             "preamble": stat_data,
             "test_count": 0,
             "timeout_count": 0,
+            "non_to_fail_count": 0,
             (set_empty_regex, "count", "Set empty"): 0,
             (dim_set_regex, "extend", "Dim set"): [],
             (dim_param_regex, "extend", "Dim param"): [],
