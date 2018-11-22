@@ -10,9 +10,9 @@ generators:
         identifier: 'o'
         relations:
             #- "1"
-            - "divWrap(%1,%1)"
+            #- "divWrap(%1,%1)"
             - "z3::pw(%1,%z)"
-            - "z3::operator*(%1,divWrap(%o,%1))"
+            #- "z3::operator*(%1,divWrap(%o,%1))"
 
     zero:
         identifier: 'z'
@@ -25,7 +25,7 @@ relations:
         - "%m=z3::operator+(%1,%z)"
         - "%m=z3::operator-(%1,%z)"
         - "%m=z3::operator*(%1,%o)"
-        - "%m=divWrap(%1,%o)"
+        #- "%m=divWrap(%1,%o)"
         - "%m=z3::pw(%1,%o)"
 
     exponentiation_add:
