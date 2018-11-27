@@ -82,7 +82,9 @@ def compile_test(runtime_data, log_data):
     print_debug("compile_test START", runtime_data["debug"])
     try:
         # Path below is hack
-        compile_cmd = [runtime_data["test_compile_bin"],
+        timeout_value = str(runtime_data["timeout"])
+        compile_cmd = ["timeout", timeout_value,
+            runtime_data["test_compile_bin"],
             runtime_data["test_source_path"].rsplit("/", 1)[1]]
         # print("CMD is " + " ".join(compile_cmd))
         compile_proc = subprocess.run(compile_cmd, check=True,
@@ -105,8 +107,8 @@ def append_id_to_string(string, run_id):
 
 def execute_test(runtime_data, log_data, par_data):
     print_debug("execute_test START", runtime_data["debug"])
-    timeout = str(runtime_data["timeout"])
-    test_cmd = ["timeout", timeout, runtime_data["test_run_path"]]
+    timeout_value = str(runtime_data["timeout"])
+    test_cmd = ["timeout", timeout_value, runtime_data["test_run_path"]]
     # print("CMD is " + " ".join(test_cmd))
     print_debug("execute_test > subprocess.Popen START", runtime_data["debug"])
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
