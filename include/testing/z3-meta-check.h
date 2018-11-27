@@ -4,13 +4,31 @@
 #include "z3++.h"
 
 z3::expr
+ite(bool cond, z3::expr if_then, z3::expr if_else)
+{
+    if (cond)
+    {
+        return if_then;
+    }
+    return if_else;
+}
+
+z3::expr
 divWrap(z3::expr e1, z3::expr e2)
 {
-    if (e2 == 0)
-    {
-        return e1;
-    }
-    return e1/e2;
+    return ite(e2 != 0, e1/e2, e1);
+}
+
+z3::expr
+divWrap(int i, z3::expr e)
+{
+    return ite(e != 0, i/e, e.ctx().num_val(i, e.get_sort()));
+}
+
+z3::expr
+divWrap(z3::expr e, int i)
+{
+    return ite(i != 0, e/i, e);
 }
 
 bool

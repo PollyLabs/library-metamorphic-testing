@@ -860,6 +860,13 @@ ApiFuzzerNew::parseRelationStringVar(std::string rel_string_var) const
         assert(rel_string_var.size() == 2);
         return this->getMetaVar(std::string(1, rel_string_var[1]));
     }
+    else if (std::all_of(rel_string_var.begin(), rel_string_var.end(),
+            [](char c) { return std::isdigit(c); }))
+    {
+        return new PrimitiveObject<unsigned int>(
+            dynamic_cast<const PrimitiveType*>(this->getTypeByName("unsigned int")),
+            std::stoi(rel_string_var));
+    }
     std::vector<const ApiObject*> filtered_objs = this->filterAllObjs(
         &ApiObject::hasName, rel_string_var);
     assert(filtered_objs.size() == 1);
@@ -999,7 +1006,8 @@ ApiFuzzerNew::parseRelationString(std::string rel_string, std::string rel_name)
     size_t eq_pos = rel_string.find('=');
     // TODO properly parse strings with multiple equals that are not assignments
     if (eq_pos != std::string::npos &&
-            rel_string.find('=', eq_pos + 1) == std::string::npos)
+            rel_string.find('=', eq_pos + 1) == std::string::npos &&
+            (rel_string.find('(') >= eq_pos || rel_string.find('(') == std::string::npos))
     {
         store_result_var = this->parseRelationStringVar(
             rel_string.substr(0, eq_pos));
