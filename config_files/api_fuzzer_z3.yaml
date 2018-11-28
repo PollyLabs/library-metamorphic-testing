@@ -86,7 +86,7 @@ funcs:
       special: true
     - name: 'checkValid'
       return_type: 'bool'
-      param_types: ['z3::expr', 'z3::expr', 'z3::context']
+      param_types: ['z3::expr', 'z3::expr']
       condition: []
       special: true
     - name: 'ite'
