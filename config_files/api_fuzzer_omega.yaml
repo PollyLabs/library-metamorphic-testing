@@ -82,17 +82,14 @@ funcs:
       member_type: ''
       return_type: 'omega::Relation'
       param_types: ['omega::Relation', 'omega::Relation']
-      special: true
     - name: 'Difference'
       member_type: ''
       return_type: 'omega::Relation'
       param_types: ['omega::Relation', 'omega::Relation']
-      special: true
     - name: 'Intersection'
       member_type: ''
       return_type: 'omega::Relation'
       param_types: ['omega::Relation', 'omega::Relation']
-      special: true
     - name: 'ConvexHull'
       member_type: ''
       return_type: 'omega::Relation'
@@ -102,7 +99,6 @@ funcs:
       member_type: ''
       return_type: 'omega::Relation'
       param_types: ['omega::Relation']
-      special: true
     - name: 'copy'
       member_type: ''
       return_type: 'omega::Relation'
