@@ -48,10 +48,10 @@ funcs:
     - name: 'divWrap'
       return_type: 'z3::expr'
       param_types: ['z3::expr', 'z3::expr']
-    - name: 'z3::operator/'
+    - name: 'divWrap'
       return_type: 'z3::expr'
       param_types: ['z3::expr', 'unsigned int']
-    - name: 'z3::operator/'
+    - name: 'divWrap'
       return_type: 'z3::expr'
       param_types: ['unsigned int', 'z3::expr']
     - name: 'z3::operator=='
