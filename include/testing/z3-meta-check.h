@@ -4,26 +4,14 @@
 #include "z3++.h"
 
 z3::expr
-val_to_expr(int val, z3::expr expr)
+ite(bool cond, z3::expr if_then, z3::expr if_else)
 {
-    return expr.ctx().num_val(val, expr.get_sort());
+    if (cond)
+    {
+        return if_then;
+    }
+    return if_else;
 }
-
-//z3::expr
-//ite(bool cond, z3::expr if_then, z3::expr if_else)
-//{
-    //if (cond)
-    //{
-        //return if_then;
-    //}
-    //return if_else;
-//}
-
-//z3::expr
-//ite(bool cond, z3::expr if_then, int if_else)
-//{
-    //return ite(cond, if_then, val_to_expr(if_else, if_then));
-//}
 
 z3::expr
 divWrap(z3::expr e1, z3::expr e2)
@@ -34,19 +22,19 @@ divWrap(z3::expr e1, z3::expr e2)
 z3::expr
 divWrap(int i, z3::expr e)
 {
-    return divWrap(val_to_expr(i, e), e);
+    return ite(e != 0, i/e, e.ctx().num_val(i, e.get_sort()));
 }
 
 z3::expr
 divWrap(z3::expr e, int i)
 {
-    return divWrap(e, val_to_expr(i, e));
+    return ite(i != 0, e/i, e);
 }
 
 bool
-checkValid(z3::expr& e1, z3::expr& e2)
+checkValid(z3::expr& e1, z3::expr& e2, z3::context& ctx)
 {
-    z3::solver solver(e1.ctx());
+    z3::solver solver(ctx);
     z3::expr conjecture = z3::operator==(e1, e2);
     solver.add(!conjecture);
     return solver.check() != z3::sat;

@@ -9,17 +9,14 @@ generators:
     one:
         identifier: 'o'
         relations:
-            #- "1"
-            #- "divWrap(%1,%1)"
+            - "1"
             - "ite(z3::operator!=(%1,0),divWrap(%1,%1),%o)"
             - "z3::pw(%1,%z)"
-            - "ite(z3::operator!=(%1,0),z3::operator*(%1,divWrap(%o,%1)),%o)"
-            #- "z3::operator*(%1,divWrap(%o,%1))"
 
     zero:
         identifier: 'z'
         relations:
-            #- "0"
+            - "0"
             - "z3::operator*(%1,%z)"
             - "z3::operator-(%1,%1)"
 relations:
