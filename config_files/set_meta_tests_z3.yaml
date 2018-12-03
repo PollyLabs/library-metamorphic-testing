@@ -10,7 +10,7 @@ generators:
         identifier: 'o'
         relations:
             #- "1"
-            - "ite(z3::operator!=(%1,0),divWrap(%1,%1),%o)"
+            - "ite(z3::operator!=(%1,0),%1/%1,%o)"
             - "z3::pw(%1,%z)"
 
     zero:
