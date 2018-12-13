@@ -12,7 +12,7 @@ inputs:
       range: '[15,25]'
     - name: 'depth_max'
       type: 'unsigned int'
-      range: '[1,2]'
+      range: '[17,25]'
 
 types:
     - name: 'omega::Relation'
