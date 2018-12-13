@@ -390,6 +390,8 @@ if __name__ == '__main__':
     output_tests_folder = output_folder + runner_config_data["output_tests_folder"]
     coverage_temp_file = runner_config_data["coverage_temp_file"]
     coverage_output_dir = output_folder + runner_config_data["coverage_output_dir"]
+    api_fuzzer_file_out = output_folder + runner_config_data["api_fuzzer_file"]
+    meta_test_file_out = output_folder + runner_config_data["meta_test_file"]
 
 # Signal handler setup
     signal.signal(signal.SIGINT, int_handler)
@@ -404,6 +406,8 @@ if __name__ == '__main__':
         test_source_path = append_id_to_string(test_source_path, internal_seed)
         test_run_path = append_id_to_string(test_run_path, internal_seed)
         coverage_output_dir = append_id_to_string(coverage_output_dir, internal_seed)
+        api_fuzzer_file_out = append_id_to_string(api_fuzzer_file_out, internal_seed)
+        meta_test_file_out = append_id_to_string(meta_test_file_out, internal_seed)
 
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
@@ -412,6 +416,10 @@ if __name__ == '__main__':
         print("Found existing output folder {}, deleting...".format(output_tests_folder))
         shutil.rmtree(output_tests_folder)
     os.mkdir(output_tests_folder)
+
+# Copy over specifications file
+    shutil.copy(runner_config_data["api_fuzzer_file"], api_fuzzer_file_out)
+    shutil.copy(runner_config_data["meta_test_file"], meta_test_file_out)
 
     if args.lib_path:
         lib_path = args.lib_path

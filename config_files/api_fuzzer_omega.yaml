@@ -12,7 +12,7 @@ inputs:
       range: '[15,25]'
     - name: 'depth_max'
       type: 'unsigned int'
-      range: '[17,25]'
+      range: '[1,2]'
 
 types:
     - name: 'omega::Relation'
@@ -64,10 +64,6 @@ funcs:
       #member_type: ''
       #return_type: 'omega::Relation'
       #param_types: ['<seed>', '<input=var_count>']
-    - name: 'makeTupleRelation'
-      member_type: ''
-      return_type: 'omega::Relation'
-      param_types: ['<range=(0,10]>', '<range=(0,10]>']
     # Special funcs
     - name: 'print'
       member_type: 'omega::Relation'
@@ -102,9 +98,10 @@ funcs:
       param_types: ['omega::Relation']
       special: true
 
-#constructors:
-    #- name: 'omega::Relation'
-      #param_types: ['<input=var_count>']
+constructors:
+    - name: 'makeTupleRelation'
+      return_type: 'omega::Relation'
+      param_types: ['<range=(0,10]>', '<range=(0,10]>']
 
 set_gen:
     - type: 'func'
