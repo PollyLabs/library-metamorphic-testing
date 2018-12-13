@@ -390,8 +390,8 @@ if __name__ == '__main__':
     output_tests_folder = output_folder + runner_config_data["output_tests_folder"]
     coverage_temp_file = runner_config_data["coverage_temp_file"]
     coverage_output_dir = output_folder + runner_config_data["coverage_output_dir"]
-    api_fuzzer_file_out = output_folder + runner_config_data["api_fuzzer_file"]
-    meta_test_file_out = output_folder + runner_config_data["meta_test_file"]
+    api_fuzzer_file_out = output_folder + config_file["api_fuzzer_file"]
+    meta_test_file_out = output_folder + config_file["meta_test_file"]
 
 # Signal handler setup
     signal.signal(signal.SIGINT, int_handler)
@@ -418,8 +418,9 @@ if __name__ == '__main__':
     os.mkdir(output_tests_folder)
 
 # Copy over specifications file
-    shutil.copy(runner_config_data["api_fuzzer_file"], api_fuzzer_file_out)
-    shutil.copy(runner_config_data["meta_test_file"], meta_test_file_out)
+    os.makedirs(os.path.dirname(api_fuzzer_file_out), exist_ok=True)
+    shutil.copy(config_file["api_fuzzer_file"], api_fuzzer_file_out)
+    shutil.copy(config_file["meta_test_file"], meta_test_file_out)
 
     if args.lib_path:
         lib_path = args.lib_path
