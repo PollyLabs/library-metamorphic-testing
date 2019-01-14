@@ -9,14 +9,14 @@ generators:
     one:
         identifier: 'o'
         relations:
-            #- "1"
+            #- "<int1>"
             - "z3::ite(z3::operator!=(%1,0),z3::operator/(%1,%1),%o)"
             - "z3::pw(%1,%z)"
 
     zero:
         identifier: 'z'
         relations:
-            #- "0"
+            #- "<int0>"
             - "z3::operator*(%1,%z)"
             - "z3::operator-(%1,%1)"
 relations:
@@ -26,10 +26,12 @@ relations:
         - "%m=z3::operator*(%1,%o)"
         #- "%m=divWrap(%1,%o)"
         - "%m=z3::pw(%1,%o)"
+        - "%m=z3::operator-(z3::operator-(%1))"
+        - "%m=z3::simplify(%1)"
 
     exponentiation_add:
-        - "%m=z3::pw(%1,z3::operator+(z3::ite(z3::operator>(%2,0),%2,z3::operator-(%2)),z3::ite(z3::operator>(%3,0),%3,z3::operator-(%3))))"
-        - "%m=z3::operator*(z3::pw(%1,z3::ite(z3::operator>(%2,0),%2,z3::operator-(%2))),z3::pw(%1,z3::ite(z3::operator>(%3,0),%3,z3::operator-(%3))))"
+        - "%m=z3::pw(%1,z3::operator+(expr_abs(%2),expr_abs(%3)))"
+        - "%m=z3::operator*(z3::pw(%1,expr_abs(%2)),z3::pw(%1,expr_abs(%3)))"
 
     exponentiation_mul:
         - "%m=z3::pw(z3::operator*(%1,%2),%3)"
@@ -54,3 +56,8 @@ relations:
     multiplication_commut:
         - "%m=z3::operator*(%1,%2)"
         - "%m=z3::operator*(%2,%1)"
+
+    modulo:
+        - "%m=z3::mod(%1,%2)"
+        - "%m=z3::rem(%1,%2)"
+        - "%m=z3::operator-(%1,z3::operator*(z3::operator/(%1,%2),%2))"
