@@ -93,9 +93,19 @@ funcs:
       param_types: ['z3::expr', 'z3::expr']
       condition: []
       special: true
-    - name: 'ite'
+    - name: 'z3::ite'
       return_type: 'z3::expr'
       param_types: ['bool', 'z3::expr', 'z3::expr']
+      condition: []
+      special: true
+    - name: 'z3::ite'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr', 'z3::expr']
+      condition: []
+      special: true
+    - name: 'z3::operator>'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'unsigned int']
       condition: []
       special: true
 
