@@ -123,11 +123,11 @@ funcs:
       param_types: ['z3::expr', 'z3::expr']
       condition: []
       special: true
-    - name: 'z3::simplify'
+    - name: 'simplify'
       return_type: 'z3::expr'
-      param_types: ['z3::expr']
+      member_type: 'z3::expr'
+      param_types: ['']
       condition: []
-      special: true
 
 constructors:
     - name: 'z3::solver'

@@ -27,7 +27,7 @@ relations:
         #- "%m=divWrap(%1,%o)"
         - "%m=z3::pw(%1,%o)"
         - "%m=z3::operator-(z3::operator-(%1))"
-        - "%m=z3::simplify(%1)"
+        - "%m=%1.simplify()"
 
     exponentiation_add:
         - "%m=z3::pw(%1,z3::operator+(expr_abs(%2),expr_abs(%3)))"
