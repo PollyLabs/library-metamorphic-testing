@@ -10,7 +10,7 @@ val_to_expr(int val, z3::expr expr)
 }
 
 z3::expr
-abs(z3::expr expr)
+expr_abs(z3::expr expr)
 {
     return ite(expr < 0, -expr, expr);
 }
