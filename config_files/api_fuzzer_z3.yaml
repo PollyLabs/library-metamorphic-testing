@@ -126,7 +126,7 @@ funcs:
     - name: 'simplify'
       return_type: 'z3::expr'
       member_type: 'z3::expr'
-      param_types: ['']
+      param_types: []
       condition: []
 
 constructors:
