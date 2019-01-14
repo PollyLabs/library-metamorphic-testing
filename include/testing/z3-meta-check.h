@@ -10,6 +10,12 @@ val_to_expr(int val, z3::expr expr)
 }
 
 z3::expr
+abs(z3::expr expr)
+{
+    return ite(expr < 0, -expr, expr);
+}
+
+z3::expr
 divWrap(z3::expr e1, z3::expr e2)
 {
     return ite(e2 != 0, e1/e2, e1);
