@@ -9,16 +9,16 @@ generators:
     one:
         identifier: 'o'
         relations:
-            #- "<int1>"
-            - "z3::ite(z3::operator!=(%1,0),z3::operator/(%1,%1),%o)"
-            - "z3::pw(%1,%z)"
+            - "get_one(%1)"
+            #- "z3::ite(z3::operator!=(%1,0),z3::operator/(%1,%1),%o)"
+            #- "z3::pw(%1,%z)"
 
     zero:
         identifier: 'z'
         relations:
-            #- "<int0>"
-            - "z3::operator*(%1,%z)"
-            - "z3::operator-(%1,%1)"
+            - "get_zero(%1)"
+            #- "z3::operator*(%1,%z)"
+            #- "z3::operator-(%1,%1)"
 relations:
     identity:
         - "%m=z3::operator+(%1,%z)"

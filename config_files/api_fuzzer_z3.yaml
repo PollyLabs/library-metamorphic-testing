@@ -128,6 +128,17 @@ funcs:
       member_type: 'z3::expr'
       param_types: []
       condition: []
+    - name: 'get_zero'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr']
+      condition: []
+      special: true
+    - name: 'get_one'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr']
+      condition: []
+      special: true
+
 
 constructors:
     - name: 'z3::solver'

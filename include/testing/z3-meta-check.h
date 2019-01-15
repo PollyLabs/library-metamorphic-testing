@@ -10,6 +10,18 @@ val_to_expr(int val, z3::expr expr)
 }
 
 z3::expr
+get_one(z3::expr e)
+{
+    return val_to_expr(1, e);
+}
+
+z3::expr
+get_zero(z3::expr e)
+{
+    return val_to_expr(0, e);
+}
+
+z3::expr
 expr_abs(z3::expr expr)
 {
     return ite(expr < 0, -expr, expr);
