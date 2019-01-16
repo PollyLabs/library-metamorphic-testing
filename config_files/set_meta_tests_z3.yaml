@@ -10,15 +10,15 @@ generators:
         identifier: 'o'
         relations:
             - "get_one(%1)"
-            #- "z3::ite(z3::operator!=(%1,0),z3::operator/(%1,%1),%o)"
-            #- "z3::pw(%1,%z)"
+            - "z3::ite(z3::operator!=(%1,0),z3::operator/(%1,%1),%o)"
+            - "z3::pw(%1,%z)"
 
     zero:
         identifier: 'z'
         relations:
             - "get_zero(%1)"
-            #- "z3::operator*(%1,%z)"
-            #- "z3::operator-(%1,%1)"
+            - "z3::operator*(%1,%z)"
+            - "z3::operator-(%1,%1)"
 relations:
     identity:
         - "%m=z3::operator+(%1,%z)"
@@ -58,6 +58,6 @@ relations:
         - "%m=z3::operator*(%2,%1)"
 
     modulo:
-        - "%m=z3::mod(%1,%2)"
-        - "%m=z3::rem(%1,%2)"
-        - "%m=z3::operator-(%1,z3::operator*(z3::operator/(%1,%2),%2))"
+        - "%m=ite(%2!=0,z3::mod(%1,%2),%1)"
+        - "%m=ite(%2!=0,z3::rem(%1,%2),%1)"
+        - "%m=ite(%2!=0,z3::operator-(%1,z3::operator*(z3::operator/(%1,%2),%2)),%1)"
