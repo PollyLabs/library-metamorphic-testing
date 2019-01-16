@@ -1006,7 +1006,7 @@ ApiFuzzerNew::parseRelationString(std::string rel_string, std::string rel_name)
     size_t eq_pos = rel_string.find('=');
     // TODO properly parse strings with multiple equals that are not assignments
     if (eq_pos != std::string::npos &&
-            rel_string.find('=', eq_pos + 1) == std::string::npos &&
+            //rel_string.find('=', eq_pos + 1) == std::string::npos &&
             (rel_string.find('(') >= eq_pos || rel_string.find('(') == std::string::npos))
     {
         store_result_var = this->parseRelationStringVar(

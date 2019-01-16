@@ -58,6 +58,6 @@ relations:
         - "%m=z3::operator*(%2,%1)"
 
     modulo:
-        - "%m=ite(%2!=0,z3::mod(%1,%2),%1)"
-        - "%m=ite(%2!=0,z3::rem(%1,%2),%1)"
-        - "%m=ite(%2!=0,z3::operator-(%1,z3::operator*(z3::operator/(%1,%2),%2)),%1)"
+        - "%m=z3::ite(z3::operator!=(%2,0),z3::mod(%1,%2),%1)"
+        - "%m=z3::ite(z3::operator!=(%2,0),z3::rem(%1,%2),%1)"
+        - "%m=z3::ite(z3::operator!=(%2,0),z3::operator-(%1,z3::operator*(z3::operator/(%1,%2),%2)),%1)"
