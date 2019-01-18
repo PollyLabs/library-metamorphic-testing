@@ -212,7 +212,7 @@ def write_version_id(writer, path, id_name):
 
 def get_coverage(runtime_data):
     cwd = os.getcwd()
-    os.chdir(runtime_data["lib_build_dir"])
+    os.chdir(runtime_data["lib_coverage_dir"])
     gcda_list = pathlib.Path('.').glob("./**/*.gcda")
     for gcda_file in gcda_list:
         dst_dir = cwd + "/" + runtime_data["coverage_output_dir"] + os.path.dirname(gcda_file)
@@ -235,8 +235,8 @@ def int_handler(sig, frame):
 def finalize_experiments(runtime_data, par_data):
     # pdb.set_trace()
     cov_stdout,cov_stderr=("", "Did not run")
-    if runtime_data["lib_build_dir"]:
-        assert os.path.exists(runtime_data["lib_build_dir"])
+    if runtime_data["lib_coverage_dir"]:
+        assert os.path.exists(runtime_data["lib_coverage_dir"])
         get_coverage(runtime_data)
     write_stats(runtime_data["stat_log_file"], par_data["stats"])
 
@@ -371,6 +371,7 @@ if __name__ == '__main__':
     test_emitter_path = runner_config_data["test_emitter_path"]
     lib_path = runner_config_data["lib_path"]
     lib_build_dir = runner_config_data["lib_build_dir"]
+    lib_coverage_dir = runner_config_data["lib_coverage_dir"]
     test_compile_dir = runner_config_data["test_compile_dir"]
 # Test runtime setup
     test_compile_bin = runner_config_data["test_compile_bin"]
@@ -388,7 +389,6 @@ if __name__ == '__main__':
     log_file = output_folder + runner_config_data["log_file_path"]
     stat_log_file = output_folder + runner_config_data["stat_log_file_path"]
     output_tests_folder = output_folder + runner_config_data["output_tests_folder"]
-    coverage_temp_file = runner_config_data["coverage_temp_file"]
     coverage_output_dir = output_folder + runner_config_data["coverage_output_dir"]
     api_fuzzer_file_out = output_folder + config_file["api_fuzzer_file"]
     meta_test_file_out = output_folder + config_file["meta_test_file"]
@@ -470,8 +470,8 @@ if __name__ == '__main__':
             "test_source_path": test_source_path,
             "output_tests_folder": output_tests_folder,
             "test_emitter_path": test_emitter_path,
+            "lib_coverage_dir": lib_coverage_dir,
             "lib_build_dir": lib_build_dir,
-            "coverage_temp_file": coverage_temp_file,
             "coverage_output_dir": coverage_output_dir,
             "stat_log_file": stat_log_file,
             "debug": args.debug,

@@ -7,7 +7,8 @@ meta_runner:
 # Path setup
     test_emitter_path: "./build/test_emitter"
     lib_path: "./libs"
-    lib_build_dir: ""
+    lib_build_dir: ~
+    lib_coverage_dir: ~
     test_compile_dir: "./out"
 # Test runtime setup
     test_compile_bin: "./compile_omega.sh"
