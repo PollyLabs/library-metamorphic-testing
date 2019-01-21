@@ -371,7 +371,10 @@ if __name__ == '__main__':
     test_emitter_path = runner_config_data["test_emitter_path"]
     lib_path = runner_config_data["lib_path"]
     lib_build_dir = runner_config_data["lib_build_dir"]
-    lib_coverage_dir = runner_config_data["lib_coverage_dir"]
+    if (runner_config_data["lib_coverage_dir"]):
+        lib_coverage_dir = runner_config_data["lib_coverage_dir"]
+    else:
+        lib_coverage_dir = runner_config_data["lib_build_dir"]
     test_compile_dir = runner_config_data["test_compile_dir"]
 # Test runtime setup
     test_compile_bin = runner_config_data["test_compile_bin"]
