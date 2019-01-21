@@ -10,18 +10,21 @@ get_point_with_coordinates(isl::space point_space, isl::val val0,
 {
     isl::point point_out(point_space);
     isl::ctx ctx = point_space.get_ctx();
+    std::cout << point_space.dim(isl::dim::set) << std::endl;
+    std::cout << point_space.dim(isl::dim::param) << std::endl;
     size_t index = 0;
     std::vector<isl::val> vals {val0, val1, val2, val3, val4, val5, val6, val7,
         val8, val9};
     for (size_t i = 0; i < point_space.dim(isl::dim::set); ++i)
     {
-        point_out = point_out.set_coordinate_val(isl::dim::set, i, vals.at(index++));
-        assert(index < 10);
+        point_out = point_out.set_coordinate_val(isl::dim::set, i, vals.at(index % 10));
+        index++;
     }
     for (size_t i = 0; i < point_space.dim(isl::dim::param); ++i)
     {
-        point_out = point_out.set_coordinate_val(isl::dim::param, i, vals.at(index++));
-        assert(index < 10);
+        point_out = point_out.set_coordinate_val(isl::dim::param, i, vals.at(index % 10));
+        index++;
     }
+    assert(index <= 10);
     return point_out;
 }
