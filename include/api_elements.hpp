@@ -9,6 +9,8 @@
 #include <sstream>
 #include <vector>
 
+#include <climits>
+
 #include "fmt/format.h"
 
 
@@ -126,6 +128,7 @@ class ApiObject {
 
         bool isPrimitive() const { return this->getType()->isPrimitive(); };
         bool isDeclared() const { return this->declared; };
+        virtual bool isFuncObj() const { return false; };
         bool hasName(std::string name_check) const {
             return !this->name.compare(name_check);
         };
@@ -189,7 +192,10 @@ class FuncObject : public ApiObject {
         std::vector<const ApiObject*> getParams() const { return this->params; };
         const ApiObject* getTarget() const { return this->target; };
 
+        bool isFuncObj() const { return true; };
+
         std::string toStr() const;
+        std::string invStr() const;
         std::string toStrWithType() const { assert(false); };
 };
 

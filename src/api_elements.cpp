@@ -56,32 +56,7 @@ makeArgString(std::vector<T> func_args)
     std::vector<std::string> args_to_string;
     for (T& obj : func_args)
     {
-        std::string obj_str = obj->toStr();
-        if (std::is_same<T, ApiObject const*>::value)
-        {
-            if (!reinterpret_cast<ApiObject const*>(obj)->isPrimitive())
-            {
-                obj_str = "copy(" + obj_str + ")";
-            }
-        }
-        args_to_string.push_back(obj_str);
-    }
-    return getStringWithDelims(args_to_string, ',');
-}
-
-template<>
-std::string
-makeArgString<ApiObject>(std::vector<ApiObject> func_args)
-{
-    std::vector<std::string> args_to_string;
-    for (ApiObject& obj : func_args)
-    {
-        std::string obj_str = obj.toStr();
-        //if (!obj.getType()->isExplicit())
-        //{
-            obj_str = "copy(" + obj_str + ")";
-        //}
-        args_to_string.push_back(obj_str);
+        args_to_string.push_back(obj->toStr());
     }
     return getStringWithDelims(args_to_string, ',');
 }
@@ -229,6 +204,36 @@ FuncObject::toStr() const
     return fmt::format("{}({})", this->name, getStringWithDelims(param_names, ','));
 }
 
+std::string
+FuncObject::invStr() const
+{
+    std::vector<std::string> param_names;
+    //for (const ApiObject* param : this->params)
+    //{
+        //param_names.push_back(param->toStr());
+    //}
+    std::transform(this->params.begin(), this->params.end(),
+        std::back_inserter(param_names),
+        [](const ApiObject* param) {
+            if (param->getID() != UINT_MAX && param->getType()->hasName("omega::Relation"))
+            {
+                return "copy(" + param->toStr() + ")";
+            }
+            else if (param->isFuncObj())
+            {
+                return dynamic_cast<const FuncObject*>(param)->invStr();
+            }
+            return param->toStr();
+            });
+    if (target)
+    {
+        return fmt::format("{}.{}({})", this->target->toStr(), this->name,
+            getStringWithDelims(param_names, ','));
+    }
+    return fmt::format("{}({})", this->name, getStringWithDelims(param_names, ','));
+}
+
+
 const ApiObject*
 MetaVarObject::getConcreteVar(const ApiObject* curr_meta_variant,
     const std::vector<const ApiObject*>& meta_variants,
@@ -373,8 +378,30 @@ ApiFunc::printInvocation(std::vector<const ApiObject*> params) const
     assert(params.size() == this->getParamCount());
     std::stringstream print_inv_ss;
     print_inv_ss << this->getName() << "(";
-    print_inv_ss << makeArgString(params) << ")";
+
+    std::vector<std::string> args_to_string;
+    for (const ApiObject* obj : params)
+    {
+        std::string obj_str;
+        if (!obj->isFuncObj())
+        {
+            obj_str = obj->toStr();
+        }
+        else
+        {
+            obj_str = dynamic_cast<const FuncObject*>(obj)->invStr();
+        }
+        if (obj->getID() != UINT_MAX && obj->getType()->hasName("omega::Relation"))
+        {
+            obj_str = "copy(" + obj_str + ")";
+        }
+        args_to_string.push_back(obj_str);
+    }
+    print_inv_ss << getStringWithDelims(args_to_string, ',');
+    print_inv_ss << ")";
+
     return print_inv_ss.str();
+
 }
 
 /*******************************************************************************

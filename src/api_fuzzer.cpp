@@ -477,7 +477,6 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     this->initTypes(api_fuzzer_data["types"]);
     this->initTypes(api_fuzzer_data["singleton_types"]);
     this->initFuncs(api_fuzzer_data["funcs"]);
-    this->initFuncs(api_fuzzer_data["special_funcs"]);
     this->initConstructors(api_fuzzer_data["constructors"]);
     this->initGenConfig(api_fuzzer_data["set_gen"]);
 
