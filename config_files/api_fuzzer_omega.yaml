@@ -9,10 +9,10 @@ pre_setup:
 inputs:
     - name: 'constraints'
       type: 'unsigned int'
-      range: '[10,20]'
+      range: '[5,7]'
     - name: 'depth_max'
       type: 'unsigned int'
-      range: '[5,10]'
+      range: '[3,5]'
 
 types:
     - name: 'omega::Relation'
@@ -88,10 +88,30 @@ funcs:
       return_type: 'omega::Relation'
       param_types: ['omega::Relation']
       special: true
+    #- name: 'Sample_Solution'
+      #member_type: ''
+      #return_type: 'omega::Relation'
+      #param_types: ['omega::Relation']
+    #- name: 'Project_Sym'
+      #member_type: ''
+      #return_type: 'omega::Relation'
+      #param_types: ['omega::Relation']
+    #- name: 'Range'
+      #member_type: ''
+      #return_type: 'omega::Relation'
+      #param_types: ['omega::Relation']
+    #- name: 'Domain'
+      #member_type: ''
+      #return_type: 'omega::Relation'
+      #param_types: ['omega::Relation']
     - name: 'Complement'
       member_type: ''
       return_type: 'omega::Relation'
       param_types: ['omega::Relation']
+    #- name: 'Inverse'
+      #member_type: ''
+      #return_type: 'omega::Relation'
+      #param_types: ['omega::Relation']
     - name: 'copy'
       member_type: ''
       return_type: 'omega::Relation'
