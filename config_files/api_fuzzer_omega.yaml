@@ -140,13 +140,7 @@ set_gen:
             - '<output_var>'
             - '<new=omega::Relation>'
     - type: 'func'
-      func: 'print'
-      target: '<output_var>'
-    - type: 'func'
       func: 'ConvexHull'
       return: '<output_var>'
       func_params:
             - '<output_var>'
-    - type: 'func'
-      func: 'print'
-      target: '<output_var>'
