@@ -9,10 +9,10 @@ pre_setup:
 inputs:
     - name: 'constraints'
       type: 'unsigned int'
-      range: '[5,7]'
+      range: '[2,4]'
     - name: 'depth_max'
       type: 'unsigned int'
-      range: '[3,5]'
+      range: '[2,4]'
 
 types:
     - name: 'omega::Relation'

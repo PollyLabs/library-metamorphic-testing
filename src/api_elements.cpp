@@ -56,7 +56,32 @@ makeArgString(std::vector<T> func_args)
     std::vector<std::string> args_to_string;
     for (T& obj : func_args)
     {
-        args_to_string.push_back(obj->toStr());
+        std::string obj_str = obj->toStr();
+        if (std::is_same<T, ApiObject const*>::value)
+        {
+            if (!reinterpret_cast<ApiObject const*>(obj)->isPrimitive())
+            {
+                obj_str = "copy(" + obj_str + ")";
+            }
+        }
+        args_to_string.push_back(obj_str);
+    }
+    return getStringWithDelims(args_to_string, ',');
+}
+
+template<>
+std::string
+makeArgString<ApiObject>(std::vector<ApiObject> func_args)
+{
+    std::vector<std::string> args_to_string;
+    for (ApiObject& obj : func_args)
+    {
+        std::string obj_str = obj.toStr();
+        //if (!obj.getType()->isExplicit())
+        //{
+            obj_str = "copy(" + obj_str + ")";
+        //}
+        args_to_string.push_back(obj_str);
     }
     return getStringWithDelims(args_to_string, ',');
 }
