@@ -2,7 +2,9 @@
 input_count: 3
 meta_var_type: "omega::Relation"
 variant_count: 20
-meta_check: "Must_Be_Subset(copy(%m),copy(%m0)) && Must_Be_Subset(copy(%m0),copy(%m))"
+meta_check:
+    - "Must_Be_Subset(copy(%m),copy(%m0));"
+    - "Must_Be_Subset(copy(%m0),copy(%m));"
 
 generators:
     universe:
