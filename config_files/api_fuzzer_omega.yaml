@@ -117,6 +117,11 @@ funcs:
       return_type: 'omega::Relation'
       param_types: ['omega::Relation']
       special: true
+    - name: 'Must_Be_Subset'
+      member_type: ''
+      return_type: 'bool'
+      param_types: ['omega::Relation', 'omega::Relation']
+      special: true
 
 constructors:
     - name: 'makeTupleRelation'
