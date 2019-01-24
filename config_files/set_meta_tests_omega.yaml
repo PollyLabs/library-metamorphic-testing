@@ -3,8 +3,8 @@ input_count: 3
 meta_var_type: "omega::Relation"
 variant_count: 20
 meta_check:
-    - "Must_Be_Subset(%m,%m0);"
-    - "Must_Be_Subset(%m0,%m);"
+    - "assert(Must_Be_Subset(%m,%m0));"
+    - "assert(Must_Be_Subset(%m0,%m));"
 
 generators:
     universe:
