@@ -122,6 +122,12 @@ funcs:
       return_type: 'bool'
       param_types: ['omega::Relation', 'omega::Relation']
       special: true
+    - name: 'assert'
+      member_type: ''
+      return_type: ''
+      param_types: ['bool']
+      condition: []
+      special: true
 
 constructors:
     - name: 'makeTupleRelation'
