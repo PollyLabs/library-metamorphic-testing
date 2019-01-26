@@ -496,7 +496,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
 
     /* Object fuzzing */
     size_t input_var_count = meta_test_data["input_count"].as<size_t>();
-    for (int i = 1; i <= input_var_count; ++i)
+    for (int i = 1; i <= input_var_count * 2; ++i)
     {
         this->current_output_var =
             this->generateApiObjectDecl("out", this->meta_variant_type, false);
@@ -508,6 +508,16 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         this->generateSet();
     }
     assert(!this->output_vars.empty());
+    assert(this->output_vars.size() == input_var_count * 2);
+    std::vector<const ApiObject*> unite_output_vars;
+    for (size_t i = 0; i < input_var_count; i++)
+    {
+        const ApiObject* new_out_var = this->generateApiObject("new_out",
+            this->meta_variant_type, this->getAnyFuncByName("unite"),
+            this->output_vars.at(i*2), {this->output_vars.at(i * 2 + 1)});
+        unite_output_vars.push_back(new_out_var);
+    }
+    this->output_vars = unite_output_vars;
 
     // TODO reconsider how meta checks are generated; perhaps only generate
     // them when required

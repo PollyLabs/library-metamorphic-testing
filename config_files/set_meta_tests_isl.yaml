@@ -46,6 +46,10 @@ relations:
         - "%m = %1.coalesce()"
         - "%m = %1.detect_equalities()"
 
+    project:
+        - "%m=make_project(%1)"
+        - "%m=make_project(%1)"
+
     complement:
         - "%m = %1.complement()"
         - "%m = %u.subtract(%1)"
