@@ -2,10 +2,11 @@
 
 static unsigned int indent = 0;
 const std::string config_file_path =
-    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_z3.yaml";
+    //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_cairo.yaml";
+    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl.yaml";
 
-const bool DEBUG = false;
-//const bool DEBUG = true;
+//const bool DEBUG = false;
+const bool DEBUG = true;
 
 std::map<std::string, Modes> string_to_mode {
     {"SET_FUZZ", SET_FUZZ},
@@ -101,7 +102,6 @@ main(int argc, char** argv)
     std::string meta_test_path = working_dir + config_data["meta_test_file"].as<std::string>();
     std::string output_file = working_dir + config_data["test_emitter_output_file"].as<std::string>();
 
-
     Arguments args;
     args.output_file = output_file;
     parseArgs(args, argc, argv);
@@ -136,7 +136,7 @@ main(int argc, char** argv)
     mainPreSetup(test_ss, pre_setup_instrs);
     //std::unique_ptr<SetMetaTester> smt (new SetMetaTester(meta_test_path, rng));
 
-    std::unique_ptr<ApiFuzzer> api_fuzzer (
+    std::unique_ptr<ApiFuzzerNew> api_fuzzer (
         new ApiFuzzerNew(api_fuzzer_path, meta_test_path, args.seed, rng));
     for (std::string instr : api_fuzzer->getInstrStrs())
     {

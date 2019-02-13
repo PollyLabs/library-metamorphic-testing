@@ -1,6 +1,7 @@
 #ifndef API_FUZZER_HPP
 #define API_FUZZER_HPP
 
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -63,6 +64,7 @@ class ApiFuzzer {
             all_objs(std::vector<const ApiObject*>()),
             types(std::set<const ApiType*>()),
             funcs(std::set<const ApiFunc*>()), rng(_rng), seed(_seed) {};
+        virtual ~ApiFuzzer() = default;
 
         std::vector<const ApiInstructionInterface*> getInstrList() const;
         std::vector<std::string> getInstrStrs() const;
@@ -103,6 +105,7 @@ class ApiFuzzer {
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
         const ApiObject* generateApiObjectDecl(std::string, const ApiType*,
             bool = true);
+        void applyFunc(const ApiFunc*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
             std::vector<const ApiObject*>);
@@ -132,7 +135,7 @@ class ApiFuzzerNew : public ApiFuzzer {
 
     public:
         ApiFuzzerNew(std::string&, std::string&, unsigned int, std::mt19937*);
-        //~ApiFuzzerNew();
+        ~ApiFuzzerNew();
 
     private:
         void initPrimitiveTypes();
@@ -141,8 +144,10 @@ class ApiFuzzerNew : public ApiFuzzer {
         void initFuncs(YAML::Node);
         ApiFunc* genNewApiFunc(YAML::Node);
         void initConstructors(YAML::Node);
+        void initVariables(YAML::Node);
         void initGenConfig(YAML::Node);
         void runGeneration(YAML::Node);
+        void generateSeq(size_t);
         void generateDecl(YAML::Node);
         void generateForLoop(YAML::Node);
         void generateFunc(YAML::Node, int = -1);

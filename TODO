@@ -1,9 +1,13 @@
+* change specification fields as decided with Ally a while ago
+* add pointer type support to fuzzer
+* add variable declaration support to fuzzer
+* add primitive type support to meta tester
+* move to using smart pointers and move semantics throughout
+
+-------------------------------------------------------------------------------
+
 no basic sets
 no constraints per equality / inequality
-
-meta_runner.py
-* refactor coverage logging and file locations
-* add more statistics logging (e.g. empty sets)
 
 set_meta_tester.cpp
 * further integrate with ApiFuzzer (e.g. random int generation)
@@ -11,9 +15,6 @@ set_meta_tester.cpp
 api_fuzzer.cpp
 * intersperse generation with metamorphic testing
 * merge ApiFuzzerNew with ApiFuzzer
-* fuzz input sets as requested by the set_meta_tester
-* get rid of hardcoded variable names (i.e. link output variable name from
-fuzzer to input variables of meta tester)
 
 api_elements.cpp
 * finish ApiExpr definition and replace the hardcoded linear expression

@@ -37,6 +37,7 @@ class ApiType {
 
     public:
         ApiType(std::string _name) : name(_name) { assert (!_name.empty()); };
+        virtual ~ApiType() = default;
 
         std::string toStr() const { return this->name; };
 
@@ -119,6 +120,7 @@ class ApiObject {
 
         ApiObject(std::string _name, unsigned int _id, const ApiType* _type) :
             id(_id), name(_name), type(_type), declared(false) {};
+        virtual ~ApiObject() = default;
 
         const ApiType* getType() const { return this->type; };
         void setDeclared() { this->declared = true; };
@@ -193,17 +195,13 @@ class FuncObject : public ApiObject {
         std::string toStrWithType() const { assert(false); };
 };
 
-
 class ApiFunc {
     const std::string name;
     const ApiType* member_type;
     const ApiType* return_type;
     const std::vector<const ApiType*> param_types;
     const std::vector<std::string> conditions;
-    const bool special;
-    const bool statik;
-    const bool ctor;
-    const bool max_depth;
+    std::map<std::string, bool> flags;
 
     public:
         ApiFunc(std::string _name, const ApiType* _member_type,
@@ -212,9 +210,14 @@ class ApiFunc {
             std::vector<std::string> _conditions, bool _special = false,
             bool _statik = false, bool _ctor = false, bool _max_depth = false) :
             name(_name), member_type(_member_type), return_type(_return_type),
-            param_types(_param_types), conditions(_conditions),
-            special(_special), statik(_statik), ctor(_ctor),
-            max_depth(_max_depth) {};
+            param_types(_param_types), conditions(_conditions)
+            {
+                this->flags.insert({"special", _special});
+                this->flags.insert({"statik", _statik});
+                this->flags.insert({"ctor", _ctor});
+                this->flags.insert({"max_depth", _max_depth});
+            }
+        virtual ~ApiFunc() = default;
 
         std::string getName() const { return this->name; };
         std::vector<const ApiType*> getParamTypes() const {
@@ -241,12 +244,16 @@ class ApiFunc {
             return !this->getName().compare(name_check);
         };
         bool hasParamTypes(std::vector<const ApiType*>) const;
-        bool isSpecial() const { return this->special; };
-        bool notIsSpecial() const { return !this->special; };
-        bool isStatic() const { return this->statik; };
-        bool isCtor() const { return this->ctor; };
-        bool notIsCtor() const { return !this->ctor; };
-        bool notIsMaxDepth() const { return !this->max_depth; };
+        bool checkFlag(std::string flag) const
+        {
+            bool negative = flag.front() == '!';
+            if (negative)
+            {
+                flag.erase(flag.begin());
+            }
+            assert(flags.count(flag) != 0);
+            return negative ^ this->flags.find(flag)->second;
+        }
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;

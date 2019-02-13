@@ -381,6 +381,18 @@ ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
 }
 
 void
+ApiFuzzer::applyFunc(const ApiFunc* func)
+{
+    const ApiType* return_type = func->getReturnType();
+    const ApiObject* return_obj =
+        return_type ? this->generateObject(return_type) : nullptr;
+    const ApiType* member_type = func->getMemberType();
+    const ApiObject* member_obj =
+        member_type ? this->generateObject(member_type) : nullptr;
+    applyFunc(func, member_obj, return_obj);
+}
+
+void
 ApiFuzzer::applyFunc(const ApiFunc* func, const ApiObject* target_obj,
     const ApiObject* result_obj)
 {
@@ -439,7 +451,8 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     for (const ApiType* param_type : param_types)
     {
         if (!param_type->isExplicit() &&
-                this->getRandInt(0, this->max_depth) < this->depth || this->depth > this->max_depth)
+                (this->getRandInt(0, this->max_depth) < this->depth ||
+                 this->depth > this->max_depth))
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
@@ -479,6 +492,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     this->initFuncs(api_fuzzer_data["funcs"]);
     this->initFuncs(api_fuzzer_data["special_funcs"]);
     this->initConstructors(api_fuzzer_data["constructors"]);
+    this->initVariables(api_fuzzer_data["var_decl"]);
     this->initGenConfig(api_fuzzer_data["set_gen"]);
 
     /* Metamorphic testing initialization */
@@ -496,7 +510,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
 
     /* Object fuzzing */
     size_t input_var_count = meta_test_data["input_count"].as<size_t>();
-    for (int i = 1; i <= input_var_count * 2; ++i)
+    for (int i = 1; i <= input_var_count; ++i)
     {
         this->current_output_var =
             this->generateApiObjectDecl("out", this->meta_variant_type, false);
@@ -507,41 +521,65 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
             i, this->current_output_var->toStr())));
         this->generateSet();
     }
-    assert(!this->output_vars.empty());
-    assert(this->output_vars.size() == input_var_count * 2);
-    std::vector<const ApiObject*> unite_output_vars;
-    for (size_t i = 0; i < input_var_count; i++)
-    {
-        const ApiObject* new_out_var = this->generateApiObject("new_out",
-            this->meta_variant_type, this->getAnyFuncByName("unite"),
-            this->output_vars.at(i*2), {this->output_vars.at(i * 2 + 1)});
-        unite_output_vars.push_back(new_out_var);
-    }
-    this->output_vars = unite_output_vars;
+    assert(this->output_vars.size() == input_var_count);
 
     // TODO reconsider how meta checks are generated; perhaps only generate
     // them when required
-    this->initMetaChecks(meta_test_data["meta_check"]);
+    //this->initMetaChecks(meta_test_data["meta_check"]);
 
     /* Metamorphic tests generation */
     // TODO Ideally, meta_vars should be vector of const, but need to rethink
     // generator initialization process
-    std::vector<const MetaVarObject*> meta_vars_const(this->meta_vars.begin(),
-        this->meta_vars.end());
-    this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(
-        relations, meta_checks, this->output_vars, meta_vars_const, meta_variants,
-        this->meta_variant_type, rng));
+    //std::vector<const MetaVarObject*> meta_vars_const(this->meta_vars.begin(),
+        //this->meta_vars.end());
+    //this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(
+        //relations, meta_checks, this->output_vars, meta_vars_const, meta_variants,
+        //this->meta_variant_type, rng));
 
-    std::vector<const ApiInstructionInterface*> meta_instrs = smt->genMetaTests(5);
-    logDebug(fmt::format("META TEST = {}", smt->getAbstractMetaRelChain()));
-    this->instrs.push_back(new ApiComment(fmt::format("CURR META TEST: {}",
-        smt->getAbstractMetaRelChain())));
-    this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
+    //std::vector<const ApiInstructionInterface*> meta_instrs = smt->genMetaTests(5);
+    //logDebug(fmt::format("META TEST = {}", smt->getAbstractMetaRelChain()));
+    //this->instrs.push_back(new ApiComment(fmt::format("CURR META TEST: {}",
+        //smt->getAbstractMetaRelChain())));
+    //this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
 
     //for (std::string inst : this->getInstrList())
     //{
         //std::cout << inst << std::endl;
     //}
+}
+
+ApiFuzzerNew::~ApiFuzzerNew()
+{
+    std::cout << ">> Cleaning funcs..." << std::endl;
+    for (const ApiFunc* api_func : this->getFuncList())
+    {
+        delete api_func;
+    }
+    //std::for_each(this->getFuncList().begin(), this->getFuncList().end(),
+        //[](const ApiFunc* api_fnc){ delete api_fnc; });
+    //this->getFuncList().clear();
+    std::cout << ">> Cleaning objs..." << std::endl;
+    std::for_each(this->all_objs.begin(), this->all_objs.end(),
+        [](const ApiObject* api_obj){ delete api_obj; });
+    std::cout << ">> Cleaning types..." << std::endl;
+    for (const ApiType* api_type : this->getTypeList())
+    {
+        delete api_type;
+    }
+    //std::for_each(this->getTypeList().begin(), this->getTypeList().end(),
+        //[](const ApiType* api_typ){ std::cout << api_typ << std::endl; delete api_typ; });
+    std::cout << ">> Cleaning meta check expressions..." << std::endl;
+    std::for_each(this->meta_checks.begin(), this->meta_checks.end(),
+        [](const MetaRelation* meta_check){ delete meta_check; });
+    std::cout << ">> Cleaning meta relations..." << std::endl;
+    std::for_each(this->relations.begin(), this->relations.end(),
+        [](const MetaRelation* meta_rel){ delete meta_rel; });
+    std::cout << ">> Cleaning meta input variables..." << std::endl;
+    std::for_each(this->meta_in_vars.begin(), this->meta_in_vars.end(),
+        [](const ApiObject* meta_in_var){ delete meta_in_var; });
+    std::cout << ">> Cleaning meta variants..." << std::endl;
+    std::for_each(this->meta_variants.begin(), this->meta_variants.end(),
+        [](const ApiObject* meta_var){ delete meta_var; });
 }
 
 const ApiObject*
@@ -597,6 +635,7 @@ ApiFuzzerNew::initTypes(YAML::Node types_config)
     for (YAML::Node type_yaml : types_config) {
         std::string type_name = type_yaml["name"].as<std::string>();
         bool singleton = false;
+        logDebug(fmt::format("ADDING TYPE {}", type_name));
         logDebug(fmt::format("YAML SINGLE {}", type_yaml["singleton"].IsDefined()));
         if (type_yaml["singleton"].IsDefined() && type_yaml["singleton"].as<bool>())
         {
@@ -665,6 +704,26 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
         statik = func_yaml["static"].as<bool>();
     return new ApiFunc(func_name, member_type, return_type, param_type_list,
         cond_list, special, statik);
+}
+
+void
+ApiFuzzerNew::initVariables(YAML::Node vars_yaml)
+{
+    for (YAML::Node var_yaml : vars_yaml)
+    {
+        assert(var_yaml["name"].IsDefined());
+        assert(var_yaml["type"].IsDefined());
+        //if (this->getTypeByName(var_yaml["type"])->isPrimitive())
+        //{
+            //if (var_yaml["value"].IsDefined())
+            //{
+                //this->addthis->generatePrimitiveObject(type, value);
+            //}
+            //else
+            //{
+                //this->generatePrimitiveObject(type);
+        //}
+}
 }
 
 void
@@ -1135,17 +1194,19 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
         &ApiFunc::hasReturnType, obj_type);
     if (this->depth >= this->max_depth)
     {
+        //ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            //&ApiFunc::isCtor);
         ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::isCtor);
+            &ApiFunc::checkFlag, std::string("ctor"));
     }
     else
     {
         ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::notIsSpecial);
+            &ApiFunc::checkFlag, std::string("!special"));
         ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::notIsMaxDepth);
+            &ApiFunc::checkFlag, std::string("!max_depth"));
         std::set<const ApiFunc*> non_ctor_func_cands = filterFuncList(ctor_func_candidates,
-            &ApiFunc::notIsCtor);
+            &ApiFunc::checkFlag, std::string("!ctor"));
         // TODO this currently forces tests to be produced with full depth
         if (!non_ctor_func_cands.empty())
         {
@@ -1206,6 +1267,9 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
         case UINT:
             // HACKS
             return new PrimitiveObject<unsigned int>(obj_type, this->getRandInt(0, 10));
+        case BOOL:
+        case STRING:
+            assert(false);
     }
     assert(false);
 }
@@ -1223,6 +1287,9 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
             return new PrimitiveObject<unsigned int>(obj_type,
                 this->getRandInt(int_range.first, int_range.second));
         }
+        case BOOL:
+        case STRING:
+            assert(false);
     }
     assert(false);
 }
@@ -1260,10 +1327,28 @@ ApiFuzzerNew::generateSet()
             logDebug("Make decl");
             this->generateDecl(gen_instr_yaml);
         }
+        else if (!gen_instr_type.compare("seq"))
+        {
+            logDebug("Make seq");
+            assert(gen_instr_yaml["count"].IsDefined());
+            this->generateSeq(gen_instr_yaml["count"].as<size_t>());
+        }
         else
         {
             assert(false);
         }
+    }
+}
+
+void
+ApiFuzzerNew::generateSeq(size_t seq_count)
+{
+    std::set<const ApiFunc*> func_list = this->getFuncList();
+    while (seq_count > 0)
+    {
+        const ApiFunc* seq_func = getRandomSetElem(func_list, this->getRNG());
+        this->applyFunc(seq_func);
+        seq_count--;
     }
 }
 
@@ -1417,7 +1502,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         }
         assert(target_obj->getType()->isType(func->getMemberType()));
     }
-    else if (func->getMemberType() && !func->isStatic())
+    else if (func->getMemberType() && !func->checkFlag("statik"))
     {
         target_obj = this->generateObject(func->getMemberType());
     }

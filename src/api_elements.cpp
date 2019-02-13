@@ -409,7 +409,7 @@ ApiInstruction::toStr() const
     }
     else
     {
-        assert(!this->getFunc()->isCtor());
+        assert(!this->getFunc()->checkFlag("ctor"));
     }
     if (!this->getFunc()->getConditions().empty())
     {
@@ -417,7 +417,7 @@ ApiInstruction::toStr() const
         //instr_ss << this->emitFuncCond(this->getFunc, this->getTargetObj,
             //this->getFuncParams());
     }
-    if (!this->getFunc()->isStatic() && target_obj != nullptr)
+    if (!this->getFunc()->checkFlag("statik") && target_obj != nullptr)
     {
         // TODO consider pointer objects
         std::string invocation_string =
@@ -426,7 +426,7 @@ ApiInstruction::toStr() const
             : ".";
         instr_ss << this->getTargetObj()->toStr() << invocation_string;
     }
-    else if (this->getFunc()->isStatic())
+    else if (this->getFunc()->checkFlag("statik"))
     {
         assert(this->getTargetObj() == nullptr);
         instr_ss << this->getFunc()->getMemberType()->toStr() << "::";
