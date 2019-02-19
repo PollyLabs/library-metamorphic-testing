@@ -421,7 +421,7 @@ ApiInstruction::toStr() const
     {
         // TODO consider pointer objects
         std::string invocation_string =
-            this->getTargetObj()->getType()->toStr().back() == '*'
+            this->getTargetObj()->getType()->checkFlag("pointer")
             ? "->"
             : ".";
         instr_ss << this->getTargetObj()->toStr() << invocation_string;

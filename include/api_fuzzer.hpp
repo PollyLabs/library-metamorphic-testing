@@ -167,6 +167,8 @@ class ApiFuzzerNew : public ApiFuzzer {
         const ApiObject* generateNewObject(const ApiType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
+        template<typename T> const ApiObject* generatePrimitiveObject(
+            const PrimitiveType*, std::string, T);
         void generateSet();
         const ApiObject* getInputObject(std::string);
         template<typename T> T getInputObjectData(std::string);

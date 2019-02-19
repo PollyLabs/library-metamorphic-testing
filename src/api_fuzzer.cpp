@@ -367,7 +367,7 @@ const ApiObject*
 ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
     bool emit_instr)
 {
-    assert(!type->isSingleton() ||
+    assert(!type->checkFlag("singleton") ||
         this->filterAllObjs(&ApiObject::hasType, type).size() == 0);
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
     this->addObj(new_obj);
@@ -566,6 +566,9 @@ ApiFuzzerNew::~ApiFuzzerNew()
     {
         delete api_type;
     }
+    std::cout << ">> Cleaning instrunctions..." << std::endl;
+    std::for_each(this->instrs.begin(), this->instrs.end(),
+        [](const ApiInstructionInterface* instr){ delete instr; });
     //std::for_each(this->getTypeList().begin(), this->getTypeList().end(),
         //[](const ApiType* api_typ){ std::cout << api_typ << std::endl; delete api_typ; });
     std::cout << ">> Cleaning meta check expressions..." << std::endl;
@@ -634,17 +637,18 @@ ApiFuzzerNew::initTypes(YAML::Node types_config)
 {
     for (YAML::Node type_yaml : types_config) {
         std::string type_name = type_yaml["name"].as<std::string>();
-        bool singleton = false;
+        bool singleton = false, pointer = false;
+        if (type_yaml["singleton"].IsDefined())
+        {
+            singleton = type_yaml["singleton"].as<bool>();
+        }
+        if (type_yaml["pointer"].IsDefined())
+        {
+            pointer = type_yaml["pointer"].as<bool>();
+        }
         logDebug(fmt::format("ADDING TYPE {}", type_name));
         logDebug(fmt::format("YAML SINGLE {}", type_yaml["singleton"].IsDefined()));
-        if (type_yaml["singleton"].IsDefined() && type_yaml["singleton"].as<bool>())
-        {
-            this->addType(new SingletonType(type_name));
-        }
-        else
-        {
-            this->addType(new ApiType(type_name));
-        }
+        this->addType(new ApiType(type_name, pointer, singleton));
     }
 }
 
@@ -713,16 +717,29 @@ ApiFuzzerNew::initVariables(YAML::Node vars_yaml)
     {
         assert(var_yaml["name"].IsDefined());
         assert(var_yaml["type"].IsDefined());
-        //if (this->getTypeByName(var_yaml["type"])->isPrimitive())
-        //{
-            //if (var_yaml["value"].IsDefined())
-            //{
-                //this->addthis->generatePrimitiveObject(type, value);
-            //}
-            //else
-            //{
-                //this->generatePrimitiveObject(type);
-        //}
+        std::string name = var_yaml["name"].as<std::string>();
+        const ApiType* type =
+            this->getTypeByName(var_yaml["type"].as<std::string>());
+        if (type->isPrimitive())
+        {
+            // TODO do a switch for various primitive types
+            const PrimitiveType* p_type = 
+                dynamic_cast<const PrimitiveType*>(type);
+            assert(p_type->hasName("unsigned int"));
+            if (var_yaml["value"].IsDefined())
+            {
+                this->generatePrimitiveObject(p_type, name,
+                    var_yaml["value"].as<size_t>());
+            }
+            else
+            {
+                this->generatePrimitiveObject(p_type, name);
+            }
+        }
+        else
+        {
+            assert(false);
+        }
 }
 }
 
@@ -1090,7 +1107,7 @@ const ApiObject*
 ApiFuzzerNew::generateObject(const ApiType* obj_type)
 {
     logDebug("Generating object of type " + obj_type->toStr());
-    if (obj_type->isSingleton())
+    if (obj_type->checkFlag("singleton"))
     {
         return this->getSingletonObject(obj_type);
     }
@@ -1263,28 +1280,32 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
 {
     assert(obj_type->isPrimitive());
     logDebug("Generating primitive object with type " + obj_type->toStr());
+    const ApiObject* new_obj = nullptr;
     switch(obj_type->getTypeEnum()) {
         case UINT:
             // HACKS
-            return new PrimitiveObject<unsigned int>(obj_type, this->getRandInt(0, 10));
+            return this->generatePrimitiveObject(obj_type,
+                std::string("[0,10]"));
         case BOOL:
         case STRING:
             assert(false);
     }
-    assert(false);
+    assert(new_obj != nullptr);
+    this->addObj(new_obj);
+    return new_obj;
 }
 
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
-    std::string range)
+    std::string descriptor)
 {
     assert(obj_type->hasName("unsigned int"));
     logDebug("Generating primitive object with type " + obj_type->toStr() +
-        " and range " + range);
+        " and descriptor " + descriptor);
     switch(obj_type->getTypeEnum()) {
         case UINT: {
-            std::pair<int, int> int_range = this->parseRange(range);
-            return new PrimitiveObject<unsigned int>(obj_type,
+            std::pair<int, int> int_range = this->parseRange(descriptor);
+            return this->generatePrimitiveObject(obj_type, obj_type->toStr(),
                 this->getRandInt(int_range.first, int_range.second));
         }
         case BOOL:
@@ -1293,6 +1314,32 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     }
     assert(false);
 }
+
+template<typename T>
+const ApiObject*
+ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
+    std::string name, T data)
+{
+    assert(obj_type->hasName("unsigned int"));
+    //logDebug("Generating primitive object with type " + obj_type->toStr() +
+        //" and data " + data);
+    const ApiObject* new_obj = nullptr;
+    switch(obj_type->getTypeEnum()) {
+        case UINT: {
+            new_obj = new PrimitiveObject<unsigned int>(obj_type,
+                data, name);
+            break;
+        }
+        case BOOL:
+        case STRING:
+            assert(false);
+    }
+    assert(new_obj != nullptr);
+    this->addObj(new_obj);
+    return new_obj;
+
+}
+
 
 const ApiObject*
 ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
@@ -1357,7 +1404,7 @@ ApiFuzzerNew::generateDecl(YAML::Node instr_config)
 {
     const ApiType* var_type =
         this->getTypeByName(instr_config["var_type"].as<std::string>());
-    if (var_type->isSingleton() && this->filterAllObjs(&ApiObject::hasType,
+    if (var_type->checkFlag("singleton") && this->filterAllObjs(&ApiObject::hasType,
             var_type).size() != 0)
     {
         return;
@@ -1600,6 +1647,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         return_obj = this->generateNamedObject(
             this->getGeneratorData(instr_config["return"].as<std::string>()),
             func->getReturnType(), func, target_obj, func_params);
+        //this->addObj(return_obj);
     }
     else
     {

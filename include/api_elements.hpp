@@ -13,6 +13,14 @@
 
 
 // TODO move to api_elements
+enum ApiTypeFlag {
+    POINTER,
+    SINGLETON,
+};
+
+enum ApiFuncFlags {
+};
+
 enum PrimitiveTypeEnum {
     STRING,
     UINT,
@@ -34,32 +42,43 @@ class MetaVarObject;
 
 class ApiType {
     const std::string name;
+    std::map<std::string, bool> flags;
 
     public:
-        ApiType(std::string _name) : name(_name) { assert (!_name.empty()); };
+        ApiType(std::string _name) : ApiType(_name, false, false) {};
+        ApiType(std::string _name, bool _pointer, bool _singleton) : name(_name)
+            {
+                assert (!_name.empty());
+                this->flags.insert({"pointer", _pointer});
+                this->flags.insert({"singleton", _singleton});
+            };
         virtual ~ApiType() = default;
-
-        std::string toStr() const { return this->name; };
 
         bool hasName(std::string name_check) const {
             return !this->toStr().compare(name_check);
         };
         virtual bool isType(const ApiType*) const;
 
-        virtual bool isSingleton() const { return false; };
+        bool checkFlag(std::string flag) const
+        {
+            bool negative = flag.front() == '!';
+            if (negative)
+            {
+                flag.erase(flag.begin());
+            }
+            assert(flags.count(flag) != 0);
+            return negative ^ this->flags.find(flag)->second;
+        }
+
+        //virtual bool isSingleton() const { return false; };
         virtual bool isPrimitive() const { return false; };
         virtual bool isExplicit() const { return false; };
 
         inline bool operator<(const ApiType* other) const {
             return this->toStr() < other->toStr();
         };
-};
 
-class SingletonType : public ApiType {
-    public:
-        SingletonType(std::string _name) : ApiType(_name) {};
-
-        bool isSingleton() const { return true; };
+        std::string toStr() const { return this->name; };
 };
 
 class PrimitiveType : public ApiType {
@@ -149,8 +168,10 @@ class PrimitiveObject : public ApiObject {
     T data;
 
     public:
-        PrimitiveObject(const PrimitiveType* _type, T _data) : ApiObject(_type->toStr(),
-            -1, _type), data(_data) {};
+        PrimitiveObject(const PrimitiveType* _type, T _data, std::string _name) :
+            ApiObject(_name, -1, _type), data(_data) {};
+        PrimitiveObject(const PrimitiveType* _type, T _data) :
+            PrimitiveObject(_type, _data, _type->toStr()) {};
 
         T getData() const { return this->data; };
 
@@ -292,6 +313,7 @@ class ApiInstructionInterface
 {
     public:
         virtual std::string toStr() const = 0;
+        virtual ~ApiInstructionInterface() = default;
 };
 
 class ApiInstruction : public ApiInstructionInterface
