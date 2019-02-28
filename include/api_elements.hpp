@@ -13,17 +13,30 @@
 
 
 // TODO move to api_elements
+enum ApiTypeFlag {
+    POINTER,
+    SINGLETON,
+};
+
+enum ApiFuncFlags {
+};
+
 enum PrimitiveTypeEnum {
+    CHAR,
+    CHAR_SYMBOL,
     STRING,
     UINT,
+    INT,
     BOOL,
 };
 
+extern std::map<std::string, std::vector<char>> char_set;
 extern std::map<std::string, PrimitiveTypeEnum> primitives_map;
 extern char delim_front, delim_back, delim_mid;
 extern const bool DEBUG;
 
 void logDebug(std::string);
+void CHECK_CONDITION(bool, std::string);
 std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
 
@@ -34,31 +47,45 @@ class MetaVarObject;
 
 class ApiType {
     const std::string name;
+    std::map<std::string, bool> flags;
 
     public:
-        ApiType(std::string _name) : name(_name) { assert (!_name.empty()); };
-
-        std::string toStr() const { return this->name; };
+        ApiType(std::string _name) : ApiType(_name, false, false) {};
+        ApiType(std::string _name, bool _pointer, bool _singleton) : name(_name)
+            {
+                assert (!_name.empty());
+                this->flags.insert({"pointer", _pointer});
+                this->flags.insert({"singleton", _singleton});
+            };
+        virtual ~ApiType() = default;
 
         bool hasName(std::string name_check) const {
             return !this->toStr().compare(name_check);
         };
         virtual bool isType(const ApiType*) const;
 
-        virtual bool isSingleton() const { return false; };
+        bool checkFlag(std::string flag) const
+        {
+            bool negative = flag.front() == '!';
+            if (negative)
+            {
+                flag.erase(flag.begin());
+            }
+            assert(flags.count(flag) != 0);
+            return negative ^ this->flags.find(flag)->second;
+        }
+
+        //virtual bool isSingleton() const { return false; };
         virtual bool isPrimitive() const { return false; };
         virtual bool isExplicit() const { return false; };
+
+        virtual const ApiType* getUnderlyingType() const { return this; };
 
         inline bool operator<(const ApiType* other) const {
             return this->toStr() < other->toStr();
         };
-};
 
-class SingletonType : public ApiType {
-    public:
-        SingletonType(std::string _name) : ApiType(_name) {};
-
-        bool isSingleton() const { return true; };
+        std::string toStr() const { return this->name; };
 };
 
 class PrimitiveType : public ApiType {
@@ -76,11 +103,12 @@ class PrimitiveType : public ApiType {
 class ExplicitType : public ApiType {
     const ApiType* underlying_type;
     const std::string definition;
+    std::string gen_type;
+    std::string gen_method;
+    std::string descriptor;
 
     public:
-        ExplicitType(std::string _definition, const ApiType* _underlying_type) :
-            ApiType(_definition), definition(_definition),
-            underlying_type(_underlying_type) {};
+        ExplicitType(std::string, const ApiType*);
 
         bool isType(const ApiType* other) const {
             return !this->underlying_type->toStr().compare(other->toStr());
@@ -100,12 +128,15 @@ class ExplicitType : public ApiType {
         };
 
         std::string getDefinition() const { return this->definition; };
+        std::string getGenType() const { return this->gen_type; };
+        std::string getGenMethod() const { return this->gen_method; };
+        std::string getDescriptor() const { return this->descriptor; };
         const ApiType* getUnderlyingType() const {
             return this->underlying_type;
         };
 
         static std::string extractExplicitTypeDecl(std::string);
-        const ApiObject* retrieveObj() const;
+        //const ApiObject* retrieveObj() const;
 };
 
 class ApiObject {
@@ -117,57 +148,67 @@ class ApiObject {
     public:
         mutable bool declared;
 
-        ApiObject(std::string _name, unsigned int _id, const ApiType* _type) :
+        ApiObject(std::string _name, size_t _id, const ApiType* _type) :
             id(_id), name(_name), type(_type), declared(false) {};
+        virtual ~ApiObject() = default;
 
-        const ApiType* getType() const { return this->type; };
-        void setDeclared() { this->declared = true; };
-        size_t getID() const { return this->id; };
+        inline const ApiType* getType() const { return this->type; };
+        inline size_t getID() const { return this->id; };
 
-        bool isPrimitive() const { return this->getType()->isPrimitive(); };
-        bool isDeclared() const { return this->declared; };
-        bool hasName(std::string name_check) const {
+        inline void setDeclared() { this->declared = true; };
+
+        inline bool isPrimitive() const { return this->getType()->isPrimitive(); };
+        inline bool notIsPrimitive() const { return !this->getType()->isPrimitive(); };
+        inline bool isDeclared() const { return this->declared; };
+        inline bool hasName(std::string name_check) const {
             return !this->name.compare(name_check);
         };
-        bool hasType(const ApiType* type_check) const {
+        inline bool hasType(const ApiType* type_check) const {
             return this->getType()->isType(type_check);
         };
+        inline bool hasID(size_t id_check) const {
+            return this->getID() == id_check;
+        };
 
-        virtual std::string toStr() const {
+        inline virtual std::string toStr() const {
             return fmt::format("{}_{}", this->name, std::to_string(this->id));
         };
-        virtual std::string toStrWithType() const {
+        inline virtual std::string toStrWithType() const {
             return fmt::format("{} {}", this->getType()->toStr(),
                 this->toStr());
         };
 };
 
-template<class T>
+template<typename T>
 class PrimitiveObject : public ApiObject {
     T data;
 
     public:
-        PrimitiveObject(const PrimitiveType* _type, T _data) : ApiObject(_type->toStr(),
-            -1, _type), data(_data) {};
+        PrimitiveObject(const PrimitiveType* _type, T _data, std::string _name,
+            size_t _id) :
+            ApiObject(_name, _id, _type), data(_data) {};
+        PrimitiveObject(const PrimitiveType* _type, T _data, size_t _id) :
+            PrimitiveObject(_type, _data, _type->toStr(), _id) {};
 
         T getData() const { return this->data; };
 
-        std::string toStr() const { return fmt::format("{}", this->data); };
+        std::string toStr() const;
         std::string toStrWithType() const { assert(false); };
 };
 
 class NamedObject : public ApiObject {
     public:
-        NamedObject(std::string _name, const ApiType* _type) :
-            ApiObject(_name, -1, _type) {};
+        NamedObject(std::string _name, size_t _id, const ApiType* _type) :
+            ApiObject(_name, _id, _type) {};
 
-        std::string toStr() const { return this->name; }
+        std::string toStr() const { return this->name; };
+        std::string toStrWithType() const { assert(false); };
 };
 
 class ExprObject : public ApiObject {
     public:
-        ExprObject(std::string _expr, const PrimitiveType* _type) :
-            ApiObject(_expr, -1, _type) {};
+        ExprObject(std::string _expr, size_t _id, const PrimitiveType* _type) :
+            ApiObject(_expr, _id, _type) {};
 
         std::string toStr() const { return this->name; };
         std::string toStrWithType() const { assert(false); };
@@ -193,17 +234,13 @@ class FuncObject : public ApiObject {
         std::string toStrWithType() const { assert(false); };
 };
 
-
 class ApiFunc {
     const std::string name;
     const ApiType* member_type;
     const ApiType* return_type;
     const std::vector<const ApiType*> param_types;
     const std::vector<std::string> conditions;
-    const bool special;
-    const bool statik;
-    const bool ctor;
-    const bool max_depth;
+    std::map<std::string, bool> flags;
 
     public:
         ApiFunc(std::string _name, const ApiType* _member_type,
@@ -212,9 +249,14 @@ class ApiFunc {
             std::vector<std::string> _conditions, bool _special = false,
             bool _statik = false, bool _ctor = false, bool _max_depth = false) :
             name(_name), member_type(_member_type), return_type(_return_type),
-            param_types(_param_types), conditions(_conditions),
-            special(_special), statik(_statik), ctor(_ctor),
-            max_depth(_max_depth) {};
+            param_types(_param_types), conditions(_conditions)
+            {
+                this->flags.insert({"special", _special});
+                this->flags.insert({"statik", _statik});
+                this->flags.insert({"ctor", _ctor});
+                this->flags.insert({"max_depth", _max_depth});
+            }
+        virtual ~ApiFunc() = default;
 
         std::string getName() const { return this->name; };
         std::vector<const ApiType*> getParamTypes() const {
@@ -241,12 +283,16 @@ class ApiFunc {
             return !this->getName().compare(name_check);
         };
         bool hasParamTypes(std::vector<const ApiType*>) const;
-        bool isSpecial() const { return this->special; };
-        bool notIsSpecial() const { return !this->special; };
-        bool isStatic() const { return this->statik; };
-        bool isCtor() const { return this->ctor; };
-        bool notIsCtor() const { return !this->ctor; };
-        bool notIsMaxDepth() const { return !this->max_depth; };
+        bool checkFlag(std::string flag) const
+        {
+            bool negative = flag.front() == '!';
+            if (negative)
+            {
+                flag.erase(flag.begin());
+            }
+            assert(flags.count(flag) != 0);
+            return negative ^ this->flags.find(flag)->second;
+        }
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
@@ -285,6 +331,7 @@ class ApiInstructionInterface
 {
     public:
         virtual std::string toStr() const = 0;
+        virtual ~ApiInstructionInterface() = default;
 };
 
 class ApiInstruction : public ApiInstructionInterface
@@ -386,5 +433,7 @@ class MetaVarObject : public ApiObject {
         std::string toStr() const { assert(false); };
         std::string toStrWithType() const { assert(false); };
 };
+
+#include "api_elements.tpp"
 
 #endif

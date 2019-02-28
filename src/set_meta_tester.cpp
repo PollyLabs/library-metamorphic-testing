@@ -127,7 +127,8 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
             concrete_relation_candidates.push_back(*it);
         }
     }
-    assert(!concrete_relation_candidates.empty());
+    CHECK_CONDITION(!concrete_relation_candidates.empty(),
+        fmt::format("No concrete candidates for relation `{}` found", rel_type));
     const MetaRelation* concrete_relation = concrete_relation_candidates.at(
         getRandInt(this->rng, 0, concrete_relation_candidates.size()));
     const MetaRelation* concretized_relation =
@@ -176,6 +177,7 @@ SetMetaTesterNew::testsToApiInstrs(void) const
         {
             api_instrs.push_back(new ApiComment(fmt::format(
                 "Test for {}", meta_test->getVariantVar()->toStr())));
+            api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
             std::vector<const ApiInstructionInterface*> test_instrs = meta_test->getApiInstructions();
             api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
         });
