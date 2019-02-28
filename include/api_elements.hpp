@@ -22,16 +22,21 @@ enum ApiFuncFlags {
 };
 
 enum PrimitiveTypeEnum {
+    CHAR,
+    CHAR_SYMBOL,
     STRING,
     UINT,
+    INT,
     BOOL,
 };
 
+extern std::map<std::string, std::vector<char>> char_set;
 extern std::map<std::string, PrimitiveTypeEnum> primitives_map;
 extern char delim_front, delim_back, delim_mid;
 extern const bool DEBUG;
 
 void logDebug(std::string);
+void CHECK_CONDITION(bool, std::string);
 std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
 
@@ -74,6 +79,8 @@ class ApiType {
         virtual bool isPrimitive() const { return false; };
         virtual bool isExplicit() const { return false; };
 
+        virtual const ApiType* getUnderlyingType() const { return this; };
+
         inline bool operator<(const ApiType* other) const {
             return this->toStr() < other->toStr();
         };
@@ -96,11 +103,12 @@ class PrimitiveType : public ApiType {
 class ExplicitType : public ApiType {
     const ApiType* underlying_type;
     const std::string definition;
+    std::string gen_type;
+    std::string gen_method;
+    std::string descriptor;
 
     public:
-        ExplicitType(std::string _definition, const ApiType* _underlying_type) :
-            ApiType(_definition), definition(_definition),
-            underlying_type(_underlying_type) {};
+        ExplicitType(std::string, const ApiType*);
 
         bool isType(const ApiType* other) const {
             return !this->underlying_type->toStr().compare(other->toStr());
@@ -120,12 +128,15 @@ class ExplicitType : public ApiType {
         };
 
         std::string getDefinition() const { return this->definition; };
+        std::string getGenType() const { return this->gen_type; };
+        std::string getGenMethod() const { return this->gen_method; };
+        std::string getDescriptor() const { return this->descriptor; };
         const ApiType* getUnderlyingType() const {
             return this->underlying_type;
         };
 
         static std::string extractExplicitTypeDecl(std::string);
-        const ApiObject* retrieveObj() const;
+        //const ApiObject* retrieveObj() const;
 };
 
 class ApiObject {
@@ -137,60 +148,67 @@ class ApiObject {
     public:
         mutable bool declared;
 
-        ApiObject(std::string _name, unsigned int _id, const ApiType* _type) :
+        ApiObject(std::string _name, size_t _id, const ApiType* _type) :
             id(_id), name(_name), type(_type), declared(false) {};
         virtual ~ApiObject() = default;
 
-        const ApiType* getType() const { return this->type; };
-        void setDeclared() { this->declared = true; };
-        size_t getID() const { return this->id; };
+        inline const ApiType* getType() const { return this->type; };
+        inline size_t getID() const { return this->id; };
 
-        bool isPrimitive() const { return this->getType()->isPrimitive(); };
-        bool isDeclared() const { return this->declared; };
-        bool hasName(std::string name_check) const {
+        inline void setDeclared() { this->declared = true; };
+
+        inline bool isPrimitive() const { return this->getType()->isPrimitive(); };
+        inline bool notIsPrimitive() const { return !this->getType()->isPrimitive(); };
+        inline bool isDeclared() const { return this->declared; };
+        inline bool hasName(std::string name_check) const {
             return !this->name.compare(name_check);
         };
-        bool hasType(const ApiType* type_check) const {
+        inline bool hasType(const ApiType* type_check) const {
             return this->getType()->isType(type_check);
         };
+        inline bool hasID(size_t id_check) const {
+            return this->getID() == id_check;
+        };
 
-        virtual std::string toStr() const {
+        inline virtual std::string toStr() const {
             return fmt::format("{}_{}", this->name, std::to_string(this->id));
         };
-        virtual std::string toStrWithType() const {
+        inline virtual std::string toStrWithType() const {
             return fmt::format("{} {}", this->getType()->toStr(),
                 this->toStr());
         };
 };
 
-template<class T>
+template<typename T>
 class PrimitiveObject : public ApiObject {
     T data;
 
     public:
-        PrimitiveObject(const PrimitiveType* _type, T _data, std::string _name) :
-            ApiObject(_name, -1, _type), data(_data) {};
-        PrimitiveObject(const PrimitiveType* _type, T _data) :
-            PrimitiveObject(_type, _data, _type->toStr()) {};
+        PrimitiveObject(const PrimitiveType* _type, T _data, std::string _name,
+            size_t _id) :
+            ApiObject(_name, _id, _type), data(_data) {};
+        PrimitiveObject(const PrimitiveType* _type, T _data, size_t _id) :
+            PrimitiveObject(_type, _data, _type->toStr(), _id) {};
 
         T getData() const { return this->data; };
 
-        std::string toStr() const { return fmt::format("{}", this->data); };
+        std::string toStr() const;
         std::string toStrWithType() const { assert(false); };
 };
 
 class NamedObject : public ApiObject {
     public:
-        NamedObject(std::string _name, const ApiType* _type) :
-            ApiObject(_name, -1, _type) {};
+        NamedObject(std::string _name, size_t _id, const ApiType* _type) :
+            ApiObject(_name, _id, _type) {};
 
-        std::string toStr() const { return this->name; }
+        std::string toStr() const { return this->name; };
+        std::string toStrWithType() const { assert(false); };
 };
 
 class ExprObject : public ApiObject {
     public:
-        ExprObject(std::string _expr, const PrimitiveType* _type) :
-            ApiObject(_expr, -1, _type) {};
+        ExprObject(std::string _expr, size_t _id, const PrimitiveType* _type) :
+            ApiObject(_expr, _id, _type) {};
 
         std::string toStr() const { return this->name; };
         std::string toStrWithType() const { assert(false); };
@@ -415,5 +433,7 @@ class MetaVarObject : public ApiObject {
         std::string toStr() const { assert(false); };
         std::string toStrWithType() const { assert(false); };
 };
+
+#include "api_elements.tpp"
 
 #endif

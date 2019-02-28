@@ -25,8 +25,12 @@ extern char delim_front, delim_back, delim_mid;
 
 template<typename T> T getRandomVectorElem(std::vector<T>&, std::mt19937*);
 template<typename T> T getRandomSetElem(std::set<T>&, std::mt19937*);
+std::vector<const ApiObject*> filterObjList
+    (std::vector<const ApiObject*>, bool (ApiObject::*)() const);
 template<typename T> std::vector<const ApiObject*> filterObjList
     (std::vector<const ApiObject*>, bool (ApiObject::*)(T) const, T);
+std::set<const ApiFunc*> filterFuncList(
+    std::set<const ApiFunc*>, bool (ApiFunc::*)() const);
 template<typename T> std::set<const ApiFunc*> filterFuncList(
     std::set<const ApiFunc*>, bool (ApiFunc::*)(T) const, T);
 
@@ -38,7 +42,7 @@ class ApiFuzzer {
         std::vector<const ApiInstructionInterface*> instrs;
         std::vector<const ApiObject*> objs;
         std::vector<const ApiObject*> all_objs;
-        unsigned int next_obj_id;
+        mutable unsigned int next_obj_id;
         unsigned int depth;
         unsigned int max_depth;
         const unsigned int seed;
@@ -75,7 +79,7 @@ class ApiFuzzer {
         std::mt19937* getRNG() const { return this->rng; };
 
         int getRandInt(int = 0, int = std::numeric_limits<int>::max());
-        unsigned int getNextID();
+        unsigned int getNextID() const;
 
         bool hasTypeName(std::string);
         bool hasFuncName(std::string);
@@ -152,23 +156,27 @@ class ApiFuzzerNew : public ApiFuzzer {
         void generateForLoop(YAML::Node);
         void generateFunc(YAML::Node, int = -1);
 
-
         void initMetaVarObjs(YAML::Node, YAML::Node);
         void initMetaVariantVars();
         void initMetaRelations(YAML::Node);
         void initMetaGenerators(YAML::Node);
         void initMetaChecks(YAML::Node);
-        MetaRelation* parseRelationString(std::string, std::string) const;
-        const ApiObject* parseRelationStringVar(std::string) const;
-        const FuncObject* parseRelationStringFunc(std::string) const;
-        const ApiObject* parseRelationStringSubstr(std::string) const;
+        MetaRelation* parseRelationString(std::string, std::string);
+        const ApiObject* parseRelationStringVar(std::string);
+        const FuncObject* parseRelationStringFunc(std::string);
+        const ApiObject* parseRelationStringSubstr(std::string);
 
         const ApiObject* generateObject(const ApiType*);
+        const ApiObject* generateExplicitObject(const ExplicitType*);
         const ApiObject* generateNewObject(const ApiType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
-        const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
+        const ApiObject* generatePrimitiveObject(const PrimitiveType*,
+            std::string);
+        const ApiObject* generatePrimitiveObject(const PrimitiveType*,
+            std::string, std::string);
         template<typename T> const ApiObject* generatePrimitiveObject(
             const PrimitiveType*, std::string, T);
+        template<typename T> T parseDescriptor(std::string);
         void generateSet();
         const ApiObject* getInputObject(std::string);
         template<typename T> T getInputObjectData(std::string);

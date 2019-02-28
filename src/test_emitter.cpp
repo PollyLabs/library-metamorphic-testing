@@ -2,11 +2,13 @@
 
 static unsigned int indent = 0;
 const std::string config_file_path =
-    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_cairo.yaml";
-    //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl.yaml";
+    //"/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_cairo.yaml";
+    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_strtk.yaml";
 
 //const bool DEBUG = false;
 const bool DEBUG = true;
+
+const bool META_TESTING = true;
 
 std::map<std::string, Modes> string_to_mode {
     {"SET_FUZZ", SET_FUZZ},
@@ -80,16 +82,17 @@ mainPreSetup(std::stringstream &ss, std::vector<std::string>& pre_setup_instrs)
 {
     writeLine(ss, "int main()");
     writeLine(ss, "{");
+    indent++;
     for (std::string pre_setup_instr : pre_setup_instrs)
     {
         writeLine(ss, pre_setup_instr);
     }
-    indent++;
 }
 
 void
 mainPostSetup(std::stringstream &ss)
-{ indent--;
+{
+    indent--;
     writeLine(ss, "}");
 }
 

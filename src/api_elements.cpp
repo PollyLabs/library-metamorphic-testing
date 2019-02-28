@@ -1,8 +1,22 @@
 #include "api_elements.hpp"
 
+std::map<std::string, std::vector<char>> char_set =
+    {
+     {"numeric", {'0','1','2','3','4','5','6','7','8','9'}},
+     {"low_alpha", {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
+                    'p','q','r','s','t','u','v','w','x','y','z'}},
+     {"up_alpha", {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
+                   'P','Q','R','S','T','U','V','W','X','Y','Z'}},
+     {"symbol", {'`','!','$','%','^','&','*','(',')','_','+','{','}','[',']',
+                 ';',':','\'','@','#','~',',','<','.','>','/','?','|'}}
+    };
+
+
 std::map<std::string, PrimitiveTypeEnum> primitives_map = {
+    { "char", CHAR },
     { "string", STRING },
     { "unsigned int", UINT },
+    { "int", INT},
     { "bool", BOOL },
 };
 
@@ -28,6 +42,16 @@ logDebug(std::string message)
     if (DEBUG)
     {
         std::cerr << "DEBUG: " << message << std::endl;
+    }
+}
+
+void
+CHECK_CONDITION(bool condition, std::string message)
+{
+    if (!condition)
+    {
+        std::cout << "CHECK FAILED: " << message << std::endl;
+        exit(1);
     }
 }
 
@@ -79,42 +103,55 @@ ApiType::isType(const ApiType* other) const
  * ExplicitType functions
  ******************************************************************************/
 
-const ApiObject*
-ExplicitType::retrieveObj() const
+ExplicitType::ExplicitType(std::string _definition, const ApiType* _underlying_type) :
+    ApiType(_definition), definition(_definition), underlying_type(_underlying_type)
 {
-    assert(this->definition.front() == delim_front &&
-        this->definition.back() == delim_back);
-    logDebug("Definition to retrieve: " + this->getDefinition());
-    if  (this->definition.find(fmt::format("string{}", delim_mid))
-            != std::string::npos)
-    {
-        assert(this->getUnderlyingType()->isPrimitive());
-        assert(((PrimitiveType *) this->getUnderlyingType())->getTypeEnum()
-            == STRING);
-        std::string data = this->definition.substr(this->definition.find(delim_mid) + 1,
-            this->definition.find(delim_back) - this->definition.find(delim_mid) - 1);
-        return new PrimitiveObject<std::string>(
-            (PrimitiveType*) this->getUnderlyingType(), data);
-    }
-    else if (this->definition.find(fmt::format("uint{}", delim_mid))
-            != std::string::npos)
-    {
-        assert(this->getUnderlyingType()->isPrimitive());
-        assert(((PrimitiveType *) this->getUnderlyingType())->getTypeEnum()
-            == UINT);
-        std::string data = this->definition.substr(this->definition.find(delim_mid) + 1,
-            this->definition.find(delim_back) - this->definition.find(delim_mid) - 1);
-        return new PrimitiveObject<unsigned int>(
-            (PrimitiveType*) this->getUnderlyingType(), std::stoi(data));
-    }
-    else if (this->definition.find(fmt::format("input{}", delim_mid))
-            != std::string::npos)
-    {
-        // TODO
-        assert(false);
-    }
-    assert(false);
+    size_t mid_one = _definition.find(delim_mid);
+    size_t mid_two = _definition.find(delim_mid, mid_one + 1);
+    assert(mid_two != std::string::npos);
+    size_t end = _definition.find(delim_back);
+    this->gen_type = _definition.substr(1, mid_one - 1);
+    this->gen_method = _definition.substr(mid_one + 1, mid_two - mid_one - 1);
+    this->descriptor = _definition.substr(mid_two + 1, end - mid_two - 1);
 }
+
+
+//const ApiObject*
+//ExplicitType::retrieveObj() const
+//{
+    //assert(this->definition.front() == delim_front &&
+        //this->definition.back() == delim_back);
+    //logDebug("Definition to retrieve: " + this->getDefinition());
+    //if  (this->definition.find(fmt::format("string{}", delim_mid))
+            //!= std::string::npos)
+    //{
+        //assert(this->getUnderlyingType()->isPrimitive());
+        //assert(((PrimitiveType *) this->getUnderlyingType())->getTypeEnum()
+            //== STRING);
+        //std::string data = this->definition.substr(this->definition.find(delim_mid) + 1,
+            //this->definition.find(delim_back) - this->definition.find(delim_mid) - 1);
+        //return new PrimitiveObject<std::string>(
+            //(PrimitiveType*) this->getUnderlyingType(), data);
+    //}
+    //else if (this->definition.find(fmt::format("uint{}", delim_mid))
+            //!= std::string::npos)
+    //{
+        //assert(this->getUnderlyingType()->isPrimitive());
+        //assert(((PrimitiveType *) this->getUnderlyingType())->getTypeEnum()
+            //== UINT);
+        //std::string data = this->definition.substr(this->definition.find(delim_mid) + 1,
+            //this->definition.find(delim_back) - this->definition.find(delim_mid) - 1);
+        //return new PrimitiveObject<unsigned int>(
+            //(PrimitiveType*) this->getUnderlyingType(), std::stoi(data));
+    //}
+    //else if (this->definition.find(fmt::format("input{}", delim_mid))
+            //!= std::string::npos)
+    //{
+        //// TODO
+        //assert(false);
+    //}
+    //assert(false);
+//}
 
 std::string
 ExplicitType::extractExplicitTypeDecl(std::string type_str)
@@ -203,6 +240,7 @@ FuncObject::toStr() const
     }
     return fmt::format("{}({})", this->name, getStringWithDelims(param_names, ','));
 }
+
 
 const ApiObject*
 MetaVarObject::getConcreteVar(const ApiObject* curr_meta_variant,
@@ -304,7 +342,15 @@ ApiFunc::hasParamTypes(std::vector<const ApiType*> param_types_check) const
     }
     for (int i = 0; i < param_types_check.size(); i++)
     {
-        if (!param_types_check.at(i)->isType(this->getParamType(i)))
+        if (param_types_check.at(i)->isExplicit())
+        {
+            if (dynamic_cast<const ExplicitType*>(param_types_check.at(i))->
+                    getUnderlyingType()->isType(this->getParamType(i)))
+            {
+                return false;
+            }
+        }
+        else if (!param_types_check.at(i)->isType(this->getParamType(i)))
         {
             return false;
         }
@@ -445,4 +491,3 @@ ObjectDeclInstruction::toStr() const
 {
     return this->getObject()->toStrWithType() + ";";
 }
-
