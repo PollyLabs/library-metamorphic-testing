@@ -4,35 +4,46 @@ includes:
     - "testing/isl-meta-stats.h"
 
 pre_setup:
-    - "isl_ctx *ctx_ptr = isl_ctx_alloc();"
+    #- "isl_ctx *ctx_ptr = isl_ctx_alloc();"
+    - "typedef isl::set universe_set;"
+
+var_decl:
+    - name: 'ctx_ptr'
+      type: 'isl_ctx*'
+      func: 'isl_ctx_alloc'
+    - name: 'u'
+      type: 'universe_set'
+      func: 'universe'
 
 inputs:
     - name: 'params'
       type: 'unsigned int'
-      range: '[0,0]'
+      descriptor: '<range=[0,0]>'
     - name: 'dims'
       type: 'unsigned int'
-      range: '(0,8]'
+      descriptor: '<range=(0,8]>'
     - name: 'constraints'
       type: 'unsigned int'
       #range: '[1,3]'
-      range: '[2,2]'
+      descriptor: '<range=[2,2]>'
     - name: 'depth_max'
       type: 'unsigned int'
       #range: '[10,10]'
-      range: '[2,2]'
+      descriptor: '<range=[2,2]>'
 
 types:
     - name: 'isl::val'
     - name: 'isl::pw_aff'
     - name: 'isl::set'
-
-singleton_types:
     - name: 'isl::space'
       singleton: true
     - name: 'isl::local_space'
       singleton: true
     - name: 'isl::ctx'
+      singleton: true
+    - name: 'isl_ctx*'
+      singleton: true
+    - name: 'universe_set'
       singleton: true
 
 funcs:
@@ -179,7 +190,7 @@ funcs:
     - name: 'var_on_domain'
       member_type: 'isl::pw_aff'
       return_type: 'isl::pw_aff'
-      param_types: ['isl::local_space', 'string', 'unsigned int']
+      param_types: ['isl::local_space', 'nqstring', 'unsigned int']
       conditions: []
       special: true
       static: true
@@ -247,42 +258,45 @@ funcs:
 
 constructors:
     - name: 'isl::space'
-      param_types: ['isl::ctx', '<input=params>', '<input=dims>']
+      param_types: ['isl::ctx', '<var=input=params>', '<var=input=dims>']
     - name: 'isl::local_space'
       param_types: ['isl::space']
     - name: 'isl::val'
       param_types: ['isl::ctx', 'unsigned int']
     - name: 'isl::pw_aff'
-      param_types: ['<string=u>','isl::val']
+      param_types: ['universe_set','isl::val']
     - name: 'isl::ctx'
-      param_types: ['<string=ctx_ptr>']
+      param_types: ['isl_ctx*']
+    - name: 'isl_ctx_alloc'
+      param_types: []
+      return_type: 'isl_ctx*'
 
 set_gen:
-    - type: 'func'
-      func: 'universe'
-      return: '<var=u>'
+    #- type: 'func'
+      #func: 'universe'
+      #return: '<var=name=u>'
     - type: 'for'
-      counter: '[0,<input=dims>)'
+      counter: '[0,<var=input=dims>)'
       func: 'var_on_domain'
-      return: '<new=isl::pw_aff>'
+      return: '<var=new=isl::pw_aff>'
       func_params:
           - 'isl::local_space'
-          - '<string=isl::dim::set>'
-          - '<loop_counter>'
+          - '<nqstring=val=isl::dim::set>'
+          - '<special=loop_counter=>'
     - type: 'func'
       func: 'universe'
-      return: '<output_var>'
+      return: '<special=output_var=>'
     - type: 'for'
-      counter: '[0,<input=constraints>)'
+      counter: '[0,<var=input=constraints>)'
       func: 'intersect'
-      target: '<output_var>'
-      return: '<output_var>'
+      target: '<special=output_var=>'
+      return: '<special=output_var=>'
       func_params:
-          - '<new=isl::set>'
+          - '<var=new=isl::set>'
     - type: 'func'
       func: 'dump'
-      target: '<output_var>'
+      target: '<special=output_var=>'
     - type: 'func'
       func: 'printStats'
       func_params:
-          - '<output_var>'
+          - '<special=output_var=>'

@@ -23,6 +23,7 @@
 
 extern char delim_front, delim_back, delim_mid;
 
+void CHECK_YAML_FIELD(std::string);
 template<typename T> T getRandomVectorElem(std::vector<T>&, std::mt19937*);
 template<typename T> T getRandomSetElem(std::set<T>&, std::mt19937*);
 std::vector<const ApiObject*> filterObjList
@@ -185,6 +186,7 @@ class ApiFuzzerNew : public ApiFuzzer {
 
         std::pair<int, int> parseRange(std::string);
         int parseRangeSubstr(std::string);
+        const ExplicitType* parseComprehension(std::string);
         const ApiType* parseTypeStr(std::string);
         std::string getGeneratorData(std::string) const;
         std::string makeLinearExpr(std::vector<const ApiObject*>);

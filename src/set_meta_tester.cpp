@@ -177,7 +177,7 @@ SetMetaTesterNew::testsToApiInstrs(void) const
         {
             api_instrs.push_back(new ApiComment(fmt::format(
                 "Test for {}", meta_test->getVariantVar()->toStr())));
-            api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
+            //api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
             std::vector<const ApiInstructionInterface*> test_instrs = meta_test->getApiInstructions();
             api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
         });

@@ -24,6 +24,7 @@ enum ApiFuncFlags {
 enum PrimitiveTypeEnum {
     CHAR,
     CHAR_SYMBOL,
+    NQSTRING,
     STRING,
     UINT,
     INT,
@@ -80,6 +81,7 @@ class ApiType {
         virtual bool isExplicit() const { return false; };
 
         virtual const ApiType* getUnderlyingType() const { return this; };
+        virtual const PrimitiveTypeEnum getTypeEnum() const { assert(false); };
 
         inline bool operator<(const ApiType* other) const {
             return this->toStr() < other->toStr();
@@ -155,7 +157,7 @@ class ApiObject {
         inline const ApiType* getType() const { return this->type; };
         inline size_t getID() const { return this->id; };
 
-        inline void setDeclared() { this->declared = true; };
+        inline void setDeclared() const { this->declared = true; };
 
         inline bool isPrimitive() const { return this->getType()->isPrimitive(); };
         inline bool notIsPrimitive() const { return !this->getType()->isPrimitive(); };
@@ -202,7 +204,8 @@ class NamedObject : public ApiObject {
             ApiObject(_name, _id, _type) {};
 
         std::string toStr() const { return this->name; };
-        std::string toStrWithType() const { assert(false); };
+        std::string toStrWithType() const { return fmt::format("{} {}",
+            this->getType()->getUnderlyingType()->toStr(), this->toStr()); };
 };
 
 class ExprObject : public ApiObject {

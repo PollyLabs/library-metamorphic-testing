@@ -15,6 +15,7 @@ std::map<std::string, std::vector<char>> char_set =
 std::map<std::string, PrimitiveTypeEnum> primitives_map = {
     { "char", CHAR },
     { "string", STRING },
+    { "nqstring", NQSTRING },
     { "unsigned int", UINT },
     { "int", INT},
     { "bool", BOOL },
@@ -51,6 +52,10 @@ CHECK_CONDITION(bool condition, std::string message)
     if (!condition)
     {
         std::cout << "CHECK FAILED: " << message << std::endl;
+        if (DEBUG)
+        {
+            assert(false);
+        }
         exit(1);
     }
 }
@@ -108,7 +113,9 @@ ExplicitType::ExplicitType(std::string _definition, const ApiType* _underlying_t
 {
     size_t mid_one = _definition.find(delim_mid);
     size_t mid_two = _definition.find(delim_mid, mid_one + 1);
-    assert(mid_two != std::string::npos);
+    CHECK_CONDITION(mid_two != std::string::npos,
+        fmt::format("Expected second middle delimiter in comprehension `{}`.",
+            _definition));
     size_t end = _definition.find(delim_back);
     this->gen_type = _definition.substr(1, mid_one - 1);
     this->gen_method = _definition.substr(mid_one + 1, mid_two - mid_one - 1);
@@ -474,7 +481,9 @@ ApiInstruction::toStr() const
     }
     else if (this->getFunc()->checkFlag("statik"))
     {
-        assert(this->getTargetObj() == nullptr);
+        CHECK_CONDITION(this->getTargetObj() == nullptr,
+            fmt::format("Called static function `{}` on enclosing class instance.",
+                this->getFunc()->getName()));
         instr_ss << this->getFunc()->getMemberType()->toStr() << "::";
     }
     instr_ss << this->getFunc()->printInvocation(this->getFuncParams());
