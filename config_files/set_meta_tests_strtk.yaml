@@ -1,0 +1,26 @@
+---
+input_count: 2
+meta_var_type: 'strtk_str'
+variant_count: 3
+meta_check:
+    - 'assert(is_equal_string(%m0,%m))'
+
+generators:
+    empty:
+        identifier: 'e'
+        relations:
+            #- "%1.clear()"
+            #- "%1.erase(<int=val=0>,%1.size())"
+            #- "%1.resize(<int=val=0>)"
+
+relations:
+    identity:
+        #- "%1.append(%e)"
+        #- "%1.operator+=(%e)"
+        - "%1.erase(<int=val=0>,<int=val=0>)"
+        - "%1.substr()"
+
+    append:
+        - "%1.append(%2)"
+        - "%1.operator+=(%2)"
+

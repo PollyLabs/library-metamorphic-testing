@@ -1,0 +1,96 @@
+---
+includes:
+    - 'strtk.hpp'
+    - 'testing/strtk_helper.hpp'
+
+pre_setup:
+    - 'typedef std::string strtk_str;'
+    - 'typedef std::string delim_str;'
+    - 'typedef std::back_insert_iterator<std::list<std::pair<const char*, const char*>>> list_it;'
+
+var_decl:
+    - name: 'str'
+      type: 'std::string'
+      value: 'abcd|123|===|456ghj'
+    - name: 'token_list'
+      type: 'strtk::std_string::token_list_type'
+
+inputs:
+    - name: 'depth_max'
+      type: 'unsigned int'
+      #range: '[10,10]'
+      descriptor: '<range=[2,2]>'
+
+types:
+    - name: 'strtk_str'
+    - name: 'std::string'
+    - name: 'strtk::std_string::token_list_type'
+      singleton: true
+    - name: 'list_it'
+      singleton: true
+
+funcs:
+    - name: 'strtk::split'
+      member_type: ''
+      param_types: ['<char=random=>', 'strtk_str', '<var=type=list_it>']
+    - name: 'append'
+      member_type: 'strtk_str'
+      param_types: ['string']
+    - name: 'append'
+      member_type: 'strtk_str'
+      param_types: ['strtk_str']
+    - name: 'operator+='
+      member_type: 'strtk_str'
+      param_types: ['strtk_str']
+    - name: 'erase'
+      member_type: 'strtk_str'
+      param_types: ['int', 'int']
+      special: true
+    - name: 'erase'
+      member_type: 'strtk_str'
+      param_types: ['int', 'unsigned int']
+      special: true
+    - name: 'substr'
+      member_type: 'strtk_str'
+      param_types: []
+      special: true
+    - name: 'clear'
+      member_type: 'strtk_str'
+      param_types: []
+      special: true
+    - name: 'resize'
+      member_type: 'strtk_str'
+      param_types: ['int']
+      special: true
+    - name: 'size'
+      member_type: 'strtk_str'
+      return_type: 'unsigned int'
+      param_types: []
+      special: true
+    - name: 'is_equal_string'
+      return_type: 'bool'
+      param_types: ['strtk_str', 'strtk_str']
+      special: true
+    - name: 'assert'
+      param_types: ['bool']
+      special: true
+    - name: 'std::string'
+      return_type: 'strtk_str'
+      param_types: ['strtk_str']
+      special: true
+
+constructors:
+    - name: 'std::string'
+      return_type: 'strtk_str'
+      param_types: ['<string=len=[5,10]>']
+    - name: 'std::back_inserter'
+      return_type: 'list_it'
+      param_types: ['<var=type=strtk::std_string::token_list_type>']
+
+set_gen:
+    - type: 'seq'
+      count: 5
+    - type: 'func'
+      func: 'std::string'
+      return: '<special=output_var=>'
+      func_params: ['<var=latest=strtk_str>']

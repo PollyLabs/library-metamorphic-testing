@@ -11,6 +11,7 @@ meta_var_type: "isl::set"
 variant_count: 20
 meta_check:
     - "assert(%m.is_equal(%m0))"
+    #- "assert(operator==(%m,%m0))"
 
 generators:
     universe: # universe

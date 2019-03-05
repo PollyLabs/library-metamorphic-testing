@@ -96,10 +96,12 @@ class ApiFuzzer {
         const ApiFunc* getSingleFuncByName(std::string) const;
         const ApiFunc* getFuncBySignature(std::string, std::vector<const ApiType*>) const;
 
-        void addInstr(const ApiInstructionInterface*);
-        void addObj(const ApiObject*);
-        void addType(const ApiType*);
-        void addFunc(const ApiFunc*);
+        inline void addInstr(const ApiInstructionInterface*);
+        inline const ApiObject* addNewObj(const ApiType*);
+        inline const ApiObject* addNewObj(std::string, const ApiType*);
+        inline void addObj(const ApiObject*);
+        inline void addType(const ApiType*);
+        inline void addFunc(const ApiFunc*);
 
         virtual void generateSet() = 0;
 
@@ -116,19 +118,22 @@ class ApiFuzzer {
             std::vector<const ApiObject*>);
         std::vector<const ApiObject*> getFuncArgs(const ApiFunc*);
 
-        void addRelation(const MetaRelation*);
-        void addMetaCheck(const MetaRelation*);
-        void addMetaVar(std::string, const ApiType*);
-        void addMetaVar(std::string, const ApiType*, std::vector<const MetaRelation*>&);
-        void addInputMetaVar(size_t);
+        inline void addRelation(const MetaRelation*);
+        inline void addMetaCheck(const MetaRelation*);
+        inline void addMetaVar(std::string, const ApiType*);
+        inline void addMetaVar(std::string, const ApiType*, std::vector<const MetaRelation*>&);
+        inline void addInputMetaVar(size_t);
         MetaVarObject* getMetaVar(std::string) const;
         const ApiObject* getMetaVariant(size_t id) const;
+
+        inline std::string getGenericVariableName(const ApiType*) const;
 
     private:
         std::string emitFuncCond(const ApiFunc*, const ApiObject*,
             std::vector<const ApiObject*>);
         std::string parseCondition(std::string, const ApiObject*,
             std::vector<const ApiObject*>);
+
 };
 
 class ApiFuzzerNew : public ApiFuzzer {
@@ -168,8 +173,7 @@ class ApiFuzzerNew : public ApiFuzzer {
         const ApiObject* parseRelationStringSubstr(std::string);
 
         const ApiObject* generateObject(const ApiType*);
-        const ApiObject* generateExplicitObject(const ExplicitType*);
-        const ApiObject* generateNewObject(const ApiType*);
+        const ApiObject* generateNewObject(const ApiType*, const ApiObject* = nullptr);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*,
             std::string);
@@ -177,6 +181,7 @@ class ApiFuzzerNew : public ApiFuzzer {
             std::string, std::string);
         template<typename T> const ApiObject* generatePrimitiveObject(
             const PrimitiveType*, std::string, T);
+        const ApiObject* retrieveExplicitObject(const ExplicitType*);
         template<typename T> T parseDescriptor(std::string);
         void generateSet();
         const ApiObject* getInputObject(std::string);
