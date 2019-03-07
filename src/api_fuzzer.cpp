@@ -881,7 +881,9 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
 {
     logDebug(fmt::format("Parsing type string {}", type_str));
     if (type_str.front() == delim_front) {
-        assert(type_str.back() == delim_back);
+        CHECK_CONDITION(type_str.back() == delim_back,
+            fmt::format("Expected back delimiter `{}` in `{}`.",
+                delim_back, type_str));
 
         if (type_str.find("output_var") != std::string::npos)
         {
@@ -1582,7 +1584,7 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
                 std::string("all"));
         }
         case INT: {
-            std::string range = "[0,10]";
+            std::string range = "[-10,10]";
             range = fmt::format("{}range{}{}{}", delim_front, delim_mid,
                 range, delim_back);
             return this->generatePrimitiveObject(obj_type, name, range);
@@ -1836,6 +1838,10 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
     {
         for (char& c : range_substr)
         {
+            if (c == '-')
+            {
+                continue;
+            }
             assert(std::isdigit(c));
         }
         // TODO more checks here

@@ -289,7 +289,7 @@ constructors:
     - name: 'isl::local_space'
       param_types: ['isl::space']
     - name: 'isl::val'
-      param_types: ['isl::ctx', 'unsigned int']
+      param_types: ['isl::ctx', '<int=range=[-10,0]>']
     - name: 'isl::pw_aff'
       param_types: ['universe_set','isl::val']
     - name: 'isl::ctx'
