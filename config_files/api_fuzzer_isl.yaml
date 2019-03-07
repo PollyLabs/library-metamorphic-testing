@@ -2,6 +2,7 @@
 includes:
     - "isl-noexceptions.h"
     - "testing/isl-meta-stats.h"
+    - "testing/isl-helper.h"
 
 pre_setup:
     #- "isl_ctx *ctx_ptr = isl_ctx_alloc();"
@@ -17,19 +18,19 @@ var_decl:
 
 inputs:
     - name: 'params'
-      type: 'unsigned int'
-      descriptor: '<range=[0,0]>'
+      #type: 'unsigned int'
+      descriptor: '<unsigned int=range=[0,0]>'
     - name: 'dims'
-      type: 'unsigned int'
-      descriptor: '<range=(0,8]>'
+      #type: 'unsigned int'
+      descriptor: '<unsigned int=range=(0,8]>'
     - name: 'constraints'
-      type: 'unsigned int'
+      #type: 'unsigned int'
       #range: '[1,3]'
-      descriptor: '<range=[2,2]>'
+      descriptor: '<unsigned int=range=[2,2]>'
     - name: 'depth_max'
-      type: 'unsigned int'
+      #type: 'unsigned int'
       #range: '[10,10]'
-      descriptor: '<range=[2,2]>'
+      descriptor: '<unsigned int=val=5>'
 
 types:
     - name: 'isl::val'
@@ -112,11 +113,36 @@ funcs:
       return_type: 'isl::val'
       param_types: ['isl::val']
       conditions: []
+    - name: 'ceil'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: []
+      conditions: []
+    - name: 'floor'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: []
+      conditions: []
+    - name: 'coalesce'
+      member_type: 'isl::pw_aff'
+      return_type: 'isl::pw_aff'
+      param_types: []
+      conditions: []
     - name: 'mod'
       member_type: 'isl::pw_aff'
       return_type: 'isl::pw_aff'
       param_types: ['isl::val']
       conditions: ['false']
+    - name: 'modWrap'
+      member_type: ''
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::pw_aff','isl::val']
+      conditions: []
+    - name: 'divWrap'
+      member_type: ''
+      return_type: 'isl::pw_aff'
+      param_types: ['isl::pw_aff','isl::pw_aff']
+      conditions: []
     - name: 'scale'
       member_type: 'isl::pw_aff'
       return_type: 'isl::pw_aff'
@@ -172,6 +198,7 @@ funcs:
       return_type: ''
       param_types: []
       conditions: []
+      special: true
     # Start special funcs
     - name: 'universe'
       member_type: 'isl::set'

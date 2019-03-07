@@ -104,6 +104,13 @@ ApiType::isType(const ApiType* other) const
     return !this->toStr().compare(other->toStr());
 }
 
+std::ostream&
+operator<<(std::ostream& os, ApiType* type)
+{
+    os << type->toStr();
+    return os;
+}
+
 /*******************************************************************************
  * ExplicitType functions
  ******************************************************************************/

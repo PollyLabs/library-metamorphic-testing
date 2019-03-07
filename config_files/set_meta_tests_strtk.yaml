@@ -9,9 +9,9 @@ generators:
     empty:
         identifier: 'e'
         relations:
-            #- "%1.clear()"
-            #- "%1.erase(<int=val=0>,%1.size())"
-            #- "%1.resize(<int=val=0>)"
+            - "%1.clear()"
+            - "%1.erase(<int=val=0>,%1.size())"
+            - "%1.resize(<int=val=0>)"
 
 relations:
     identity:

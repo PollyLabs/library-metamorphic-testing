@@ -83,7 +83,8 @@ class ApiType {
         virtual const ApiType* getUnderlyingType() const { return this; };
         virtual const PrimitiveTypeEnum getTypeEnum() const { assert(false); };
 
-        inline bool operator<(const ApiType* other) const {
+        inline bool operator<(const ApiType* other) const
+        {
             return this->toStr() < other->toStr();
         };
 
@@ -157,7 +158,7 @@ class ApiObject {
         inline const ApiType* getType() const { return this->type; };
         inline size_t getID() const { return this->id; };
 
-        inline void setDeclared() const { this->declared = true; };
+        virtual inline void setDeclared() const { this->declared = true; };
 
         inline bool isPrimitive() const { return this->getType()->isPrimitive(); };
         inline bool notIsPrimitive() const { return !this->getType()->isPrimitive(); };
@@ -193,6 +194,8 @@ class PrimitiveObject : public ApiObject {
             PrimitiveObject(_type, _data, _type->toStr(), _id) {};
 
         T getData() const { return this->data; };
+
+        inline bool isDeclared() const { return true; };
 
         std::string toStr() const;
         std::string toStrWithType() const { assert(false); };

@@ -63,7 +63,6 @@ SetMetaTesterNew::finalizeTest(MetaTest* new_test) const
     {
         new_test->addRelation(meta_check->concretizeVars(
             new_test->getVariantVar(), this->meta_variants, this->meta_in_vars));
-;
     }
 }
 
@@ -134,6 +133,7 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
     const MetaRelation* concretized_relation =
         concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
             input_vars);
+    //delete concrete_relation;
     return concretized_relation;
 }
 
