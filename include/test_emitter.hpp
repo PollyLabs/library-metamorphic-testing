@@ -20,16 +20,12 @@ enum Modes {
 
 struct Arguments {
     unsigned int seed;
+    std::string config_file;
     Modes mode;
-    unsigned int max_dims;
-    unsigned int max_params;
-    unsigned int max_set_count;
-    std::string input_sets;
+    bool debug;
     std::string output_file;
 
-    Arguments(): seed(42), max_dims(5), max_params(5), max_set_count(3), input_sets(""),
-       output_file("./test.cpp")
-       {}
+    Arguments(): seed(42), config_file(""), debug(false), output_file("") {};
 };
 
 void parseArgs(Arguments&, int, char**);

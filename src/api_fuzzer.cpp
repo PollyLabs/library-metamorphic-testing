@@ -1,10 +1,5 @@
 #include "api_fuzzer.hpp"
 
-/* TODO list:
- * - add a depth for expression generation
- */
-
-
 char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
@@ -13,12 +8,27 @@ char delim_mid = '=';
  * Helper functions
  ******************************************************************************/
 
+void
+CHECK_YAML_FIELD(YAML::Node node, std::string field_name)
+{
+    std::string message = fmt::format(
+        "Did not find field `{}` for unnamed node.", field_name);
+    if (node["name"].IsDefined())
+    {
+        message = fmt::format("Did not find field `{}` for named node `{}`.",
+            field_name, node["name"].as<std::string>());
+    }
+    CHECK_CONDITION(node[field_name].IsDefined(), message);
+}
+
 template<typename T>
 T
 getRandomVectorElem(std::vector<T>& vector_in, std::mt19937* rng)
 {
     unsigned int rand_val = (*rng)();
     logDebug(fmt::format("RAND GEN {}", rand_val));
+    CHECK_CONDITION(vector_in.size() != 0,
+        fmt::format("Attempt to get element of empty vector."));
     return vector_in.at(rand_val % vector_in.size());
 }
 
@@ -29,9 +39,26 @@ getRandomSetElem(std::set<T>& set_in, std::mt19937* rng)
     typename std::set<T>::iterator it = set_in.begin();
     unsigned int rand_val = (*rng)();
     logDebug(fmt::format("RAND GEN {}", rand_val));
+    CHECK_CONDITION(set_in.size() != 0,
+        fmt::format("Attempt to get element of empty set."));
     int advance_count = rand_val % set_in.size();
     std::advance(it, advance_count);
     return *it;
+}
+
+std::vector<const ApiObject*>
+filterObjList(std::vector<const ApiObject*> obj_list,
+    bool (ApiObject::*filter_func)() const)
+{
+    std::vector<const ApiObject*> filtered_objs;
+    for (const ApiObject* obj : obj_list)
+    {
+        if ((obj->*filter_func)())
+        {
+            filtered_objs.push_back(obj);
+        }
+    }
+    return filtered_objs;
 }
 
 template<typename T>
@@ -80,8 +107,6 @@ filterFuncList(std::set<const ApiFunc*> func_list,
     }
     return filtered_funcs;
 }
-
-
 
 /*******************************************************************************
  * ApiFuzzer functions
@@ -132,11 +157,11 @@ int
 ApiFuzzer::getRandInt(int min, int max)
 {
     assert(max >= min);
-    return (*this->rng)() % (max + 1) + min;
+    return (*this->rng)() % (max - min + 1) + min;
 }
 
 unsigned int
-ApiFuzzer::getNextID()
+ApiFuzzer::getNextID() const
 {
     this->next_obj_id++;
     return this->next_obj_id - 1;
@@ -168,47 +193,65 @@ ApiFuzzer::hasFuncName(std::string func_check)
     return false;
 }
 
-void
+inline void
 ApiFuzzer::addInstr(const ApiInstructionInterface* instr)
 {
     this->instrs.push_back(instr);
-    //static int counter = 0;
-    //this->instrs.push_back(instr->toStr());
-    //this->instrs.push_back(fmt::format("fprintf(stderr, \"{}\n\");\n", ++counter));
 }
 
-void
+
+inline std::string
+ApiFuzzer::getGenericVariableName(const ApiType* type) const
+{
+    return type->toStr().substr(type->toStr().rfind(':') + 1);
+}
+
+inline const ApiObject*
+ApiFuzzer::addNewObj(const ApiType* type)
+{
+    return this->addNewObj(this->getGenericVariableName(type), type);
+}
+
+inline const ApiObject*
+ApiFuzzer::addNewObj(std::string name, const ApiType* type)
+{
+    const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
+    this->addObj(new_obj);
+    return new_obj;
+}
+
+inline void
 ApiFuzzer::addObj(const ApiObject* obj)
 {
     this->objs.push_back(obj);
     this->all_objs.push_back(obj);
 }
 
-void
+inline void
 ApiFuzzer::addType(const ApiType* type)
 {
     this->types.insert(type);
 }
 
-void
+inline void
 ApiFuzzer::addFunc(const ApiFunc* func)
 {
     this->funcs.insert(func);
 }
 
-void
+inline void
 ApiFuzzer::addRelation(const MetaRelation* meta_rel)
 {
     this->relations.push_back(meta_rel);
 }
 
-void
+inline void
 ApiFuzzer::addMetaCheck(const MetaRelation* meta_check)
 {
     this->meta_checks.push_back(meta_check);
 }
 
-void
+inline void
 ApiFuzzer::addMetaVar(std::string identifier, const ApiType* meta_var_type)
 {
     std::vector<const MetaRelation*> empty_relations({});
@@ -229,7 +272,7 @@ ApiFuzzer::addMetaVar(std::string identifier, const ApiType* meta_var_type,
     this->meta_vars.push_back(new_meta_obj);
 }
 
-void
+inline void
 ApiFuzzer::addInputMetaVar(size_t id)
 {
     this->addMetaVar(std::to_string(id), this->meta_variant_type);
@@ -327,11 +370,15 @@ const ApiFunc*
 ApiFuzzer::getFuncBySignature(std::string name,
     std::vector<const ApiType*> param_types) const
 {
-    logDebug("Searching for func signature with name " + name + " and types " +
-        makeArgString(param_types));
+    logDebug(
+        fmt::format("Searching for func signature with name `{}` and types [{}]."
+            , name, makeArgString(param_types)));
     std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
     filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasParamTypes,
         param_types);
+    CHECK_CONDITION(filtered_funcs.size() == 1,
+        fmt::format("Signature filtering for func `{}` yielded {} results, "
+                    "expected 1.", name, filtered_funcs.size()));
     assert(filtered_funcs.size() == 1);
     return *(filtered_funcs.begin());
 }
@@ -342,7 +389,7 @@ ApiFuzzer::generateNamedObject(std::string name, const ApiType* type,
     std::vector<const ApiObject*> init_func_args)
 {
     bool new_obj_decl = true;
-    const NamedObject* new_obj = new NamedObject(name, type);
+    const NamedObject* new_obj = new NamedObject(name, this->getNextID(), type);
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
         target_obj, init_func_args);
     this->addObj(new_obj);
@@ -367,7 +414,7 @@ const ApiObject*
 ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
     bool emit_instr)
 {
-    assert(!type->isSingleton() ||
+    assert(!type->checkFlag("singleton") ||
         this->filterAllObjs(&ApiObject::hasType, type).size() == 0);
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
     this->addObj(new_obj);
@@ -377,7 +424,20 @@ ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
             new ObjectDeclInstruction(new_obj);
         this->addInstr(new_instr);
     }
+    new_obj->setDeclared();
     return new_obj;
+}
+
+void
+ApiFuzzer::applyFunc(const ApiFunc* func)
+{
+    const ApiType* return_type = func->getReturnType();
+    const ApiObject* return_obj =
+        return_type ? this->generateObject(return_type) : nullptr;
+    const ApiType* member_type = func->getMemberType();
+    const ApiObject* member_obj =
+        member_type ? this->generateObject(member_type) : nullptr;
+    applyFunc(func, member_obj, return_obj);
 }
 
 void
@@ -439,7 +499,8 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     for (const ApiType* param_type : param_types)
     {
         if (!param_type->isExplicit() &&
-                this->getRandInt(0, this->max_depth) < this->depth || this->depth > this->max_depth)
+                (this->getRandInt(0, this->max_depth) < this->depth ||
+                 this->depth > this->max_depth))
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
@@ -479,6 +540,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     this->initFuncs(api_fuzzer_data["funcs"]);
     this->initFuncs(api_fuzzer_data["special_funcs"]);
     this->initConstructors(api_fuzzer_data["constructors"]);
+    this->initVariables(api_fuzzer_data["var_decl"]);
     this->initGenConfig(api_fuzzer_data["set_gen"]);
 
     /* Metamorphic testing initialization */
@@ -498,8 +560,9 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     size_t input_var_count = meta_test_data["input_count"].as<size_t>();
     for (int i = 1; i <= input_var_count; ++i)
     {
-        this->current_output_var =
-            this->generateApiObjectDecl("out", this->meta_variant_type, false);
+        this->current_output_var = this->addNewObj("out", this->meta_variant_type);
+        //this->current_output_var =
+            //this->generateApiObjectDecl("out", this->meta_variant_type, true);
         this->objs.clear();
         this->output_vars.push_back(this->current_output_var);
         this->addInstr(new ApiComment(fmt::format(
@@ -507,7 +570,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
             i, this->current_output_var->toStr())));
         this->generateSet();
     }
-    assert(!this->output_vars.empty());
+    assert(this->output_vars.size() == input_var_count);
 
     // TODO reconsider how meta checks are generated; perhaps only generate
     // them when required
@@ -526,12 +589,55 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     logDebug(fmt::format("META TEST = {}", smt->getAbstractMetaRelChain()));
     this->instrs.push_back(new ApiComment(fmt::format("CURR META TEST: {}",
         smt->getAbstractMetaRelChain())));
-    this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
-
-    //for (std::string inst : this->getInstrList())
+    // TODO move this initialisation in the meta tester
+    //for (const ApiInstructionInterface* meta_instr_interface : meta_instrs)
     //{
-        //std::cout << inst << std::endl;
+        //const ApiInstruction* meta_instr =
+            //dynamic_cast<const ApiInstruction*>(meta_instr_interface);
+        //if (meta_instr && meta_instr->getTargetObj() != nullptr &&
+                //!meta_instr->getTargetObj()->isDeclared())
+        //{
+            //this->addInstr(new ObjectDeclInstruction(meta_instr->getTargetObj()));
+        //}
     //}
+    this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
+}
+
+ApiFuzzerNew::~ApiFuzzerNew()
+{
+    std::cout << ">> Cleaning funcs..." << std::endl;
+    for (const ApiFunc* api_func : this->getFuncList())
+    {
+        delete api_func;
+    }
+    //std::for_each(this->getFuncList().begin(), this->getFuncList().end(),
+        //[](const ApiFunc* api_fnc){ std::cout << api_fnc << std::endl; delete api_fnc; });
+    //this->getFuncList().clear();
+    std::cout << ">> Cleaning objs..." << std::endl;
+    std::for_each(this->all_objs.begin(), this->all_objs.end(),
+        [](const ApiObject* api_obj){ delete api_obj; });
+    std::cout << ">> Cleaning types..." << std::endl;
+    for (const ApiType* api_type : this->getTypeList())
+    {
+        delete api_type;
+    }
+    std::cout << ">> Cleaning instructions..." << std::endl;
+    std::for_each(this->instrs.begin(), this->instrs.end(),
+        [](const ApiInstructionInterface* instr){ delete instr; });
+    //std::for_each(this->getTypeList().begin(), this->getTypeList().end(),
+        //[](const ApiType* api_typ){ std::cout << api_typ << std::endl; delete api_typ; });
+    std::cout << ">> Cleaning meta check expressions..." << std::endl;
+    std::for_each(this->meta_checks.begin(), this->meta_checks.end(),
+        [](const MetaRelation* meta_check){ delete meta_check; });
+    std::cout << ">> Cleaning meta relations..." << std::endl;
+    std::for_each(this->relations.begin(), this->relations.end(),
+        [](const MetaRelation* meta_rel){ delete meta_rel; });
+    std::cout << ">> Cleaning meta input variables..." << std::endl;
+    std::for_each(this->meta_in_vars.begin(), this->meta_in_vars.end(),
+        [](const ApiObject* meta_in_var){ delete meta_in_var; });
+    std::cout << ">> Cleaning meta variants..." << std::endl;
+    std::for_each(this->meta_variants.begin(), this->meta_variants.end(),
+        [](const ApiObject* meta_var){ delete meta_var; });
 }
 
 const ApiObject*
@@ -561,22 +667,30 @@ ApiFuzzerNew::initInputs(YAML::Node inputs_config)
 {
     for (YAML::Node input_yaml : inputs_config)
     {
+        CHECK_YAML_FIELD(input_yaml, "name");
         std::string name = input_yaml["name"].as<std::string>();
-        const ApiType* obj_type = this->getTypeByName(
-            input_yaml["type"].as<std::string>());
         const ApiObject* obj;
-        if (input_yaml["range"].IsDefined())
-        {
-            obj = this->generatePrimitiveObject( (PrimitiveType*) obj_type,
-                input_yaml["range"].as<std::string>());
-            logDebug(fmt::format("Generated object with data {} for range {}.",
-                dynamic_cast<const PrimitiveObject<unsigned int>*>(obj)->getData(),
-                input_yaml["range"].as<std::string>()));
-        }
-        else
-        {
-            obj = this->generateObject(obj_type);
-        }
+        //if (obj_type->isPrimitive())
+        //{
+        CHECK_YAML_FIELD(input_yaml, "descriptor");
+        std::string descriptor = input_yaml["descriptor"].as<std::string>();
+        const ApiType* input_type =
+            this->parseTypeStr(descriptor);
+        CHECK_CONDITION(input_type->isExplicit(),
+            fmt::format("Expected comprehension, got `{}`.", descriptor));
+        obj = this->retrieveExplicitObject(
+            dynamic_cast<const ExplicitType*>(input_type));
+            //obj = this->generatePrimitiveObject(
+                //dynamic_cast<const PrimitiveType*>(obj_type),
+                //name, input_yaml["descriptor"].as<std::string>());
+            //logDebug(fmt::format("Generated object with data {} for range {}.",
+                //dynamic_cast<const PrimitiveObject<unsigned int>*>(obj)->getData(),
+                //input_yaml["range"].as<std::string>()));
+        //}
+        //else
+        //{
+            //obj = this->generateObject(obj_type);
+        //}
         this->fuzzer_input.insert(std::pair<std::string, const ApiObject*>(name, obj));
     }
 }
@@ -586,16 +700,18 @@ ApiFuzzerNew::initTypes(YAML::Node types_config)
 {
     for (YAML::Node type_yaml : types_config) {
         std::string type_name = type_yaml["name"].as<std::string>();
-        bool singleton = false;
+        bool singleton = false, pointer = false;
+        if (type_yaml["singleton"].IsDefined())
+        {
+            singleton = type_yaml["singleton"].as<bool>();
+        }
+        if (type_yaml["pointer"].IsDefined())
+        {
+            pointer = type_yaml["pointer"].as<bool>();
+        }
+        logDebug(fmt::format("ADDING TYPE {}", type_name));
         logDebug(fmt::format("YAML SINGLE {}", type_yaml["singleton"].IsDefined()));
-        if (type_yaml["singleton"].IsDefined() && type_yaml["singleton"].as<bool>())
-        {
-            this->addType(new SingletonType(type_name));
-        }
-        else
-        {
-            this->addType(new ApiType(type_name));
-        }
+        this->addType(new ApiType(type_name, pointer, singleton));
     }
 }
 
@@ -657,6 +773,56 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
         cond_list, special, statik);
 }
 
+
+void
+ApiFuzzerNew::initVariables(YAML::Node vars_yaml)
+{
+    for (YAML::Node var_yaml : vars_yaml)
+    {
+        CHECK_YAML_FIELD(var_yaml, "name");
+        CHECK_YAML_FIELD(var_yaml, "type");
+        std::string name = var_yaml["name"].as<std::string>();
+        const ApiType* type =
+            this->getTypeByName(var_yaml["type"].as<std::string>());
+        if (type->isPrimitive())
+        {
+            // TODO do a switch for various primitive types
+            const PrimitiveType* p_type =
+                dynamic_cast<const PrimitiveType*>(type);
+            if (var_yaml["value"].IsDefined())
+            {
+                this->generatePrimitiveObject(
+                    p_type, name, var_yaml["value"].as<std::string>());
+            }
+            else
+            {
+                this->generatePrimitiveObject(p_type, name);
+            }
+        }
+        else
+        {
+            //const ApiObject* init_obj =
+                //this->generateApiObjectDecl(name, type, true);
+            if (var_yaml["func"].IsDefined())
+            {
+                const ApiFunc* init_func =
+                    this->getAnyFuncByName(var_yaml["func"].as<std::string>());
+                const ApiObject* target_obj =
+                    init_func->getMemberType() != nullptr &&
+                        init_func->checkFlag(std::string("!statik"))
+                    ? this->generateObject(init_func->getMemberType())
+                    : nullptr;
+                this->generateApiObject(name, type, init_func, target_obj,
+                    this->getFuncArgs(init_func));
+            }
+            else
+            {
+                this->generateApiObjectDecl(name, type, true);
+            }
+        }
+    }
+}
+
 void
 ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
 {
@@ -702,52 +868,102 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
     }
 }
 
+const ExplicitType*
+ApiFuzzerNew::parseComprehension(std::string comprehension)
+{
+    logDebug(fmt::format("Parsing comprehension {}", comprehension));
+    CHECK_CONDITION(comprehension.front() == delim_front,
+        fmt::format("Expected front delimiter `{}` for comprehensions `{}`.",
+            delim_front, comprehension));
+    CHECK_CONDITION(comprehension.find(delim_mid) != std::string::npos,
+        fmt::format("Expected middle delimiter `{}` for comprehensions `{}`.",
+            delim_mid, comprehension));
+    CHECK_CONDITION(comprehension.back() == delim_back,
+        fmt::format("Expected back delimiter `{}` for comprehensions `{}`.",
+            delim_back, comprehension));
+    const ApiType* api_type = parseTypeStr(comprehension);
+    CHECK_CONDITION(api_type->isExplicit(),
+        fmt::format("Expected explicit type; got `{}`.", api_type->toStr()));
+    return dynamic_cast<const ExplicitType*>(api_type);
+}
+
 const ApiType*
 ApiFuzzerNew::parseTypeStr(std::string type_str)
 {
-    if (type_str.front() == delim_front && type_str.back() == delim_back) {
+    logDebug(fmt::format("Parsing type string {}", type_str));
+    if (type_str.front() == delim_front) {
+        CHECK_CONDITION(type_str.back() == delim_back,
+            fmt::format("Expected back delimiter `{}` in `{}`.",
+                delim_back, type_str));
+
         if (type_str.find("output_var") != std::string::npos)
         {
-            assert(this->current_output_var);
             return new ExplicitType(type_str, this->getCurrOutputVar()->getType());
         }
-        if (type_str.find("seed") != std::string::npos)
+        else if (type_str.find("loop_counter") != std::string::npos)
         {
             return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
         }
-        if (type_str.find("rand") != std::string::npos)
+
+        size_t mid_1 = type_str.find(delim_mid);
+        size_t mid_2 = type_str.find(delim_mid, mid_1 + 1);
+        CHECK_CONDITION(mid_1 != std::string::npos,
+            fmt::format("Expected middle delimiter `{}` in type string `{}`",
+                delim_mid, type_str));
+        CHECK_CONDITION(mid_2 != std::string::npos,
+            fmt::format(
+                "Expected second middle delimiter `{}` in type string `{}`",
+                delim_mid, type_str));
+
+        std::string out_type = type_str.substr(1, mid_1 - 1);
+        std::string gen_type = type_str.substr(mid_1 + 1, mid_2 - mid_1 - 1);
+        std::string descr = type_str.substr(mid_2 + 1);
+        descr.pop_back();
+        if (!out_type.compare("var"))
         {
-            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+            if (!gen_type.compare("type"))
+            {
+                return new ExplicitType(type_str, this->getTypeByName(descr));
+            }
+            else if (!gen_type.compare("name"))
+            {
+                std::vector<const ApiObject*> filtered_objs =
+                    this->filterAllObjs(&ApiObject::hasName, descr);
+                CHECK_CONDITION(filtered_objs.size() == 1,
+                    fmt::format("Expected one object with name `{}`; found {}.",
+                        descr, filtered_objs.size()));
+                return new ExplicitType(type_str,
+                    filtered_objs.front()->getType());
+            }
+            else if (!gen_type.compare("input"))
+            {
+                return new ExplicitType(type_str,
+                    this->getInputObject(descr)->getType());
+            }
+            else if (!gen_type.compare("new"))
+            {
+                return new ExplicitType(type_str, this->getTypeByName(descr));
+            }
+            else if (!gen_type.compare("latest"))
+            {
+                std::vector<const ApiObject*> filtered_objs =
+                    filterObjList(this->getAllObjList(), &ApiObject::notIsPrimitive);
+                if (descr.compare(""))
+                {
+                    filtered_objs = filterObjList(filtered_objs, &ApiObject::hasType,
+                        this->getTypeByName(descr));
+                }
+                CHECK_CONDITION(filtered_objs.size() > 0,
+                    fmt::format("Could not find latest variable of type `{}`.",
+                        descr));
+                return new ExplicitType(fmt::format("{}var{}id{}{}{}",
+                    delim_front, delim_mid, delim_mid, filtered_objs.back()->getID(),
+                    delim_back), filtered_objs.back()->getType());
+            }
+            CHECK_CONDITION(false,
+                fmt::format("Var comprehension not implemented: {}", type_str));
         }
-        if (type_str.find("var_name") != std::string::npos)
-        {
-            return new ExplicitType(type_str, this->getTypeByName("string"));
-        }
-        assert (type_str.find(delim_mid) != std::string::npos);
-        if (type_str.find(fmt::format("input{}", delim_mid)) != std::string::npos)
-        {
-            // HACK: replace by type of input
-            return new ExplicitType(type_str,
-                this->getTypeByName("unsigned int"));
-        }
-        else if (type_str.find(fmt::format("string{}", delim_mid)) != std::string::npos)
-        {
-            return new ExplicitType(type_str, this->getTypeByName("string"));
-        }
-        else if (type_str.find(fmt::format("new{}", delim_mid)) != std::string::npos)
-        {
-            std::string type_substr = this->getGeneratorData(type_str);
-            return this->getTypeByName(type_substr);
-        }
-        else if (type_str.find(fmt::format("expr{}", delim_mid)) != std::string::npos)
-        {
-            return new ExplicitType(type_str, this->getTypeByName("string"));
-        }
-        else if (type_str.find(fmt::format("range{}", delim_mid)) != std::string::npos)
-        {
-            return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
-        }
-        assert(false);
+        return new ExplicitType(type_str, this->getTypeByName(out_type));
     }
     return this->getTypeByName(type_str);
 }
@@ -838,11 +1054,13 @@ ApiFuzzerNew::initMetaChecks(YAML::Node check_list_yaml)
 }
 
 const ApiObject*
-ApiFuzzerNew::parseRelationStringVar(std::string rel_string_var) const
+ApiFuzzerNew::parseRelationStringVar(std::string rel_string_var)
 {
     if (rel_string_var[0] == '%')
     {
-        assert(rel_string_var.length() <= 3);
+        CHECK_CONDITION(rel_string_var.length() <= 3,
+            fmt::format("Expected metamorphic variable comprehension, got `{}`.",
+                rel_string_var));
         assert(rel_string_var.length() >= 1);
         if (std::isdigit(rel_string_var[1]))
         {
@@ -865,16 +1083,18 @@ ApiFuzzerNew::parseRelationStringVar(std::string rel_string_var) const
     {
         return new PrimitiveObject<unsigned int>(
             dynamic_cast<const PrimitiveType*>(this->getTypeByName("unsigned int")),
-            std::stoi(rel_string_var));
+            std::stoi(rel_string_var), this->getNextID());
     }
     std::vector<const ApiObject*> filtered_objs = this->filterAllObjs(
         &ApiObject::hasName, rel_string_var);
-    assert(filtered_objs.size() == 1);
+    CHECK_CONDITION(filtered_objs.size() == 1,
+        fmt::format("Expected one object with name `{}`, found `{}`",
+            rel_string_var, filtered_objs.size()));
     return filtered_objs.at(0);
 }
 
 const ApiObject*
-ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr) const
+ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr)
 {
     if (std::isspace(rel_substr.front()))
     {
@@ -898,14 +1118,12 @@ ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr) const
     else if (rel_substr.front() == delim_front &&
         rel_substr.back() == delim_back)
     {
-        // TODO develop for more comprehensions and move to own function
-        assert(rel_substr.find("var-") != std::string::npos);
-        std::string var_name = rel_substr.substr(rel_substr.find('-') + 1,
-            rel_substr.find(delim_back) - rel_substr.find('-') - 1);
-        std::vector<const ApiObject*> candidate_objs =
-            this->filterAllObjs(&ApiObject::hasName, var_name);
-        assert(candidate_objs.size() == 1);
-        return candidate_objs.at(0);
+        const ApiType* comprehension = parseTypeStr(rel_substr);
+        CHECK_CONDITION(comprehension->isExplicit(),
+            fmt::format("Expected ExplicitType, found {}.",
+                comprehension->toStr()));
+        return this->retrieveExplicitObject(
+            dynamic_cast<const ExplicitType*>(comprehension));
     }
     else
     {
@@ -914,7 +1132,7 @@ ApiFuzzerNew::parseRelationStringSubstr(std::string rel_substr) const
 }
 
 const FuncObject*
-ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
+ApiFuzzerNew::parseRelationStringFunc(std::string rel_string)
 {
     size_t paren_count = 0;
     std::stack<std::string> funcs;
@@ -974,7 +1192,9 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
             accumulator.insert(0, 1, *r_it);
         }
     }
-    assert (paren_count == 0);
+    CHECK_CONDITION(paren_count == 0,
+        fmt::format("Expected parenthesis to be closed in input `{}`; got `{}` "
+                    "remaining open.", rel_string, paren_count));
     if (accumulator != "")
     {
         assert(func_name.empty());
@@ -999,15 +1219,20 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string) const
 
 MetaRelation*
 ApiFuzzerNew::parseRelationString(std::string rel_string, std::string rel_name)
-    const
 {
     const ApiObject* store_result_var = nullptr;
 
     size_t eq_pos = rel_string.find('=');
     // TODO properly parse strings with multiple equals that are not assignments
-    if (eq_pos != std::string::npos &&
+    if (eq_pos != std::string::npos && rel_string.front() == '%' &&
+            rel_string.find('.') > eq_pos)
             //rel_string.find('=', eq_pos + 1) == std::string::npos &&
-            (rel_string.find('(') >= eq_pos || rel_string.find('(') == std::string::npos))
+            //(rel_string.find(delim_front) == std::string::npos ||
+            //(rel_string.find(delim_front) != std::string::npos &&
+             //rel_string.find(delim_front) > eq_pos)))
+            //&&
+             //rel_string.find(delim_back, eq_pos) > eq_pos &&
+             //rel_string.find(delim_mid, eq_pos + 1) != std::string::npos))
     {
         store_result_var = this->parseRelationStringVar(
             rel_string.substr(0, eq_pos));
@@ -1020,8 +1245,10 @@ ApiFuzzerNew::parseRelationString(std::string rel_string, std::string rel_name)
 const ApiObject*
 ApiFuzzerNew::generateObject(const ApiType* obj_type)
 {
+    CHECK_CONDITION(obj_type != nullptr,
+        fmt::format("Given null type to generate object for."));
     logDebug("Generating object of type " + obj_type->toStr());
-    if (obj_type->isSingleton())
+    if (obj_type->checkFlag("singleton"))
     {
         return this->getSingletonObject(obj_type);
     }
@@ -1031,69 +1258,234 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     }
     else if (obj_type->isExplicit())
     {
-        const ExplicitType* expl_type = dynamic_cast<const ExplicitType*>(obj_type);
-        if (expl_type->isRange())
-        {
-            const ApiType* obj_type = this->getTypeByName("unsigned int");
-            assert(obj_type->isPrimitive());
-            const PrimitiveType* prim_type = dynamic_cast<const PrimitiveType*>(obj_type);
-            return this->generatePrimitiveObject(prim_type,
-                this->getGeneratorData(expl_type->getDefinition()));
-        }
-        else if (expl_type->isInput())
-        {
-            std::string input_name =
-                expl_type->getDefinition();
-            logDebug(fmt::format("DEF {}",
-                expl_type->getDefinition()));
-            input_name = input_name.substr(input_name.find(delim_mid) + 1,
-                input_name.find(delim_back) - input_name.find(delim_mid) - 1);
-            logDebug(fmt::format("INPUT_NAME {}", input_name));
-            return this->getInputObject(input_name);
-        }
-        else if (expl_type->isExpr())
-        {
-            const ApiType* expr_param_type = this->getTypeByName(
-                this->getGeneratorData(expl_type->getDefinition()));
-            std::vector<const ApiObject*> expr_params = this->filterObjs(
-                &ApiObject::hasType, expr_param_type);
-            const ExprObject* new_expr_obj = new ExprObject(this->makeLinearExpr(expr_params),
-                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()));
-            return new_expr_obj;
-        }
-        else if (expl_type->getDefinition().find("output_var") != std::string::npos)
-        {
-            return this->getCurrOutputVar(obj_type);
-        }
-        else if (expl_type->getDefinition().find("seed") != std::string::npos)
-        {
-            assert(expl_type->getUnderlyingType()->isPrimitive());
-            return new PrimitiveObject<unsigned int>(
-                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
-                this->seed);
-        }
-        else if (expl_type->getDefinition().find("rand") != std::string::npos)
-        {
-            assert(expl_type->getUnderlyingType()->isPrimitive());
-            return new PrimitiveObject<unsigned int>(
-                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
-                this->getRandInt(0, std::numeric_limits<int>::max()));
-        }
-        else if (expl_type->getDefinition().find("var_name") != std::string::npos)
-        {
-            return new PrimitiveObject<std::string>(
-                dynamic_cast<const PrimitiveType*>(expl_type->getUnderlyingType()),
-                "\"p_" + std::to_string(this->getNextID()) + "\"");
-        }
-        else
-        {
-            return expl_type->retrieveObj();
-        }
+        return this->retrieveExplicitObject(
+            dynamic_cast<const ExplicitType*>(obj_type));
     }
     else
     {
         return this->generateNewObject(obj_type);
     }
+}
+
+const ApiObject*
+ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
+{
+    logDebug("Making explicit object from description " + expl_type->getDefinition());
+    if (!expl_type->getGenType().compare("var"))
+    {
+        if (!expl_type->getGenMethod().compare("name"))
+        {
+            std::vector<const ApiObject*> filtered_objs =
+                this->filterAllObjs(&ApiObject::hasName,
+                    expl_type->getDescriptor());
+            CHECK_CONDITION(filtered_objs.size() == 1,
+                fmt::format("Could not find object with name {}",
+                    expl_type->getDescriptor()));
+            return filtered_objs.front();
+        }
+        else if (!expl_type->getGenMethod().compare("type"))
+        {
+            std::vector<const ApiObject*> filtered_objs =
+                this->filterAllObjs(&ApiObject::hasType,
+                    expl_type->getUnderlyingType());
+            if (filtered_objs.empty())
+            {
+                return addNewObj(expl_type->getUnderlyingType());
+                //return this->generateNewObject(expl_type->getUnderlyingType());
+            }
+            return getRandomVectorElem(filtered_objs, this->getRNG());
+        }
+        else if (!expl_type->getGenMethod().compare("new"))
+        {
+            return this->addNewObj(
+                this->getTypeByName(expl_type->getDescriptor()));
+            //return this->generateNewObject(
+                //this->getTypeByName(expl_type->getDescriptor()));
+        }
+        else if (!expl_type->getGenMethod().compare("id"))
+        {
+            size_t id_check;
+            std::sscanf(expl_type->getDescriptor().c_str(), "%zu", &id_check);
+            std::vector<const ApiObject*> filtered_objs =
+                this->filterAllObjs(&ApiObject::hasID, id_check);
+            CHECK_CONDITION(filtered_objs.size() == 1,
+                fmt::format("Could not find object with id {}",
+                    expl_type->getDescriptor()));
+            return filtered_objs.front();
+        }
+        else if (!expl_type->getGenMethod().compare("input"))
+        {
+            return this->getInputObject(expl_type->getDescriptor());
+        }
+        CHECK_CONDITION(false,
+            fmt::format("Not implemented var object generation method for `{}`.",
+                expl_type->getGenMethod()));
+    }
+    else if (!expl_type->getGenType().compare("special"))
+    {
+        if (!expl_type->getGenMethod().compare("output_var"))
+        {
+            return this->getCurrOutputVar();
+        }
+        CHECK_CONDITION(false,
+            fmt::format("Not implemented special object generation method for `{}`.",
+                expl_type->getGenMethod()));
+    }
+    else if (expl_type->getUnderlyingType()->isPrimitive())
+    {
+        const PrimitiveType* prim_type = dynamic_cast<const PrimitiveType*>(
+            expl_type->getUnderlyingType());
+        std::string var_name = fmt::format("{}_{}", prim_type->toStr(),
+            this->getNextID());
+        if (!expl_type->getGenMethod().compare("val"))
+        {
+            switch(prim_type->getTypeEnum())
+            {
+                case INT:
+                {
+                    return this->generatePrimitiveObject(prim_type, var_name,
+                                        std::stoi(expl_type->getDescriptor()));
+                }
+                case UINT:
+                {
+                    return this->generatePrimitiveObject(prim_type, var_name,
+                                static_cast<unsigned int>(
+                                    std::stoi(expl_type->getDescriptor())));
+                }
+                case STRING:
+                case NQSTRING:
+                {
+                    return this->generatePrimitiveObject(prim_type, var_name,
+                                        expl_type->getDescriptor());
+                }
+                default:
+                {
+                    CHECK_CONDITION(false,
+                        fmt::format(
+                            "Not implemented descriptor conversion for type {}.",
+                            prim_type->toStr()));
+                    assert(false);
+                }
+            }
+        }
+        else if (!expl_type->getGenMethod().compare("len") ||
+                    !expl_type->getGenMethod().compare("range"))
+        {
+            return this->generatePrimitiveObject(prim_type, var_name,
+                fmt::format("{}range{}{}{}", delim_front, delim_mid,
+                    expl_type->getDescriptor(), delim_back));
+        }
+        else if (!expl_type->getGenMethod().compare("random"))
+        {
+            return this->generatePrimitiveObject(prim_type, var_name);
+        }
+        CHECK_CONDITION(false,
+            fmt::format(
+                "Not implemented primitive object generation method `{}`",
+                expl_type->getGenMethod()));
+    }
+    CHECK_CONDITION(false,
+        fmt::format("Not implemented explicit object generation for type {}",
+            expl_type->getDefinition()));
+    assert(false);
+}
+
+const ApiObject*
+ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result_obj)
+{
+    //logDebug("DEPTH " + std::to_string(this->depth));
+    if (obj_type->isPrimitive())
+    {
+        CHECK_CONDITION(result_obj == nullptr,
+            fmt::format("Not implemented new primitive object generation for "
+                        "targeted result obj"));
+        return generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
+    }
+    ++this->depth;
+    std::set<const ApiFunc*> ctor_func_candidates = this->filterFuncs(
+        &ApiFunc::hasReturnType, obj_type);
+    if (this->depth >= this->max_depth)
+    {
+        logDebug(fmt::format("Reached max depth creating object type `{}`"
+                            ", filtering constructors.", obj_type->toStr()));
+        ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            &ApiFunc::checkFlag, std::string("ctor"));
+    }
+    else
+    {
+        ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            &ApiFunc::checkFlag, std::string("!special"));
+        ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            &ApiFunc::checkFlag, std::string("!max_depth"));
+        std::set<const ApiFunc*> non_ctor_func_cands = filterFuncList(ctor_func_candidates,
+            &ApiFunc::checkFlag, std::string("!ctor"));
+        // TODO this currently forces tests to be produced with full depth
+        if (!non_ctor_func_cands.empty())
+        {
+            ctor_func_candidates = non_ctor_func_cands;
+        }
+    }
+    CHECK_CONDITION(ctor_func_candidates.size() != 0,
+        fmt::format(
+            "Could not find candidate constructor functions for type `{}`.",
+            obj_type->toStr()));
+    logDebug("Candidate funcs:");
+    for (const ApiFunc* func_cand : ctor_func_candidates)
+    {
+        logDebug(fmt::format("\t{}", func_cand->getName()));
+    }
+    const ApiFunc* gen_func = getRandomSetElem(ctor_func_candidates, this->getRNG());
+    logDebug(fmt::format("Selected func = {}", gen_func->getName()));
+    logDebug("Generating " + obj_type->toStr() + " type object with func " +
+        gen_func->getName());
+    std::vector<const ApiObject*> ctor_args = this->getFuncArgs(gen_func);
+    //for (const ApiObject* ctor_arg : ctor_args)
+    //{
+        //if (!ctor_arg->isDeclared())
+        //{
+            //this->generateNewObject(ctor_arg->getType(), ctor_arg);
+        //}
+    //}
+    const ApiObject* target_obj = nullptr;
+    if (gen_func->getMemberType() != nullptr)
+    {
+        const ApiType* target_type = gen_func->getMemberType();
+        std::vector<const ApiObject*> target_obj_candidates =
+            this->filterObjs(&ApiObject::hasType, target_type);
+        if (target_obj_candidates.empty())
+        {
+            target_obj = this->generateObject(target_type);
+        }
+        else
+        {
+            target_obj = getRandomVectorElem(target_obj_candidates, this->getRNG());
+        }
+    }
+    if (result_obj != nullptr)
+    {
+        CHECK_CONDITION(result_obj->hasType(obj_type),
+            fmt::format("Invalid types given for result object `{}` and "
+                        "expected type `{}`.", result_obj->getType()->toStr(),
+                        obj_type->toStr()));
+        this->applyFunc(gen_func, target_obj, result_obj, ctor_args);
+        --this->depth;
+        return result_obj;
+    }
+
+    //if (obj_type->toStr().find(delim_mid) != std::string::npos)
+    //{
+        //var_name = obj_type->toStr().substr(obj_type->toStr().rfind(delim_mid) + 1);
+    //}
+    //else
+    //{
+    std::string var_name = this->getGenericVariableName(obj_type);
+    // hack
+    while (var_name.find('*') != std::string::npos)
+    {
+        var_name = var_name.replace(var_name.find('*'), 1, "");
+    }
+    --this->depth;
+    return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
 }
 
 const ApiObject*
@@ -1113,108 +1505,165 @@ ApiFuzzerNew::getInputObjectData(std::string input_name)
     return dynamic_cast<const PrimitiveObject<T>*>(input_obj)->getData();
 }
 
-const ApiObject*
-ApiFuzzerNew::generateNewObject(const ApiType* obj_type)
+
+template<>
+unsigned int
+ApiFuzzerNew::parseDescriptor<unsigned int>(std::string descriptor)
 {
-    if (obj_type->isPrimitive())
+    std::pair<int, int> int_range = this->parseRange(descriptor);
+    return static_cast<unsigned int>
+        (this->getRandInt(int_range.first, int_range.second));
+}
+
+template<>
+int
+ApiFuzzerNew::parseDescriptor<int>(std::string descriptor)
+{
+    std::pair<int, int> int_range = this->parseRange(descriptor);
+    return this->getRandInt(int_range.first, int_range.second);
+}
+
+template<>
+std::string
+ApiFuzzerNew::parseDescriptor<std::string>(std::string descriptor)
+{
+    std::pair<size_t, size_t> len_range = this->parseRange(descriptor);
+    size_t len = this->getRandInt(len_range.first, len_range.second);
+    std::mt19937* rng = this->getRNG();
+    auto rand_char = [&rng]() -> char
+        {
+            std::map<std::string, std::vector<char>>::iterator rand_char_set =
+                char_set.begin();
+            std::advance(rand_char_set, (*rng)() % char_set.size());
+            return getRandomVectorElem((*rand_char_set).second, rng);
+        };
+    std::string new_str(len, 0);
+    std::generate_n(new_str.begin(), len, rand_char);
+    return new_str;
+}
+
+template<>
+char
+ApiFuzzerNew::parseDescriptor<char>(std::string descriptor)
+{
+    std::map<std::string, std::vector<char>>::iterator restricted_char_set_it =
+        char_set.find(descriptor);
+    if (char_set.count(descriptor) != 0)
     {
-        return generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
-    }
-    ++this->depth;
-    std::set<const ApiFunc*> ctor_func_candidates = this->filterFuncs(
-        &ApiFunc::hasReturnType, obj_type);
-    if (this->depth >= this->max_depth)
-    {
-        ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::isCtor);
+        restricted_char_set_it = char_set.find(descriptor);
     }
     else
     {
-        ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::notIsSpecial);
-        ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::notIsMaxDepth);
-        std::set<const ApiFunc*> non_ctor_func_cands = filterFuncList(ctor_func_candidates,
-            &ApiFunc::notIsCtor);
-        // TODO this currently forces tests to be produced with full depth
-        if (!non_ctor_func_cands.empty())
-        {
-            ctor_func_candidates = non_ctor_func_cands;
-        }
+        restricted_char_set_it = char_set.begin();
+        std::advance(restricted_char_set_it,
+            this->getRandInt(0, char_set.size() - 1));
     }
-    assert(ctor_func_candidates.size() != 0);
-    logDebug("Candidate funcs:");
-    for (const ApiFunc* func_cand : ctor_func_candidates)
-    {
-        logDebug(fmt::format("\t{}", func_cand->getName()));
-    }
-    const ApiFunc* gen_func = getRandomSetElem(ctor_func_candidates, this->getRNG());
-    logDebug(fmt::format("Selected func = {}", gen_func->getName()));
-    logDebug("Generating " + obj_type->toStr() + " type object with func " +
-        gen_func->getName());
-    std::vector<const ApiObject*> ctor_args = this->getFuncArgs(gen_func);
-    const ApiObject* target_obj = nullptr;
-    if (gen_func->getMemberType() != nullptr)
-    {
-        const ApiType* target_type = gen_func->getMemberType();
-        std::vector<const ApiObject*> target_obj_candidates =
-            this->filterObjs(&ApiObject::hasType, target_type);
-        if (target_obj_candidates.empty())
-        {
-            target_obj = this->generateObject(target_type);
-        }
-        else
-        {
-            target_obj = getRandomVectorElem(target_obj_candidates, this->getRNG());
-        }
-    }
-    std::string var_name;
-    if (obj_type->toStr().find(delim_mid) != std::string::npos)
-    {
-        var_name = obj_type->toStr().substr(obj_type->toStr().rfind(delim_mid) + 1);
-    }
-    else
-    {
-        // TODO change
-        var_name = obj_type->toStr().substr(obj_type->toStr().rfind(':') + 1);
-        // hack
-        while (var_name.find('*') != std::string::npos)
-        {
-            var_name = var_name.replace(var_name.find('*'), 1, "");
-        }
-    }
-    --this->depth;
-    return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
+    return getRandomVectorElem((*restricted_char_set_it).second, this->getRNG());
+}
+
+template<typename T>
+T
+ApiFuzzerNew::parseDescriptor(std::string descriptor)
+{
+    assert(false);
 }
 
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
 {
-    assert(obj_type->isPrimitive());
-    logDebug("Generating primitive object with type " + obj_type->toStr());
-    switch(obj_type->getTypeEnum()) {
-        case UINT:
-            // HACKS
-            return new PrimitiveObject<unsigned int>(obj_type, this->getRandInt(0, 10));
-    }
-    assert(false);
+    return this->generatePrimitiveObject(obj_type,
+        fmt::format("{}_{}", obj_type->toStr(), this->getNextID()));
 }
 
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
-    std::string range)
+    std::string name)
 {
-    assert(obj_type->hasName("unsigned int"));
-    logDebug("Generating primitive object with type " + obj_type->toStr() +
-        " and range " + range);
     switch(obj_type->getTypeEnum()) {
         case UINT: {
-            std::pair<int, int> int_range = this->parseRange(range);
-            return new PrimitiveObject<unsigned int>(obj_type,
-                this->getRandInt(int_range.first, int_range.second));
+            std::string range = "[0,10]";
+            range = fmt::format("{}range{}{}{}", delim_front, delim_mid,
+                range, delim_back);
+            return this->generatePrimitiveObject(obj_type, name, range);
         }
+        case STRING:
+        case NQSTRING: {
+            std::string range = "[10,20]";
+            range = fmt::format("{}range{}{}{}", delim_front, delim_mid,
+                range, delim_back);
+            return this->generatePrimitiveObject(obj_type, name, range);
+        }
+        case CHAR: {
+            return this->generatePrimitiveObject(obj_type, name,
+                std::string("all"));
+        }
+        case INT: {
+            std::string range = "[-10,10]";
+            range = fmt::format("{}range{}{}{}", delim_front, delim_mid,
+                range, delim_back);
+            return this->generatePrimitiveObject(obj_type, name, range);
+        }
+        default:
+            CHECK_CONDITION(false,
+                fmt::format("`{}` type enum default value not implemented.",
+                obj_type->toStr()));
+            assert(false);
     }
-    assert(false);
+}
+
+const ApiObject*
+ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
+    std::string name, std::string descriptor)
+{
+    logDebug("Generating primitive object with type " + obj_type->toStr() +
+        " and descriptor " + descriptor);
+    switch(obj_type->getTypeEnum()) {
+        case UINT: {
+            assert(descriptor.front() == delim_front);
+            return this->generatePrimitiveObject<unsigned int>(obj_type,
+                obj_type->toStr(), this->parseDescriptor<unsigned int>(descriptor));
+        }
+        case STRING:
+        case NQSTRING: {
+            if (descriptor.front() == delim_front)
+            {
+                descriptor = this->parseDescriptor<std::string>(descriptor);
+            }
+            const ApiObject* new_obj =
+                new PrimitiveObject<std::string>(obj_type, descriptor, name,
+                    this->getNextID());
+            this->addObj(new_obj);
+            return new_obj;
+        }
+        case CHAR: {
+            return this->generatePrimitiveObject<char>(obj_type,
+                obj_type->toStr(), this->parseDescriptor<char>(descriptor));
+        }
+        case INT: {
+            return this->generatePrimitiveObject<int>(obj_type,
+                obj_type->toStr(), this->parseDescriptor<int>(descriptor));
+        }
+        case BOOL:
+        default:
+            CHECK_CONDITION(false, fmt::format("`{}` type enum not implemented.",
+                obj_type->toStr()));
+            assert(false);
+    }
+}
+
+template<typename T>
+const ApiObject*
+ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
+    std::string name, T data)
+{
+    assert(obj_type->isPrimitive());
+    //assert(obj_type->hasName("unsigned int") || obj_type->hasName("string"));
+    logDebug("Generating primitive object with type " + obj_type->toStr());
+    const ApiObject* new_obj = new PrimitiveObject<T>(obj_type, data, name,
+        this->getNextID());
+    CHECK_CONDITION(new_obj != nullptr, "Could not generate primitive object.");
+    this->addObj(new_obj);
+    return new_obj;
 }
 
 const ApiObject*
@@ -1224,7 +1673,12 @@ ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
         &ApiObject::hasType, obj_type);
     assert (filtered_objs.size() <= 1);
     if (filtered_objs.size() == 0)
+    {
+        logDebug(fmt::format(
+                 "Unable to find instance of singleton object of type `{}`, "
+                 "generating new instance.", obj_type->toStr()));
         return generateNewObject(obj_type);
+    }
     return filtered_objs.at(0);
 }
 
@@ -1250,6 +1704,12 @@ ApiFuzzerNew::generateSet()
             logDebug("Make decl");
             this->generateDecl(gen_instr_yaml);
         }
+        else if (!gen_instr_type.compare("seq"))
+        {
+            logDebug("Make seq");
+            assert(gen_instr_yaml["count"].IsDefined());
+            this->generateSeq(gen_instr_yaml["count"].as<size_t>());
+        }
         else
         {
             assert(false);
@@ -1258,11 +1718,24 @@ ApiFuzzerNew::generateSet()
 }
 
 void
+ApiFuzzerNew::generateSeq(size_t seq_count)
+{
+    std::set<const ApiFunc*> func_list = this->filterFuncs(
+        &ApiFunc::checkFlag, std::string("!special"));
+    while (seq_count > 0)
+    {
+        const ApiFunc* seq_func = getRandomSetElem(func_list, this->getRNG());
+        this->applyFunc(seq_func);
+        seq_count--;
+    }
+}
+
+void
 ApiFuzzerNew::generateDecl(YAML::Node instr_config)
 {
     const ApiType* var_type =
         this->getTypeByName(instr_config["var_type"].as<std::string>());
-    if (var_type->isSingleton() && this->filterAllObjs(&ApiObject::hasType,
+    if (var_type->checkFlag("singleton") && this->filterAllObjs(&ApiObject::hasType,
             var_type).size() != 0)
     {
         return;
@@ -1297,6 +1770,10 @@ ApiFuzzerNew::generateForLoop(YAML::Node instr_config)
 std::pair<int, int>
 ApiFuzzerNew::parseRange(std::string range_str)
 {
+    if (range_str.front() == delim_front)
+    {
+        range_str = this->getGeneratorData(range_str);
+    }
     assert(range_str.find(",") != std::string::npos);
     assert(range_str.front() == '(' || range_str.front() == '[');
     assert(range_str.back() == ')' || range_str.back() == ']');
@@ -1338,19 +1815,47 @@ ApiFuzzerNew::parseRange(std::string range_str)
 int
 ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
 {
-    if (range_substr.find(fmt::format("input{}", delim_mid)) != std::string::npos)
+    if (range_substr.front() == delim_front)
     {
-        std::string input_name = this->getGeneratorData(range_substr);
-        const ApiObject* input_obj = this->getInputObject(input_name);
-        assert(input_obj->getType()->isPrimitive());
-        assert(dynamic_cast<const PrimitiveType*>(input_obj->getType())->getTypeEnum()
-            == PrimitiveTypeEnum::UINT);
-        return dynamic_cast<const PrimitiveObject<unsigned int>*>(input_obj)->getData();
+        CHECK_CONDITION(range_substr.back() == delim_back,
+            fmt::format("Expected ending delimiter `{}` in substring `{}`.",
+                delim_back, range_substr));
+        CHECK_CONDITION(range_substr.find(delim_mid) != std::string::npos,
+            fmt::format("Expected middle delimiter `{}` in substring `{}`.",
+                delim_mid, range_substr));
+        const ApiType* parsed_type = parseTypeStr(range_substr);
+        CHECK_CONDITION(parsed_type->isExplicit(),
+            fmt::format("Expected comprehension, got `{}` with type `{}`.",
+                range_substr, parsed_type->toStr()));
+        const ApiObject* range_obj =
+            retrieveExplicitObject(
+                dynamic_cast<const ExplicitType*>(parsed_type));
+        CHECK_CONDITION(range_obj->isPrimitive(),
+            fmt::format("Expected object of primitive type, got object of type `{}`.",
+                range_obj->getType()->toStr()));
+        switch (range_obj->getType()->getTypeEnum())
+        {
+            case UINT:
+                return dynamic_cast<const PrimitiveObject<unsigned int>*>(
+                    range_obj)->getData();
+            case INT:
+                return dynamic_cast<const PrimitiveObject<int>*>(
+                    range_obj)->getData();
+            default:
+                CHECK_CONDITION(false,
+                    fmt::format("Expected `int` type, got type `{}`.",
+                        range_obj->getType()->toStr()));
+        }
+        assert(false);
     }
     else
     {
         for (char& c : range_substr)
         {
+            if (c == '-')
+            {
+                continue;
+            }
             assert(std::isdigit(c));
         }
         // TODO more checks here
@@ -1362,6 +1867,8 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
 void
 ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
 {
+    CHECK_CONDITION(instr_config["func"].IsDefined(),
+        "Fuzzer generation instruction must have `func` field defined.");
     std::string func_name = instr_config["func"].as<std::string>();
     const ApiFunc* func;
     if (instr_config["func_params"].IsDefined())
@@ -1369,15 +1876,9 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         std::vector<const ApiType*> param_types;
         for (YAML::Node func_param_yaml : instr_config["func_params"])
         {
-            if (func_param_yaml.as<std::string>().find("<loop_counter>") != std::string::npos)
-            {
-                param_types.push_back(this->getTypeByName("unsigned int"));
-            }
-            else
-            {
-                param_types.push_back(
-                    this->parseTypeStr(func_param_yaml.as<std::string>()));
-            }
+            param_types.push_back(
+                this->parseTypeStr(
+                    func_param_yaml.as<std::string>())->getUnderlyingType());
         }
         func = this->getFuncBySignature(func_name, param_types);
     }
@@ -1405,51 +1906,58 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
             assert(candidate_objs.size() == 1);
             target_obj = candidate_objs.at(0);
         }
-        assert(target_obj->getType()->isType(func->getMemberType()));
+        CHECK_CONDITION(target_obj->getType()->isType(func->getMemberType()),
+            fmt::format("Generated target object type `{}` does not match "
+                        "expected type `{}`.", target_obj->getType()->toStr(),
+                        func->getMemberType()->toStr()));
     }
-    else if (func->getMemberType() && !func->isStatic())
+    else if (func->getMemberType() && !func->checkFlag("statik"))
     {
         target_obj = this->generateObject(func->getMemberType());
     }
     // Set return object, if any declared
     const ApiObject* return_obj = nullptr;
     // TODO should we automatically create a return object if not defined?
-    bool gen_new_obj = false;
-    bool gen_new_named_obj = false;
+    //bool gen_new_obj = false;
+    //bool gen_new_named_obj = false;
     if (instr_config["return"].IsDefined())
     {
-        std::string obj_name = instr_config["return"].as<std::string>();
-        if (obj_name.find(fmt::format("new{}", delim_mid)) !=
-            std::string::npos)
+        std::string return_type_str = instr_config["return"].as<std::string>();
+        if (return_type_str.front() == delim_front)
         {
-            gen_new_obj = true;
+            return_obj = retrieveExplicitObject(parseComprehension(return_type_str));
         }
-        else if (obj_name.find(fmt::format("var{}", delim_mid)) !=
-            std::string::npos)
-        {
-            std::vector<const ApiObject*> candidate_objs =
-                this->filterAllObjs(&ApiObject::hasName,
-                this->getGeneratorData(instr_config["return"].as<std::string>()));
-            assert(candidate_objs.size() <= 1);
-            if (candidate_objs.size() == 1)
-            {
-                return_obj = candidate_objs.at(0);
-            }
-            else
-            {
-                gen_new_named_obj = true;
-                // TODO check for singleton object? Pipe this through generateObject
-            }
-        }
-        else if (obj_name.find("output_var") != std::string::npos)
-        {
-            // TODO collapse this into first case
-            return_obj = this->getCurrOutputVar(func->getReturnType());
-        }
+        //if (obj_name.find(fmt::format("new{}", delim_mid)) !=
+            //std::string::npos)
+        //{
+            //gen_new_obj = true;
+        //}
+        //else if (obj_name.find(fmt::format("var{}", delim_mid)) !=
+            //std::string::npos)
+        //{
+            //std::vector<const ApiObject*> candidate_objs =
+                //this->filterAllObjs(&ApiObject::hasName,
+                //this->getGeneratorData(instr_config["return"].as<std::string>()));
+            //assert(candidate_objs.size() <= 1);
+            //if (candidate_objs.size() == 1)
+            //{
+                //return_obj = candidate_objs.at(0);
+            //}
+            //else
+            //{
+                //gen_new_named_obj = true;
+                //// TODO check for singleton object? Pipe this through generateObject
+            //}
+        //}
+        //else if (return_type_str.find("output_var") != std::string::npos)
+        //{
+            //// TODO collapse this into first case
+            //return_obj = this->getCurrOutputVar(func->getReturnType());
+        //}
         else
         {
             std::vector<const ApiObject*> candidate_objs =
-                this->filterObjs(&ApiObject::hasName, obj_name);
+                this->filterObjs(&ApiObject::hasName, return_type_str);
             assert(candidate_objs.size() <= 1);
             if (candidate_objs.size() == 1)
             {
@@ -1474,16 +1982,39 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         {
             std::string type_str = func_param_yaml.as<std::string>();
             // TODO might need further checks for loop_counter?
-            if (type_str.find("<loop_counter>") != std::string::npos)
+            //if (type_str.find("<loop_counter>") != std::string::npos)
+            //{
+                //func_params.push_back(new PrimitiveObject<unsigned int>(
+                    //dynamic_cast<const PrimitiveType*>(
+                    //this->getTypeByName("unsigned int")), loop_counter,
+                    //this->getNextID()));
+            //}
+            //else
+            //{
+            const ApiType* type = this->parseTypeStr(type_str);
+            if (type->isExplicit() &&
+                   !dynamic_cast<const ExplicitType*>(type)->getGenMethod()
+                    .compare("loop_counter"))
             {
                 func_params.push_back(new PrimitiveObject<unsigned int>(
                     dynamic_cast<const PrimitiveType*>(
-                    this->getTypeByName("unsigned int")), loop_counter));
+                    this->getTypeByName("unsigned int")), loop_counter,
+                    this->getNextID()));
             }
             else
             {
-                const ApiType* type = this->parseTypeStr(type_str);
-                func_params.push_back(this->generateObject(type));
+                const ApiObject* param_obj = this->generateObject(type);
+                if (type->isExplicit() &&
+                        !dynamic_cast<const ExplicitType*>(type)->getGenMethod()
+                            .compare("new"))
+                {
+                    this->generateNewObject(type->getUnderlyingType(), param_obj);
+                }
+                //if (!param_obj->isDeclared() && param_obj->notIsPrimitive())
+                //{
+                    //this->generateNewObject(type->getUnderlyingType(), param_obj);
+                //}
+                func_params.push_back(param_obj);
             }
         }
     }
@@ -1491,30 +2022,27 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         func_params = this->getFuncArgs(func);
     }
-    if (gen_new_obj)
-    {
-        const ApiType* return_type = this->parseTypeStr(
-            instr_config["return"].as<std::string>());
-        std::string var_name = return_type->toStr();
-        var_name = var_name.substr(var_name.rfind(':') + 1);
-        return_obj = this->generateApiObject(var_name, return_type, func,
-            target_obj, func_params);
-    }
-    else if (gen_new_named_obj)
-    {
-        return_obj = this->generateNamedObject(
-            this->getGeneratorData(instr_config["return"].as<std::string>()),
-            func->getReturnType(), func, target_obj, func_params);
-    }
-    else
-    {
-        this->applyFunc(func, target_obj, return_obj,
-            func_params);
-    }
-    if (this->getRandInt(0, 1))
-    {
-
-    }
+    //if (gen_new_obj)
+    //{
+        //const ApiType* return_type = this->parseTypeStr(
+            //instr_config["return"].as<std::string>());
+        //std::string var_name = return_type->toStr();
+        //var_name = var_name.substr(var_name.rfind(':') + 1);
+        //return_obj = this->generateApiObject(var_name, return_type, func,
+            //target_obj, func_params);
+    //}
+    //else if (gen_new_named_obj)
+    //{
+        //return_obj = this->generateNamedObject(
+            //this->getGeneratorData(instr_config["return"].as<std::string>()),
+            //func->getReturnType(), func, target_obj, func_params);
+        ////this->addObj(return_obj);
+    //}
+    //else
+    //{
+    this->applyFunc(func, target_obj, return_obj,
+        func_params);
+    //}
 }
 
 std::string

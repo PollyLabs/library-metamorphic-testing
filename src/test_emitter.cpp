@@ -1,11 +1,13 @@
 #include "test_emitter.hpp"
 
 static unsigned int indent = 0;
+
 const std::string config_file_path =
     "/home/dan/workspace/library-metamorphic-testing/config_files/config_gmp.yaml";
 
-const bool DEBUG = false;
-//const bool DEBUG = true;
+//bool DEBUG = false;
+bool DEBUG = true;
+bool META_TESTING = true;
 
 std::map<std::string, Modes> string_to_mode {
     {"SET_FUZZ", SET_FUZZ},
@@ -20,13 +22,25 @@ void
 parseArgs(Arguments& args, int argc, char **argv)
 {
     int i = 1;
-    while (i < argc) {
-        if (!strcmp(argv[i], "--seed") || !strcmp(argv[i], "-s")) {
+    while (i < argc)
+    {
+        /* Arguments with options required */
+        if (!strcmp(argv[i], "--seed") || !strcmp(argv[i], "-s"))
+        {
             args.seed = atoi(argv[++i]);
         }
-        else if (!strcmp(argv[i], "--output") || !strcmp(argv[i], "-o"))
+        else if (!strcmp(argv[i], "--config-file") || !strcmp(argv[i], "-c"))
+        {
+            args.config_file = atoi(argv[++i]);
+        }
+        else if (!strcmp(argv[i], "--output-file") || !strcmp(argv[i], "-o"))
         {
             args.output_file = argv[++i];
+        }
+        /* Flag arguments */
+        else if (!strcmp(argv[i], "--debug"))
+        {
+            DEBUG = true;
         }
         else {
             std::cout << "Found unknown argument: " << argv[i] << std::endl;
@@ -79,32 +93,47 @@ mainPreSetup(std::stringstream &ss, std::vector<std::string>& pre_setup_instrs)
 {
     writeLine(ss, "int main()");
     writeLine(ss, "{");
+    indent++;
     for (std::string pre_setup_instr : pre_setup_instrs)
     {
         writeLine(ss, pre_setup_instr);
     }
-    indent++;
 }
 
 void
 mainPostSetup(std::stringstream &ss)
-{ indent--;
+{
+    indent--;
     writeLine(ss, "}");
 }
 
 int
 main(int argc, char** argv)
 {
-    YAML::Node config_data = loadYAMLFileWithCheck(config_file_path);
-    std::string working_dir = config_data["working_dir"].as<std::string>();
-    std::string api_fuzzer_path = working_dir + config_data["api_fuzzer_file"].as<std::string>();
-    std::string meta_test_path = working_dir + config_data["meta_test_file"].as<std::string>();
-    std::string output_file = working_dir + config_data["test_emitter_output_file"].as<std::string>();
-
-
     Arguments args;
-    args.output_file = output_file;
     parseArgs(args, argc, argv);
+
+    if (args.config_file.empty())
+    {
+        args.config_file = default_config_file;
+    }
+
+    YAML::Node config_data = loadYAMLFileWithCheck(args.config_file);
+    std::string working_dir = config_data["working_dir"].as<std::string>();
+    std::string api_fuzzer_path =
+        working_dir + config_data["api_fuzzer_file"].as<std::string>();
+    std::string meta_test_path =
+        working_dir + config_data["meta_test_file"].as<std::string>();
+    if (args.output_file.empty())
+    {
+        args.output_file =
+            working_dir + config_data["test_emitter_output_file"]
+                .as<std::string>();
+    }
+    else
+    {
+        args.output_file = "./test.cpp";
+    }
 
     std::mt19937* rng = new std::mt19937(args.seed);
     std::stringstream test_ss;
@@ -123,7 +152,6 @@ main(int argc, char** argv)
         }
     }
 
-    //writeArgs(ss, args, getMetaRelation(meta_rel));
     prepareHeader(test_ss, include_list, args, api_fuzzer_path, meta_test_path);
     std::vector<std::string> pre_setup_instrs;
     if (api_fuzzer_data["pre_setup"].IsDefined())
@@ -134,9 +162,8 @@ main(int argc, char** argv)
         }
     }
     mainPreSetup(test_ss, pre_setup_instrs);
-    //std::unique_ptr<SetMetaTester> smt (new SetMetaTester(meta_test_path, rng));
 
-    std::unique_ptr<ApiFuzzer> api_fuzzer (
+    std::unique_ptr<ApiFuzzerNew> api_fuzzer (
         new ApiFuzzerNew(api_fuzzer_path, meta_test_path, args.seed, rng));
     for (std::string instr : api_fuzzer->getInstrStrs())
     {
@@ -148,6 +175,5 @@ main(int argc, char** argv)
     std::ofstream ofs;
     ofs.open(args.output_file);
     ofs << test_ss.rdbuf();
-//    printf(test_ss.rdbuf()->str().c_str());
     ofs.close();
 }

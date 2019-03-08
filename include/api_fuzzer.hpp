@@ -1,6 +1,7 @@
 #ifndef API_FUZZER_HPP
 #define API_FUZZER_HPP
 
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -22,10 +23,15 @@
 
 extern char delim_front, delim_back, delim_mid;
 
+void CHECK_YAML_FIELD(std::string);
 template<typename T> T getRandomVectorElem(std::vector<T>&, std::mt19937*);
 template<typename T> T getRandomSetElem(std::set<T>&, std::mt19937*);
+std::vector<const ApiObject*> filterObjList
+    (std::vector<const ApiObject*>, bool (ApiObject::*)() const);
 template<typename T> std::vector<const ApiObject*> filterObjList
     (std::vector<const ApiObject*>, bool (ApiObject::*)(T) const, T);
+std::set<const ApiFunc*> filterFuncList(
+    std::set<const ApiFunc*>, bool (ApiFunc::*)() const);
 template<typename T> std::set<const ApiFunc*> filterFuncList(
     std::set<const ApiFunc*>, bool (ApiFunc::*)(T) const, T);
 
@@ -37,7 +43,7 @@ class ApiFuzzer {
         std::vector<const ApiInstructionInterface*> instrs;
         std::vector<const ApiObject*> objs;
         std::vector<const ApiObject*> all_objs;
-        unsigned int next_obj_id;
+        mutable unsigned int next_obj_id;
         unsigned int depth;
         unsigned int max_depth;
         const unsigned int seed;
@@ -63,6 +69,7 @@ class ApiFuzzer {
             all_objs(std::vector<const ApiObject*>()),
             types(std::set<const ApiType*>()),
             funcs(std::set<const ApiFunc*>()), rng(_rng), seed(_seed) {};
+        virtual ~ApiFuzzer() = default;
 
         std::vector<const ApiInstructionInterface*> getInstrList() const;
         std::vector<std::string> getInstrStrs() const;
@@ -73,7 +80,7 @@ class ApiFuzzer {
         std::mt19937* getRNG() const { return this->rng; };
 
         int getRandInt(int = 0, int = std::numeric_limits<int>::max());
-        unsigned int getNextID();
+        unsigned int getNextID() const;
 
         bool hasTypeName(std::string);
         bool hasFuncName(std::string);
@@ -89,10 +96,12 @@ class ApiFuzzer {
         const ApiFunc* getSingleFuncByName(std::string) const;
         const ApiFunc* getFuncBySignature(std::string, std::vector<const ApiType*>) const;
 
-        void addInstr(const ApiInstructionInterface*);
-        void addObj(const ApiObject*);
-        void addType(const ApiType*);
-        void addFunc(const ApiFunc*);
+        inline void addInstr(const ApiInstructionInterface*);
+        inline const ApiObject* addNewObj(const ApiType*);
+        inline const ApiObject* addNewObj(std::string, const ApiType*);
+        inline void addObj(const ApiObject*);
+        inline void addType(const ApiType*);
+        inline void addFunc(const ApiFunc*);
 
         virtual void generateSet() = 0;
 
@@ -103,24 +112,28 @@ class ApiFuzzer {
             const ApiFunc*, const ApiObject*, std::vector<const ApiObject*>);
         const ApiObject* generateApiObjectDecl(std::string, const ApiType*,
             bool = true);
+        void applyFunc(const ApiFunc*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*);
         void applyFunc(const ApiFunc*, const ApiObject*, const ApiObject*,
             std::vector<const ApiObject*>);
         std::vector<const ApiObject*> getFuncArgs(const ApiFunc*);
 
-        void addRelation(const MetaRelation*);
-        void addMetaCheck(const MetaRelation*);
-        void addMetaVar(std::string, const ApiType*);
-        void addMetaVar(std::string, const ApiType*, std::vector<const MetaRelation*>&);
-        void addInputMetaVar(size_t);
+        inline void addRelation(const MetaRelation*);
+        inline void addMetaCheck(const MetaRelation*);
+        inline void addMetaVar(std::string, const ApiType*);
+        inline void addMetaVar(std::string, const ApiType*, std::vector<const MetaRelation*>&);
+        inline void addInputMetaVar(size_t);
         MetaVarObject* getMetaVar(std::string) const;
         const ApiObject* getMetaVariant(size_t id) const;
+
+        inline std::string getGenericVariableName(const ApiType*) const;
 
     private:
         std::string emitFuncCond(const ApiFunc*, const ApiObject*,
             std::vector<const ApiObject*>);
         std::string parseCondition(std::string, const ApiObject*,
             std::vector<const ApiObject*>);
+
 };
 
 class ApiFuzzerNew : public ApiFuzzer {
@@ -132,7 +145,7 @@ class ApiFuzzerNew : public ApiFuzzer {
 
     public:
         ApiFuzzerNew(std::string&, std::string&, unsigned int, std::mt19937*);
-        //~ApiFuzzerNew();
+        ~ApiFuzzerNew();
 
     private:
         void initPrimitiveTypes();
@@ -141,27 +154,35 @@ class ApiFuzzerNew : public ApiFuzzer {
         void initFuncs(YAML::Node);
         ApiFunc* genNewApiFunc(YAML::Node);
         void initConstructors(YAML::Node);
+        void initVariables(YAML::Node);
         void initGenConfig(YAML::Node);
         void runGeneration(YAML::Node);
+        void generateSeq(size_t);
         void generateDecl(YAML::Node);
         void generateForLoop(YAML::Node);
         void generateFunc(YAML::Node, int = -1);
-
 
         void initMetaVarObjs(YAML::Node, YAML::Node);
         void initMetaVariantVars();
         void initMetaRelations(YAML::Node);
         void initMetaGenerators(YAML::Node);
         void initMetaChecks(YAML::Node);
-        MetaRelation* parseRelationString(std::string, std::string) const;
-        const ApiObject* parseRelationStringVar(std::string) const;
-        const FuncObject* parseRelationStringFunc(std::string) const;
-        const ApiObject* parseRelationStringSubstr(std::string) const;
+        MetaRelation* parseRelationString(std::string, std::string);
+        const ApiObject* parseRelationStringVar(std::string);
+        const FuncObject* parseRelationStringFunc(std::string);
+        const ApiObject* parseRelationStringSubstr(std::string);
 
         const ApiObject* generateObject(const ApiType*);
-        const ApiObject* generateNewObject(const ApiType*);
+        const ApiObject* generateNewObject(const ApiType*, const ApiObject* = nullptr);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
-        const ApiObject* generatePrimitiveObject(const PrimitiveType*, std::string);
+        const ApiObject* generatePrimitiveObject(const PrimitiveType*,
+            std::string);
+        const ApiObject* generatePrimitiveObject(const PrimitiveType*,
+            std::string, std::string);
+        template<typename T> const ApiObject* generatePrimitiveObject(
+            const PrimitiveType*, std::string, T);
+        const ApiObject* retrieveExplicitObject(const ExplicitType*);
+        template<typename T> T parseDescriptor(std::string);
         void generateSet();
         const ApiObject* getInputObject(std::string);
         template<typename T> T getInputObjectData(std::string);
@@ -170,6 +191,7 @@ class ApiFuzzerNew : public ApiFuzzer {
 
         std::pair<int, int> parseRange(std::string);
         int parseRangeSubstr(std::string);
+        const ExplicitType* parseComprehension(std::string);
         const ApiType* parseTypeStr(std::string);
         std::string getGeneratorData(std::string) const;
         std::string makeLinearExpr(std::vector<const ApiObject*>);

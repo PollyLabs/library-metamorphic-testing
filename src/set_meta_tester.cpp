@@ -3,8 +3,7 @@
 int
 getRandInt(std::mt19937* rng, int min, int max)
 {
-    assert(max != 0);
-    return (*rng)() % max + min;
+    return (*rng)() % (max - min + 1) + min;
 }
 
 std::string
@@ -12,7 +11,7 @@ getRandSetElem(std::mt19937* rng, std::set<std::string>& set_in)
 {
     assert(set_in.size() > 0);
     std::set<std::string>::const_iterator it = set_in.begin();
-    std::advance(it, getRandInt(rng, 0, set_in.size()));
+    std::advance(it, getRandInt(rng, 0, set_in.size() - 1));
     return *it;
 }
 
@@ -63,7 +62,6 @@ SetMetaTesterNew::finalizeTest(MetaTest* new_test) const
     {
         new_test->addRelation(meta_check->concretizeVars(
             new_test->getVariantVar(), this->meta_variants, this->meta_in_vars));
-;
     }
 }
 
@@ -78,7 +76,7 @@ SetMetaTesterNew::makeAbstractMetaRelChain(unsigned int rel_count)
     while (rel_count > 0)
     {
         std::set<std::string>::const_iterator it = abstract_relations.begin();
-        std::advance(it, getRandInt(this->rng, 0, abstract_relations.size()));
+        std::advance(it, getRandInt(this->rng, 0, abstract_relations.size() - 1));
         this->abstract_rel_chain.push(*it);
         rel_count--;
     }
@@ -127,12 +125,14 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
             concrete_relation_candidates.push_back(*it);
         }
     }
-    assert(!concrete_relation_candidates.empty());
+    CHECK_CONDITION(!concrete_relation_candidates.empty(),
+        fmt::format("No concrete candidates for relation `{}` found", rel_type));
     const MetaRelation* concrete_relation = concrete_relation_candidates.at(
-        getRandInt(this->rng, 0, concrete_relation_candidates.size()));
+        getRandInt(this->rng, 0, concrete_relation_candidates.size() - 1));
     const MetaRelation* concretized_relation =
         concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
             input_vars);
+    //delete concrete_relation;
     return concretized_relation;
 }
 
@@ -176,6 +176,7 @@ SetMetaTesterNew::testsToApiInstrs(void) const
         {
             api_instrs.push_back(new ApiComment(fmt::format(
                 "Test for {}", meta_test->getVariantVar()->toStr())));
+            api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
             std::vector<const ApiInstructionInterface*> test_instrs = meta_test->getApiInstructions();
             api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
         });

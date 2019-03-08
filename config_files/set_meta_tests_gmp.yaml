@@ -1,0 +1,46 @@
+# %n, where n is an integer = input set
+# %e = empty set
+# %u = universe
+# %m = metamorphic test variable
+#
+# formula names taken from
+# https://www.allaboutcircuits.com/technical-articles/boolean-identities/
+---
+input_count: 3
+meta_var_type: "mpz_class"
+variant_count: 20
+meta_check:
+    - "assert(operator==(%m0,%m))"
+
+generators:
+    zero:
+        identifier: 'z'
+        relations:
+            - "operator-(%1,%1)"
+            - "operator*(%1,%z)"
+    one:
+        identifier: 'o'
+        relations:
+            - "get_one(%1)"
+
+relations:
+    identity:
+        - "%m=operator+(%1,%z)" 
+        - "%m=operator-(%1,%z)" 
+        - "%m=operator*(%1,%o)" 
+
+    addition_commut:
+        - "%m=operator+(%1,%2)"
+        - "%m=operator+(%2,%1)"
+     
+    multiplication_commut:
+        - "%m=operator*(%1,%2)"
+        - "%m=operator*(%2,%1)"
+        
+    multiplication_assoc:
+        - "%m=operator*(operator*(%1,%2),%3)"
+        - "%m=operator*(%1,operator*(%2,%3))"
+
+
+
+
