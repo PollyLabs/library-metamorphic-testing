@@ -7,8 +7,8 @@ meta_runner:
 # Path setup
     test_emitter_path: "./build/test_emitter"
     lib_path: "./libs"
-    lib_build_dir: "/home/sentenced/Documents/Internships/2018_ETH/isl"
-    lib_coverage_dir: "/home/sentenced/Documents/Internships/2018_ETH/isl"
+    lib_build_dir: ""
+    lib_coverage_dir: ""
     test_compile_dir: "./out"
 # Test runtime setup
     test_compile_bin: "./compile_isl.sh"

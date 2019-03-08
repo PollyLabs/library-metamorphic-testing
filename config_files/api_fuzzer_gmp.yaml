@@ -1,4 +1,3 @@
----
 includes:
     - "gmpxx.h"
     - "testing/gmp-helpers.h"
@@ -7,11 +6,9 @@ pre_setup:
 
 inputs:
     - name: 'var2'
-      type: 'unsigned int'
-      descriptor: '<range=[1,10000]>'
+      descriptor: '<unsigned int=range=[1,10000]>'
     - name: 'depth_max'
-      type: 'unsigned int'
-      descriptor: '<range=[100,100]>'
+      descriptor: '<unsigned int=val=10>'
 
 # START HERE
 
@@ -90,4 +87,4 @@ constructors:
 set_gen:
     - type: 'func'
       func: 'abs'
-      return: '<special=output_var>'
+      return: '<special=output_var=>'
