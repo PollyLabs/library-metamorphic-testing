@@ -11,7 +11,6 @@
 
 #include "fmt/format.h"
 
-
 // TODO move to api_elements
 enum ApiTypeFlag {
     POINTER,
@@ -34,7 +33,7 @@ enum PrimitiveTypeEnum {
 extern std::map<std::string, std::vector<char>> char_set;
 extern std::map<std::string, PrimitiveTypeEnum> primitives_map;
 extern char delim_front, delim_back, delim_mid;
-extern const bool DEBUG;
+extern bool DEBUG;
 
 void logDebug(std::string);
 void CHECK_CONDITION(bool, std::string);
@@ -372,7 +371,8 @@ class ObjectDeclInstruction : public ApiInstructionInterface
         const ApiObject* obj;
 
     public:
-        ObjectDeclInstruction(const ApiObject* _obj) : obj(_obj) {};
+        ObjectDeclInstruction(const ApiObject* _obj) : obj(_obj)
+            { _obj->setDeclared(); };
 
         const ApiObject* getObject() const { return this->obj; };
         std::string toStr() const;

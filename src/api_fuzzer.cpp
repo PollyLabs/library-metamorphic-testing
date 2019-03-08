@@ -27,6 +27,8 @@ getRandomVectorElem(std::vector<T>& vector_in, std::mt19937* rng)
 {
     unsigned int rand_val = (*rng)();
     logDebug(fmt::format("RAND GEN {}", rand_val));
+    CHECK_CONDITION(vector_in.size() != 0,
+        fmt::format("Attempt to get element of empty vector."));
     return vector_in.at(rand_val % vector_in.size());
 }
 
@@ -37,6 +39,8 @@ getRandomSetElem(std::set<T>& set_in, std::mt19937* rng)
     typename std::set<T>::iterator it = set_in.begin();
     unsigned int rand_val = (*rng)();
     logDebug(fmt::format("RAND GEN {}", rand_val));
+    CHECK_CONDITION(set_in.size() != 0,
+        fmt::format("Attempt to get element of empty set."));
     int advance_count = rand_val % set_in.size();
     std::advance(it, advance_count);
     return *it;
@@ -366,8 +370,9 @@ const ApiFunc*
 ApiFuzzer::getFuncBySignature(std::string name,
     std::vector<const ApiType*> param_types) const
 {
-    logDebug("Searching for func signature with name " + name + " and types " +
-        makeArgString(param_types));
+    logDebug(
+        fmt::format("Searching for func signature with name `{}` and types [{}]."
+            , name, makeArgString(param_types)));
     std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
     filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasParamTypes,
         param_types);
@@ -584,12 +589,18 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     logDebug(fmt::format("META TEST = {}", smt->getAbstractMetaRelChain()));
     this->instrs.push_back(new ApiComment(fmt::format("CURR META TEST: {}",
         smt->getAbstractMetaRelChain())));
-    this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
-
-    //for (std::string inst : this->getInstrList())
+    // TODO move this initialisation in the meta tester
+    //for (const ApiInstructionInterface* meta_instr_interface : meta_instrs)
     //{
-        //std::cout << inst << std::endl;
+        //const ApiInstruction* meta_instr =
+            //dynamic_cast<const ApiInstruction*>(meta_instr_interface);
+        //if (meta_instr && meta_instr->getTargetObj() != nullptr &&
+                //!meta_instr->getTargetObj()->isDeclared())
+        //{
+            //this->addInstr(new ObjectDeclInstruction(meta_instr->getTargetObj()));
+        //}
     //}
+    this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
 }
 
 ApiFuzzerNew::~ApiFuzzerNew()
@@ -1181,7 +1192,9 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string)
             accumulator.insert(0, 1, *r_it);
         }
     }
-    assert (paren_count == 0);
+    CHECK_CONDITION(paren_count == 0,
+        fmt::format("Expected parenthesis to be closed in input `{}`; got `{}` "
+                    "remaining open.", rel_string, paren_count));
     if (accumulator != "")
     {
         assert(func_name.empty());
@@ -1542,7 +1555,8 @@ ApiFuzzerNew::parseDescriptor<char>(std::string descriptor)
     else
     {
         restricted_char_set_it = char_set.begin();
-        std::advance(restricted_char_set_it, this->getRandInt(0, char_set.size()));
+        std::advance(restricted_char_set_it,
+            this->getRandInt(0, char_set.size() - 1));
     }
     return getRandomVectorElem((*restricted_char_set_it).second, this->getRNG());
 }

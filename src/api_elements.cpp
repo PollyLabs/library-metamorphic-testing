@@ -85,6 +85,8 @@ makeArgString(std::vector<T> func_args)
     std::vector<std::string> args_to_string;
     for (T& obj : func_args)
     {
+        CHECK_CONDITION(obj != nullptr,
+            fmt::format("Got null pointer argument when making argument string"));
         args_to_string.push_back(obj->toStr());
     }
     return getStringWithDelims(args_to_string, ',');
