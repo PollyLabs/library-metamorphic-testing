@@ -11,7 +11,7 @@ inputs:
       descriptor: '<range=[1,10000]>'
     - name: 'depth_max'
       type: 'unsigned int'
-      descriptor: '<range=[1,100]>'
+      descriptor: '<range=[100,100]>'
 
 # START HERE
 

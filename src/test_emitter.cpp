@@ -2,7 +2,7 @@
 
 static unsigned int indent = 0;
 const std::string config_file_path =
-    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_z3.yaml";
+    "/home/dan/workspace/library-metamorphic-testing/config_files/config_gmp.yaml";
 
 const bool DEBUG = false;
 //const bool DEBUG = true;
