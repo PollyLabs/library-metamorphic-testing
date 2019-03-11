@@ -55,6 +55,10 @@ funcs:
       param_types: ['mpz_class']
       conditions: []
       special: true
+    - name: 'get_minus_one'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
     - name: 'mpz_init'
       param_types: ['mpz_t']
       conditions: []
@@ -73,9 +77,19 @@ funcs:
     - name: 'mpz_set_ui'
       param_types: ['mpz_t', '<var=input=var2>']
       conditions: []
-    - name: 'mpz_swap'
-      param_types: ['mpz_t', 'mpz_t']
+    - name: 'gcd'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
       conditions: []
+    - name: 'lcm'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'sqrt'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
+      special: true
 
 
 constructors:
