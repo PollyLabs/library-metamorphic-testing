@@ -1,6 +1,16 @@
+Presumably major, high value engineering
+
+* Combine meta_tester with api_fuzzer; gives:
+    - separate declaration of generators
+    - use on-the-fly generated values
+* Some general knowledge to be used between meta tests (i.e. random choices for
+variables or values (can tie into above)
+
+
+-------------------------------------------------------------------------------
+
 * change specification fields as decided with Ally a while ago
 * add pointer type support to fuzzer
-* add variable declaration support to fuzzer
 * add primitive type support to meta tester
 * move to using smart pointers and move semantics throughout
 
