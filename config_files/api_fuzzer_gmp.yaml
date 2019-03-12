@@ -1,0 +1,104 @@
+includes:
+    - "gmpxx.h"
+    - "testing/gmp-helpers.h"
+
+pre_setup:
+
+inputs:
+    - name: 'var2'
+      descriptor: '<unsigned int=range=[1,10000]>'
+    - name: 'depth_max'
+      descriptor: '<unsigned int=val=10>'
+
+# START HERE
+
+types:
+    - name: 'mpz_class'
+    - name: 'mpz_t'
+
+funcs:
+    - name: 'operator+'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'operator-'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'operator*'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'mpz_cdiv_q '
+      param_types: ['mpz_t', 'mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'operator=='
+      return_type: 'bool'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'abs'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
+    - name: 'get_mpz_t'
+      member_type: 'mpz_class'
+      return_type: 'mpz_t'
+      conditions: []
+    - name: 'assert'
+      member_type: ''
+      return_type: ''
+      param_types: ['bool']
+      condition: []
+      special: true
+    - name: 'get_one'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
+      special: true
+    - name: 'get_minus_one'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
+    - name: 'mpz_init'
+      param_types: ['mpz_t']
+      conditions: []
+    - name: 'mpz_inits'
+      param_types: ['mpz_t', 'mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_inits'
+      param_types: ['mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_inits'
+      param_types: ['mpz_t', 'mpz_t', 'mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_set'
+      param_types: ['mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_set_ui'
+      param_types: ['mpz_t', '<var=input=var2>']
+      conditions: []
+    - name: 'gcd'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'lcm'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'sqrt'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
+      special: true
+
+
+constructors:
+    - name: 'mpz_class'
+      param_types: ['<int=random=[0,1000]>']
+
+# END HERE
+
+set_gen:
+    - type: 'func'
+      func: 'abs'
+      return: '<special=output_var=>'
