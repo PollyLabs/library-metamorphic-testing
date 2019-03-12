@@ -32,6 +32,14 @@ get_minus_one(mpq_class e)
     return -(e/e);
 }
 
+mpq_class 
+mpq_class_w(mpz_class a, mpz_class b)
+{
+    mpq_class x = mpq_class(a,b);
+    x.canonicalize();
+    return x;
+}
+
 
 
 

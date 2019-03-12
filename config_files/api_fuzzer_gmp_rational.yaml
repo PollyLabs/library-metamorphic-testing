@@ -12,6 +12,7 @@ inputs:
 
 types:
     - name: 'mpq_class'
+    - name: 'mpz_class'
     - name: 'mpq_t'
 
 funcs:
@@ -19,13 +20,25 @@ funcs:
       return_type: 'mpq_class'
       param_types: ['mpq_class', 'mpq_class']
       conditions: []
+    - name: 'operator+'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
     - name: 'operator-'
       return_type: 'mpq_class'
       param_types: ['mpq_class', 'mpq_class']
       conditions: []
+    - name: 'operator-'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
     - name: 'operator*'
       return_type: 'mpq_class'
       param_types: ['mpq_class', 'mpq_class']
+      conditions: []
+    - name: 'operator*'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
       conditions: []
     - name: 'operator=='
       return_type: 'bool'
@@ -53,11 +66,25 @@ funcs:
       param_types: ['bool']
       condition: []
       special: true
+    - name: 'mpq_class_w'
+      return_type: 'mpq_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'get_num'
+      return_type: 'mpz_class'
+      member_type: 'mpq_class'
+      conditions: []
+    - name: 'get_den'
+      return_type: 'mpz_class'
+      member_type: 'mpq_class'
+      conditions: []
 
 
 constructors:
     - name: 'mpq_class'
-      param_types: ['<int=random=[0,1000]>','<int=random=[1,1000]>' ]
+      param_types: ['<int=random=[-1000,1000]>','<int=random=[0,1000]>' ]
+    - name: 'mpz_class'
+      param_types: ['<int=random=[-1000,1000]>']
 
 # END HERE
 
