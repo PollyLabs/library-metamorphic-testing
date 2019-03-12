@@ -1,16 +1,8 @@
-FROM alascu/metalib:base
-# Get and build gmp
-RUN \
-    apt-get install -y wget bzip2 m4 && \
-    wget https://gmplib.org/download/gmp/gmp-6.1.2.tar.bz2 && \
-    tar xjf gmp-6.1.2.tar.bz2 && cd gmp-6.1.2 && \
-    ./configure --enable-cxx && make 
+FROM alascu/metalib:base_gmp
 
 # Pull repo
 RUN \
-    git clone https://github.com/PollyLabs/library-metamorphic-testing.git && \
-    cd library-metamorphic-testingmkdir /output && ln -s /output ./output && \
-    git checkout dan 
+    git clone https://github.com/PollyLabs/library-metamorphic-testing.git
 
 # Set workdir to repo location
 WORKDIR /home/library-metamorphic-testing
@@ -20,22 +12,18 @@ RUN mkdir /output && ln -s /output ./output
 
 # Copy config file template over and update paths
 RUN \
-    cp ./config_files/config.yaml.template ./config_files/config_gmp.yaml && \
-    sed -i "/^working_dir:/c\working_dir: \"`pwd`/\"" ./config_files/config_gmp.yaml && \
-    sed -i 's|api_fuzzer_<name>|api_fuzzer_gmp|' ./config_files/config_gmp.yaml && \
-    sed -i 's|meta_tests_<lib>|meta_tests_gmp|' ./config_files/config_gmp.yaml && \
-    sed -i 's|lib_path:.*|lib_path: "/home/gmp-6.1.2/.libs/"|' ./config_files/config_gmp.yaml && \
-#    sed -i 's|<work_dir>|/home/library-metamorphic-testing|' ./config_files/config_isl.yaml && \
-    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/gmp-6.1.2/"|' ./config_files/config_gmp.yaml && \
+    sed 's|<work_dir>|'`pwd`'\/|' < ./config_files/config.yaml.template \
+        > ./config_files/config_gmp.yaml && \
+    sed -i 's|<lib>|gmp|' ./config_files/config_gmp.yaml && \
+    sed -i 's|lib_path:.*|lib_path: "/home/gmp/.libs/"|' ./config_files/config_gmp.yaml && \
+    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/gmp/"|' ./config_files/config_gmp.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_gmp.sh"|' ./config_files/config_gmp.yaml && \
     sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_gmp.yaml
-
-# Update config file path in test_emitter
-RUN \
-    sed -i "/^const std::string config_file_path/{n;s|.*|\t\"`pwd`/config_files/config_gmp.yaml\";|}" ./src/test_emitter.cpp
+#    sed -i 's|api_fuzzer_<name>|api_fuzzer_gmp|' ./config_files/config_gmp.yaml && \
+#    sed -i 's|meta_tests_<lib>|meta_tests_gmp|' ./config_files/config_gmp.yaml && \
 
 # Build project
-RUN mkdir build && cd build && cmake .. && make 
+RUN mkdir build && cd build && cmake .. && make
 
 # Set command to run experiments
 CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_gmp.yaml", "continuous", "--append-id"]
