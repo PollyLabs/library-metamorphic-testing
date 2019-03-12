@@ -129,10 +129,6 @@ main(int argc, char** argv)
             working_dir + config_data["test_emitter_output_file"]
                 .as<std::string>();
     }
-    else
-    {
-        args.output_file = "./test.cpp";
-    }
 
     std::mt19937* rng = new std::mt19937(args.seed);
     std::stringstream test_ss;
