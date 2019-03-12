@@ -2,7 +2,7 @@
 
 static unsigned int indent = 0;
 const std::string default_config_file =
-    "/home/dan/workspace/library-metamorphic-testing/config_files/config_gmp.yaml";
+    "/home/dan/workspace/library-metamorphic-testing/config_files/config_gmp_rational.yaml";
 
 //bool DEBUG = false;
 bool DEBUG = true;
