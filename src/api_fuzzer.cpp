@@ -368,6 +368,7 @@ ApiFuzzer::getSingleFuncByName(std::string name) const
 
 const ApiFunc*
 ApiFuzzer::getFuncBySignature(std::string name,
+    const ApiType* return_type, const ApiType* target_type,
     std::vector<const ApiType*> param_types) const
 {
     logDebug(
@@ -376,6 +377,16 @@ ApiFuzzer::getFuncBySignature(std::string name,
     std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
     filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasParamTypes,
         param_types);
+    if (return_type)
+    {
+        filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasReturnType,
+            return_type);
+    }
+    if (target_type)
+    {
+        filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasMemberType,
+            target_type);
+    }
     CHECK_CONDITION(filtered_funcs.size() == 1,
         fmt::format("Signature filtering for func `{}` yielded {} results, "
                     "expected 1.", name, filtered_funcs.size()));
@@ -1213,7 +1224,8 @@ ApiFuzzerNew::parseRelationStringFunc(std::string rel_string)
         param_objs.push_back(func_param);
         param_types.push_back(func_param->getType());
     }
-    const ApiFunc* func = this->getFuncBySignature(func_name, param_types);
+    const ApiFunc* func = this->getFuncBySignature(func_name, nullptr,
+        target ? target->getType() : nullptr, param_types);
     return new FuncObject(func, target, param_objs);
 }
 
@@ -1880,7 +1892,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
                 this->parseTypeStr(
                     func_param_yaml.as<std::string>())->getUnderlyingType());
         }
-        func = this->getFuncBySignature(func_name, param_types);
+        func = this->getFuncBySignature(func_name, nullptr, nullptr, param_types);
     }
     else
     {
