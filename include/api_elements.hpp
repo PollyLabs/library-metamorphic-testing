@@ -241,20 +241,21 @@ class FuncObject : public ApiObject {
 
 class ApiFunc {
     const std::string name;
-    const ApiType* member_type;
+    const ApiType* enclosing_class;
     const ApiType* return_type;
     const std::vector<const ApiType*> param_types;
     const std::vector<std::string> conditions;
     std::map<std::string, bool> flags;
 
     public:
-        ApiFunc(std::string _name, const ApiType* _member_type,
+        ApiFunc(std::string _name, const ApiType* _enclosing_class,
             const ApiType* _return_type,
             std::vector<const ApiType*> _param_types,
             std::vector<std::string> _conditions, bool _special = false,
             bool _statik = false, bool _ctor = false, bool _max_depth = false) :
-            name(_name), member_type(_member_type), return_type(_return_type),
-            param_types(_param_types), conditions(_conditions)
+            name(_name), enclosing_class(_enclosing_class),
+            return_type(_return_type), param_types(_param_types),
+            conditions(_conditions)
             {
                 this->flags.insert({"special", _special});
                 this->flags.insert({"statik", _statik});
@@ -269,16 +270,16 @@ class ApiFunc {
         };
         const ApiType* getParamType(const unsigned int) const;
         unsigned int getParamCount() const { return this->param_types.size(); };
-        const ApiType* getMemberType() const { return this->member_type; };
+        const ApiType* getClassType() const { return this->enclosing_class; };
         const ApiType* getReturnType() const { return this->return_type; };
         std::vector<std::string> getConditions() const
         {
             return this->conditions;
         };
 
-        bool hasMemberType(const ApiType* member_check) const {
-            return this->getMemberType() != nullptr &&
-                this->getMemberType()->isType(member_check);
+        bool hasClassType(const ApiType* member_check) const {
+            return this->getClassType() != nullptr &&
+                this->getClassType()->isType(member_check);
         };
         bool hasReturnType(const ApiType* return_check) const {
             return this->getReturnType() != nullptr &&
