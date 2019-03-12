@@ -384,7 +384,7 @@ ApiFuzzer::getFuncBySignature(std::string name,
     }
     if (target_type)
     {
-        filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasMemberType,
+        filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasClassType,
             target_type);
     }
     CHECK_CONDITION(filtered_funcs.size() == 1,
@@ -445,9 +445,9 @@ ApiFuzzer::applyFunc(const ApiFunc* func)
     const ApiType* return_type = func->getReturnType();
     const ApiObject* return_obj =
         return_type ? this->generateObject(return_type) : nullptr;
-    const ApiType* member_type = func->getMemberType();
+    const ApiType* enclosing_class = func->getClassType();
     const ApiObject* member_obj =
-        member_type ? this->generateObject(member_type) : nullptr;
+        enclosing_class ? this->generateObject(enclosing_class) : nullptr;
     applyFunc(func, member_obj, return_obj);
 }
 
@@ -745,12 +745,12 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
 {
     std::string func_name = func_yaml["name"].as<std::string>();
     logDebug("Adding func with name " + func_name);
-    const ApiType* member_type = nullptr;
-    if (func_yaml["member_type"].IsDefined())
+    const ApiType* enclosing_class = nullptr;
+    if (func_yaml["enclosing_class"].IsDefined())
     {
-        std::string member_str = func_yaml["member_type"].as<std::string>();
-        member_type = member_str == "" ? nullptr :
-            this->parseTypeStr(member_str);
+        std::string class_str = func_yaml["enclosing_class"].as<std::string>();
+        enclosing_class = class_str == "" ? nullptr :
+            this->parseTypeStr(class_str);
     }
     const ApiType* return_type = nullptr;
     if (func_yaml["return_type"].IsDefined())
@@ -780,7 +780,7 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
         special = func_yaml["special"].as<bool>();
     if (func_yaml["static"].IsDefined())
         statik = func_yaml["static"].as<bool>();
-    return new ApiFunc(func_name, member_type, return_type, param_type_list,
+    return new ApiFunc(func_name, enclosing_class, return_type, param_type_list,
         cond_list, special, statik);
 }
 
@@ -819,9 +819,9 @@ ApiFuzzerNew::initVariables(YAML::Node vars_yaml)
                 const ApiFunc* init_func =
                     this->getAnyFuncByName(var_yaml["func"].as<std::string>());
                 const ApiObject* target_obj =
-                    init_func->getMemberType() != nullptr &&
+                    init_func->getClassType() != nullptr &&
                         init_func->checkFlag(std::string("!statik"))
-                    ? this->generateObject(init_func->getMemberType())
+                    ? this->generateObject(init_func->getClassType())
                     : nullptr;
                 this->generateApiObject(name, type, init_func, target_obj,
                     this->getFuncArgs(init_func));
@@ -838,27 +838,25 @@ void
 ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
 {
     for (YAML::Node ctor_yaml : ctors_yaml) {
-        assert(ctor_yaml["name"].IsDefined());
-        assert(ctor_yaml["param_types"].IsDefined());
-        std::string func_name = ctor_yaml["name"].as<std::string>();
-        const ApiType* member_type = nullptr;
-        if (ctor_yaml["member_type"].IsDefined())
+        CHECK_YAML_FIELD(ctor_yaml, "return_type");
+        CHECK_YAML_FIELD(ctor_yaml, "param_types");
+        const ApiType* return_type =
+            this->parseTypeStr(ctor_yaml["return_type"].as<std::string>());
+        std::string func_name;
+        if (ctor_yaml["name"].IsDefined())
         {
-            member_type =
-                this->parseTypeStr(ctor_yaml["member_type"].as<std::string>());
-        }
-        // TODO could we handle this better?
-        // this is used to not run out of functions when reaching depth limit,
-        // in case we want to use a specific function to generate certain objects
-        const ApiType* return_type;
-        if (ctor_yaml["return_type"].IsDefined())
-        {
-            return_type =
-                this->parseTypeStr(ctor_yaml["return_type"].as<std::string>());
+            func_name = ctor_yaml["name"].as<std::string>();
         }
         else
         {
-            return_type = this->parseTypeStr(func_name);
+            func_name = return_type->toStr();
+        }
+        const ApiType* enclosing_class = nullptr;
+        if (ctor_yaml["enclosing_class"].IsDefined())
+        {
+            enclosing_class =
+                this->parseTypeStr(
+                    ctor_yaml["enclosing_class"].as<std::string>());
         }
         YAML::Node param_types_list_yaml = ctor_yaml["param_types"];
         std::vector<const ApiType *> param_types_list;
@@ -873,7 +871,7 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         bool new_func_ctor = true;
         bool max_depth = ctor_yaml["max_depth"].IsDefined() &&
             ctor_yaml["max_depth"].as<bool>();
-        this->addFunc(new ApiFunc(func_name, member_type, return_type,
+        this->addFunc(new ApiFunc(func_name, enclosing_class, return_type,
             param_types_list, cond_list, new_func_special, new_func_statik,
             new_func_ctor));
     }
@@ -1460,9 +1458,9 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
         //}
     //}
     const ApiObject* target_obj = nullptr;
-    if (gen_func->getMemberType() != nullptr)
+    if (gen_func->getClassType() != nullptr)
     {
-        const ApiType* target_type = gen_func->getMemberType();
+        const ApiType* target_type = gen_func->getClassType();
         std::vector<const ApiObject*> target_obj_candidates =
             this->filterObjs(&ApiObject::hasType, target_type);
         if (target_obj_candidates.empty())
@@ -1907,7 +1905,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         std::string target_type = instr_config["target"].as<std::string>();
         if (target_type.find("output_var") != std::string::npos)
         {
-            target_obj = this->getCurrOutputVar(func->getMemberType());
+            target_obj = this->getCurrOutputVar(func->getClassType());
         }
         else if (target_type.find(fmt::format("var{}", delim_mid)) !=
                 std::string::npos)
@@ -1919,14 +1917,14 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
             assert(candidate_objs.size() == 1);
             target_obj = candidate_objs.at(0);
         }
-        CHECK_CONDITION(target_obj->getType()->isType(func->getMemberType()),
+        CHECK_CONDITION(target_obj->getType()->isType(func->getClassType()),
             fmt::format("Generated target object type `{}` does not match "
                         "expected type `{}`.", target_obj->getType()->toStr(),
-                        func->getMemberType()->toStr()));
+                        func->getClassType()->toStr()));
     }
-    else if (func->getMemberType() && !func->checkFlag("statik"))
+    else if (func->getClassType() && !func->checkFlag("statik"))
     {
-        target_obj = this->generateObject(func->getMemberType());
+        target_obj = this->generateObject(func->getClassType());
     }
     // Set return object, if any declared
     const ApiObject* return_obj = nullptr;
