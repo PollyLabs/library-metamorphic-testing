@@ -1,8 +1,7 @@
 #include "test_emitter.hpp"
 
 static unsigned int indent = 0;
-
-const std::string config_file_path =
+const std::string default_config_file =
     "/home/dan/workspace/library-metamorphic-testing/config_files/config_gmp.yaml";
 
 //bool DEBUG = false;
