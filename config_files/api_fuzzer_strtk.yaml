@@ -17,9 +17,8 @@ var_decl:
 
 inputs:
     - name: 'depth_max'
-      type: 'unsigned int'
       #range: '[10,10]'
-      descriptor: '<range=[2,2]>'
+      descriptor: '<unsigned int=val=10>'
 
 types:
     - name: 'strtk_str'
@@ -42,6 +41,11 @@ funcs:
     - name: 'operator+='
       member_type: 'strtk_str'
       param_types: ['strtk_str']
+    - name: 'subtract_int'
+      member_type: ''
+      param_types: ['int','int']
+      return_type: 'int'
+      special: true
     - name: 'erase'
       member_type: 'strtk_str'
       param_types: ['int', 'int']
@@ -50,9 +54,18 @@ funcs:
       member_type: 'strtk_str'
       param_types: ['int', 'unsigned int']
       special: true
+    - name: 'pop_back'
+      member_type: 'strtk_str'
+      param_types: []
+      condition
     - name: 'substr'
       member_type: 'strtk_str'
       param_types: []
+      return_type: 'strtk_str'
+    - name: 'substr'
+      member_type: 'strtk_str'
+      param_types: ['int','int']
+      return_type: 'strtk_str'
       special: true
     - name: 'clear'
       member_type: 'strtk_str'
@@ -64,7 +77,7 @@ funcs:
       special: true
     - name: 'size'
       member_type: 'strtk_str'
-      return_type: 'unsigned int'
+      return_type: 'int'
       param_types: []
       special: true
     - name: 'is_equal_string'
