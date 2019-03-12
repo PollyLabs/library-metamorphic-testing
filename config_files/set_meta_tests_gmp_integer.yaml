@@ -23,7 +23,7 @@ generators:
         relations:
             - "get_one(%1)"
     minu_one:
-        identifier: 'm'
+        identifier: 'n'
         relations:
             - "get_minus_one(%1)"
 
@@ -67,7 +67,7 @@ relations:
 
     abs:
         - "%m=abs(%1)"
-        - "%m=abs(operator*(%1, %m))"
+        - "%m=abs(operator*(%1, %n))"
 
     lcm_gcm_abs:
         - "%m=abs(operator*(%1, %2))"
