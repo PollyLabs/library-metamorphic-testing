@@ -63,7 +63,7 @@ def generate_test(seed, test_id, runtime_data, log_data, par_data):
     finally:
         par_data["stat_lock"].release()
     generator_cmd = [runtime_data["test_emitter_path"], "-s", seed, "-o",
-        runtime_data["test_source_path"]]
+        runtime_data["test_source_path"], "-c", runtime_data["config_file_path"]]
     # print("CMD is " + " ".join(generator_cmd))
     generator_proc = subprocess.Popen(generator_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = generator_proc.communicate()
@@ -467,6 +467,7 @@ if __name__ == '__main__':
         })
         runtime_data = {
             "timeout": timeout,
+            "config_file_path": config_file_path,
             "test_compile_bin": test_compile_bin,
             "test_compile_dir": test_compile_dir,
             "test_run_path": test_run_path,
