@@ -1,0 +1,67 @@
+includes:
+    - "gmpxx.h"
+    - "testing/gmp-helpers.h"
+
+pre_setup:
+
+inputs:
+    - name: 'depth_max'
+      descriptor: '<unsigned int=val=10>'
+
+# START HERE
+
+types:
+    - name: 'mpq_class'
+    - name: 'mpq_t'
+
+funcs:
+    - name: 'operator+'
+      return_type: 'mpq_class'
+      param_types: ['mpq_class', 'mpq_class']
+      conditions: []
+    - name: 'operator-'
+      return_type: 'mpq_class'
+      param_types: ['mpq_class', 'mpq_class']
+      conditions: []
+    - name: 'operator*'
+      return_type: 'mpq_class'
+      param_types: ['mpq_class', 'mpq_class']
+      conditions: []
+    - name: 'operator=='
+      return_type: 'bool'
+      param_types: ['mpq_class', 'mpq_class']
+      conditions: []
+    - name: 'abs'
+      return_type: 'mpq_class'
+      param_types: ['mpq_class']
+      conditions: []
+    - name: 'get_one'
+      return_type: 'mpq_class'
+      param_types: ['mpq_class']
+      conditions: []
+    - name: 'get_minus_one'
+      return_type: 'mpq_class'
+      param_types: ['mpq_class']
+      conditions: []
+    - name: 'get_mpq_t'
+      member_type: 'mpq_class'
+      return_type: 'mpq_t'
+      conditions: []
+    - name: 'assert'
+      member_type: ''
+      return_type: ''
+      param_types: ['bool']
+      condition: []
+      special: true
+
+
+constructors:
+    - name: 'mpq_class'
+      param_types: ['<int=random=[0,1000]>','<int=random=[1,1000]>' ]
+
+# END HERE
+
+set_gen:
+    - type: 'func'
+      func: 'abs'
+      return: '<special=output_var=>'
