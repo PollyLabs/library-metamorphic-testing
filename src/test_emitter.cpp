@@ -30,7 +30,7 @@ parseArgs(Arguments& args, int argc, char **argv)
         }
         else if (!strcmp(argv[i], "--config-file") || !strcmp(argv[i], "-c"))
         {
-            args.config_file = atoi(argv[++i]);
+            args.config_file = argv[++i];
         }
         else if (!strcmp(argv[i], "--output-file") || !strcmp(argv[i], "-o"))
         {
