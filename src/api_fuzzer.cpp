@@ -1389,7 +1389,8 @@ ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
         }
         else if (!expl_type->getGenMethod().compare("random"))
         {
-            return this->generatePrimitiveObject(prim_type, var_name, expl_type->getDescriptor());
+            return this->generatePrimitiveObject(prim_type, var_name,
+                expl_type->getDescriptor());
         }
         CHECK_CONDITION(false,
             fmt::format(
