@@ -10,8 +10,6 @@ inputs:
     - name: 'depth_max'
       descriptor: '<unsigned int=val=10>'
 
-# START HERE
-
 types:
     - name: 'mpz_class'
     - name: 'mpz_t'
@@ -41,11 +39,11 @@ funcs:
       param_types: ['mpz_class']
       conditions: []
     - name: 'get_mpz_t'
-      member_type: 'mpz_class'
+      enclosing_class: 'mpz_class'
       return_type: 'mpz_t'
       conditions: []
     - name: 'assert'
-      member_type: ''
+      enclosing_class: ''
       return_type: ''
       param_types: ['bool']
       condition: []
@@ -93,10 +91,8 @@ funcs:
 
 
 constructors:
-    - name: 'mpz_class'
+    - return_type: 'mpz_class'
       param_types: ['<int=random=[0,1000]>']
-
-# END HERE
 
 set_gen:
     - type: 'func'
