@@ -57,11 +57,11 @@ funcs:
       param_types: ['mpq_class']
       conditions: []
     - name: 'get_mpq_t'
-      member_type: 'mpq_class'
+      enclosing_class: 'mpq_class'
       return_type: 'mpq_t'
       conditions: []
     - name: 'assert'
-      member_type: ''
+      enclosing_class: ''
       return_type: ''
       param_types: ['bool']
       condition: []
@@ -72,11 +72,11 @@ funcs:
       conditions: []
     - name: 'get_num'
       return_type: 'mpz_class'
-      member_type: 'mpq_class'
+      enclosing_class: 'mpq_class'
       conditions: []
     - name: 'get_den'
       return_type: 'mpz_class'
-      member_type: 'mpq_class'
+      enclosing_class: 'mpq_class'
       conditions: []
     - name: 'get_zero_int'
       return_type: 'mpz_class'
@@ -85,9 +85,9 @@ funcs:
 
 
 constructors:
-    - name: 'mpq_class'
+    - return_type: 'mpq_class'
       param_types: ['<int=random=[-1000,1000]>','<int=random=[0,1000]>' ]
-    - name: 'mpz_class'
+    - return_type: 'mpz_class'
       param_types: ['<int=random=[-1000,1000]>']
 
 # END HERE
