@@ -4,8 +4,7 @@
 int
 getRandInt(std::mt19937& rng, int min, int max)
 {
-    return rng() % (max + 1) + min;
-    return std::uniform_int_distribution<int>(min, max)(rng);
+    return rng() % (max - min + 1) + min;
 }
 
 omega::Relation

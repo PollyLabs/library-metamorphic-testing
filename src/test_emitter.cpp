@@ -2,10 +2,10 @@
 
 static unsigned int indent = 0;
 const std::string default_config_file =
-    "/home/dan/workspace/library-metamorphic-testing/config_files/config_gmp_rational.yaml";
+    "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl.yaml";
 
-//bool DEBUG = false;
-bool DEBUG = true;
+bool DEBUG = false;
+//bool DEBUG = true;
 bool META_TESTING = true;
 
 std::map<std::string, Modes> string_to_mode {
@@ -30,7 +30,7 @@ parseArgs(Arguments& args, int argc, char **argv)
         }
         else if (!strcmp(argv[i], "--config-file") || !strcmp(argv[i], "-c"))
         {
-            args.config_file = atoi(argv[++i]);
+            args.config_file = argv[++i];
         }
         else if (!strcmp(argv[i], "--output-file") || !strcmp(argv[i], "-o"))
         {
@@ -128,10 +128,6 @@ main(int argc, char** argv)
         args.output_file =
             working_dir + config_data["test_emitter_output_file"]
                 .as<std::string>();
-    }
-    else
-    {
-        args.output_file = "./test.cpp";
     }
 
     std::mt19937* rng = new std::mt19937(args.seed);

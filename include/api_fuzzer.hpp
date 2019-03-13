@@ -94,7 +94,8 @@ class ApiFuzzer {
             bool (ApiFunc::*)(T) const, T) const;
         const ApiFunc* getAnyFuncByName(std::string) const;
         const ApiFunc* getSingleFuncByName(std::string) const;
-        const ApiFunc* getFuncBySignature(std::string, std::vector<const ApiType*>) const;
+        const ApiFunc* getFuncBySignature(std::string, const ApiType*,
+            const ApiType*, std::vector<const ApiType*>) const;
 
         inline void addInstr(const ApiInstructionInterface*);
         inline const ApiObject* addNewObj(const ApiType*);

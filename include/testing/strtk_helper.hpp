@@ -18,8 +18,14 @@ make_string(size_t len)
     return new_str;
 }
 
-bool
+inline bool
 is_equal_string(std::string str1, std::string other)
 {
     return !str1.compare(other);
+}
+
+inline int
+subtract_int(int i1, int i2)
+{
+    return i1 - i2;
 }

@@ -395,9 +395,9 @@ std::string
 ApiFunc::printSignature() const
 {
     std::stringstream print_ss;
-    if (this->getMemberType()->toStr() != "")
+    if (this->getClassType()->toStr() != "")
     {
-        print_ss << this->getMemberType()->toStr() << ".";
+        print_ss << this->getClassType()->toStr() << ".";
     }
     print_ss << this->getName() << "(";
     print_ss << makeArgString(this->getParamTypes()) << ")";
@@ -493,7 +493,7 @@ ApiInstruction::toStr() const
         CHECK_CONDITION(this->getTargetObj() == nullptr,
             fmt::format("Called static function `{}` on enclosing class instance.",
                 this->getFunc()->getName()));
-        instr_ss << this->getFunc()->getMemberType()->toStr() << "::";
+        instr_ss << this->getFunc()->getClassType()->toStr() << "::";
     }
     instr_ss << this->getFunc()->printInvocation(this->getFuncParams());
     //if (!this->getFunc()->getConditions().empty())
