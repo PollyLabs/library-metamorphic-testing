@@ -49,8 +49,8 @@ relations:
 
     inverse:
         - "%m=operator-(%z, %1)"
-        - "%m=mpq_class_w(operator-(%z.get_num(),%1.get_num()), %1.get_den())"
-        - "%m=mpq_class_w(%1.get_num(),operator-(%z.get_num(),%1.get_den()))"
+        - "%m=mpq_class_w(operator-(get_zero_int(), %1.get_num()), %1.get_den())"
+        - "%m=mpq_class_w(%1.get_num(),operator-(get_zero_int(), %1.get_den()))"
         
     multiplication_assoc:
         - "%m=operator*(operator*(%1,%2),%3)"
