@@ -40,6 +40,13 @@ mpq_class_w(mpz_class a, mpz_class b)
     return x;
 }
 
+mpz_class 
+get_zero_int()
+{
+    mpz_class x(0);
+    return x;
+}
+
 
 
 

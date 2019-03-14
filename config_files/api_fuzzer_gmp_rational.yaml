@@ -78,6 +78,10 @@ funcs:
       return_type: 'mpz_class'
       member_type: 'mpq_class'
       conditions: []
+    - name: 'get_zero_int'
+      return_type: 'mpz_class'
+      conditions: []
+      special: true
 
 
 constructors:
