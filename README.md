@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/PollyLabs/library-metamorphic-testing.svg?branch=master)](https://travis-ci.org/PollyLabs/library-metamorphic-testing)
+
 C++ infrastructure for automated metamorphic test generation for software
 libraries.
 
