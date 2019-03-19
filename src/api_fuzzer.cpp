@@ -913,6 +913,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         {
             return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
         }
+        else if (type_str.find("var_name") != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("string"));
+        }
 
         size_t mid_1 = type_str.find(delim_mid);
         size_t mid_2 = type_str.find(delim_mid, mid_1 + 1);
@@ -1336,6 +1340,16 @@ ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
         if (!expl_type->getGenMethod().compare("output_var"))
         {
             return this->getCurrOutputVar();
+        }
+        else if (!expl_type->getGenMethod().compare("var_name"))
+        {
+            const PrimitiveType* str_type =
+                dynamic_cast<const PrimitiveType*>(this->getTypeByName("string"));
+            CHECK_CONDITION(str_type != nullptr,
+                "Could not retrieve primitive `string` type");
+            return this->generatePrimitiveObject(str_type,
+                this->getGenericVariableName(str_type),
+                fmt::format("var_{}", this->getNextID()));
         }
         CHECK_CONDITION(false,
             fmt::format("Not implemented special object generation method for `{}`.",

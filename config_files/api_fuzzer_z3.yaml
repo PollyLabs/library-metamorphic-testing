@@ -5,11 +5,9 @@ includes:
 
 inputs:
     - name: 'var_count'
-      type: 'unsigned int'
-      range: '[3,3]'
+      descriptor: '<unsigned int=val=3>'
     - name: 'depth_max'
-      type: 'unsigned int'
-      range: '[3,5]'
+      descriptor: '<unsigned int=range=[3,5]>'
 
 types:
     - name: 'z3::expr'
@@ -73,17 +71,17 @@ funcs:
       return_type: 'z3::expr'
       param_types: ['z3::expr', 'unsigned int']
     - name: 'add'
-      member_type: 'z3::solver'
+      enclosing_class: 'z3::solver'
       param_types: ['z3::expr']
       conditions: []
       special: true
     - name: 'check'
-      member_type: 'z3::solver'
+      enclosing_class: 'z3::solver'
       param_types: []
       conditions: []
       special: true
     - name: 'assert'
-      member_type: ''
+      enclosing_class: ''
       return_type: ''
       param_types: ['bool']
       condition: []
@@ -125,7 +123,7 @@ funcs:
       special: true
     - name: 'simplify'
       return_type: 'z3::expr'
-      member_type: 'z3::expr'
+      enclosing_class: 'z3::expr'
       param_types: []
       condition: []
     - name: 'get_zero'
@@ -141,14 +139,14 @@ funcs:
 
 
 constructors:
-    - name: 'z3::solver'
+    - return_type: 'z3::solver'
       param_types: ['z3::context']
-    - name: 'z3::context'
+    - return_type: 'z3::context'
       param_types: []
     - name: 'int_const'
-      member_type: 'z3::context'
+      enclosing_class: 'z3::context'
       return_type: 'z3::expr'
-      param_types: ['<var_name>']
+      param_types: ['<special=var_name=>']
 
 set_gen:
     - type: 'decl'
@@ -158,6 +156,6 @@ set_gen:
     - type: 'func'
       func: 'z3::operator+'
       func_params:
-        - '<new=z3::expr>'
-        - '<new=z3::expr>'
-      return: '<output_var>'
+        - '<var=new=z3::expr>'
+        - '<var=new=z3::expr>'
+      return: '<special=output_var=>'
