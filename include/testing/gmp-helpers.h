@@ -47,6 +47,14 @@ get_zero_int()
     return x;
 }
 
+mpq_class
+canonicalize_w(mpq_class e)
+{
+    mpq_class x = mpq_class(e);
+    x.canonicalize();
+    return x;
+}
+
 
 
 

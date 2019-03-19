@@ -96,5 +96,5 @@ constructors:
 
 set_gen:
     - type: 'func'
-      func: 'abs'
+      func: 'operator+'
       return: '<special=output_var=>'

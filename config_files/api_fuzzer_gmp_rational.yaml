@@ -6,7 +6,7 @@ pre_setup:
 
 inputs:
     - name: 'depth_max'
-      descriptor: '<unsigned int=val=50>'
+      descriptor: '<unsigned int=val=40>'
 
 # START HERE
 
@@ -14,6 +14,7 @@ types:
     - name: 'mpq_class'
     - name: 'mpz_class'
     - name: 'mpq_t'
+    - name: 'mpz_t'
 
 funcs:
     - name: 'operator+'
@@ -48,6 +49,10 @@ funcs:
       return_type: 'mpq_class'
       param_types: ['mpq_class']
       conditions: []
+    - name: 'abs'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
     - name: 'get_one'
       return_type: 'mpq_class'
       param_types: ['mpq_class']
@@ -71,6 +76,10 @@ funcs:
       param_types: ['mpz_class', 'mpz_class']
       conditions: []
       special: true
+    - name: 'canonicalize_w'
+      return_type: 'mpq_class'
+      param_types: ['mpq_class']
+      conditions: []
     - name: 'get_num'
       return_type: 'mpz_class'
       enclosing_class: 'mpq_class'
@@ -83,6 +92,48 @@ funcs:
       return_type: 'mpz_class'
       conditions: []
       special: true
+    - name: 'mpz_cdiv_q '
+      param_types: ['mpz_t', 'mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'get_mpz_t'
+      enclosing_class: 'mpz_class'
+      return_type: 'mpz_t'
+      conditions: []
+    - name: 'get_one'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
+      special: true
+    - name: 'get_minus_one'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class']
+      conditions: []
+    - name: 'mpz_init'
+      param_types: ['mpz_t']
+      conditions: []
+    - name: 'mpz_inits'
+      param_types: ['mpz_t', 'mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_inits'
+      param_types: ['mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_inits'
+      param_types: ['mpz_t', 'mpz_t', 'mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_set'
+      param_types: ['mpz_t', 'mpz_t']
+      conditions: []
+    - name: 'mpz_set_ui'
+      param_types: ['mpz_t','<int=random=[-1000,1000]>' ]
+      conditions: []
+    - name: 'gcd'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
+    - name: 'lcm'
+      return_type: 'mpz_class'
+      param_types: ['mpz_class', 'mpz_class']
+      conditions: []
 
 
 constructors:
@@ -96,4 +147,6 @@ constructors:
 set_gen:
     - type: 'func'
       func: 'operator+'
+    - type: 'func'
+      func: 'canonicalize_w'
       return: '<special=output_var=>'
