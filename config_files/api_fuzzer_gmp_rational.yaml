@@ -6,7 +6,7 @@ pre_setup:
 
 inputs:
     - name: 'depth_max'
-      descriptor: '<unsigned int=val=10>'
+      descriptor: '<unsigned int=val=50>'
 
 # START HERE
 
@@ -70,6 +70,7 @@ funcs:
       return_type: 'mpq_class'
       param_types: ['mpz_class', 'mpz_class']
       conditions: []
+      special: true
     - name: 'get_num'
       return_type: 'mpz_class'
       enclosing_class: 'mpq_class'
