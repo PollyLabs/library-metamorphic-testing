@@ -138,7 +138,7 @@ funcs:
 
 constructors:
     - return_type: 'mpq_class'
-      param_types: ['<int=random=[-1000,1000]>','<int=random=[0,1000]>' ]
+      param_types: ['<int=random=[-1000,1000]>','<int=random=[1,1000]>' ]
     - return_type: 'mpz_class'
       param_types: ['<int=random=[-1000,1000]>']
 
