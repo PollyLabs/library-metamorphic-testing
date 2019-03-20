@@ -1,0 +1,29 @@
+FROM alascu/metalib:base_isl_maint
+
+# Pull repo
+RUN \
+    git clone https://github.com/PollyLabs/library-metamorphic-testing.git
+
+# Set workdir to repo location
+WORKDIR /home/library-metamorphic-testing
+
+# Setup output folder and link
+RUN mkdir /output && ln -s /output ./output
+
+# Copy config file template over and update paths
+RUN \
+    sed -i 's|<work_dir>|/home/library-metamorphic-testing|' \
+        < ./config_files/config.yaml.template \
+        > ./config_files/config_isl.yaml && \
+    sed -i 's|<lib>|isl_point|' ./config_files/config_isl.yaml && \
+    sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl.yaml && \
+    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/isl"|' ./config_files/config_isl.yaml && \
+    sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_isl.sh"|' ./config_files/config_gmp_rational.yaml && \
+    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_isl.yaml && \
+    cp ./config_files/set_meta_tests_isl.yaml ./config_files/set_meta_tests_isl_point.yaml
+
+# Build project
+RUN mkdir build && cd build && cmake .. && make -j
+
+# Set command to run experiments
+CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_isl.yaml", "continuous", "--append-id"]

@@ -1,0 +1,9 @@
+FROM alascu/metalib:base
+
+# Get and build isl with coverage info
+RUN \
+    apt-get install -y automake libtool libgmp-dev && \
+    git clone git://repo.or.cz/isl.git && \
+    cd isl && git checkout maint && ./autogen.sh && \
+    CFLAGS="-fprofile-arcs -ftest-coverage" ./configure && \
+    make -j
