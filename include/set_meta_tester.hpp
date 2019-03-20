@@ -13,6 +13,7 @@
 #include "yaml-cpp/yaml.h"
 #include "fmt/format.h"
 
+class ApiFuzzerNew;
 int getRandInt(std::mt19937*, int, int);
 std::string getRandSetElem(std::mt19937*, std::set<std::string>&);
 
@@ -59,13 +60,16 @@ class MetaTest {
 
 class SetMetaTesterNew {
     protected:
+        ApiFuzzerNew* fuzzer;
+        const ApiObject* curr_meta_variant;
         const std::string meta_var_name;
         const ApiType* meta_var_type;
         const std::vector<const MetaRelation*> relations;
         const std::vector<const MetaRelation*> meta_checks;
         const std::vector<const ApiObject*> meta_in_vars;
-        const std::vector<const MetaVarObject*> meta_vars;
+        const std::vector<MetaVarObject*> meta_vars;
         const std::vector<const ApiObject*> meta_variants;
+        std::map<const MetaVarObject*, const ApiObject*> meta_var_inits;
 
         std::queue<std::string> abstract_rel_chain;
         std::vector<const MetaTest*> meta_tests;
@@ -73,33 +77,30 @@ class SetMetaTesterNew {
 
         std::mt19937* rng;
 
-        //std::vector<std::string> input_var_names;
-        //std::string meta_var_type;
-        //std::string meta_var_name;
-        //unsigned int meta_var_id;
-        //std::string meta_check_str;
-        //std::queue<std::string> rel_chain;
-        //std::vector<MetaTest*> meta_exprs;
-
     public:
-        SetMetaTesterNew(
-            const std::vector<const MetaRelation*>&,
-            const std::vector<const MetaRelation*>&,
-            const std::vector<const ApiObject*>&,
-            const std::vector<const MetaVarObject*>&,
-            const std::vector<const ApiObject*>&,
-            const ApiType*, std::mt19937*);
-        std::vector<const ApiInstructionInterface*> genMetaTests(unsigned int);
+        SetMetaTesterNew(ApiFuzzerNew* fuzzer);
+            //const std::vector<const MetaRelation*>&,
+            //const std::vector<const MetaRelation*>&,
+            //const std::vector<const ApiObject*>&,
+            //const std::vector<const MetaVarObject*>&,
+            //const std::vector<const ApiObject*>&,
+            //const ApiType*, std::mt19937*);
+        void genMetaTests(unsigned int);
         std::string getAbstractMetaRelChain() const;
+        const ApiObject* getCurrentMetaVar() const
+        {
+            return this->curr_meta_variant;
+        };
 
     private:
         void initMetaRels(std::map<std::string, std::set<std::string>>&, YAML::Node);
         std::queue<std::string> makeAbstractMetaRelChain(unsigned int);
-        void genOneMetaTest(std::queue<std::string>, const ApiObject*);
+        const MetaTest* genOneMetaTest(std::queue<std::string>, const ApiObject*);
         bool addMetaTest(MetaTest* expr);
         const MetaRelation* getConcreteMetaRel(std::string, const ApiObject*,
             std::vector<const ApiObject*>) const;
-        std::vector<const ApiInstructionInterface*> testsToApiInstrs(void) const;
+        std::vector<const ApiInstructionInterface*> testToApiInstrs(
+            const MetaTest*) const;
         void finalizeTest(MetaTest*) const;
 };
 

@@ -125,7 +125,7 @@ ExplicitType::ExplicitType(std::string _definition, const ApiType* _underlying_t
     CHECK_CONDITION(mid_two != std::string::npos,
         fmt::format("Expected second middle delimiter in comprehension `{}`.",
             _definition));
-    size_t end = _definition.find(delim_back);
+    size_t end = _definition.rfind(delim_back);
     this->gen_type = _definition.substr(1, mid_one - 1);
     this->gen_method = _definition.substr(mid_one + 1, mid_two - mid_one - 1);
     this->descriptor = _definition.substr(mid_two + 1, end - mid_two - 1);
@@ -257,7 +257,6 @@ FuncObject::toStr() const
     return fmt::format("{}({})", this->name, getStringWithDelims(param_names, ','));
 }
 
-
 const ApiObject*
 MetaVarObject::getConcreteVar(const ApiObject* curr_meta_variant,
     const std::vector<const ApiObject*>& meta_variants,
@@ -383,6 +382,13 @@ ApiFunc::checkArgs(std::vector<const ApiObject*> args_check) const
     }
     for (int i = 0; i < args_check.size(); i++)
     {
+        CHECK_CONDITION(args_check.at(i) != nullptr,
+            fmt::format("Given argument {} to check for function `{}` is null.",
+                i, this->name));
+        CHECK_CONDITION(args_check.at(i)->getType() != nullptr,
+            fmt::format("Given argument named `{}` to check for function `{}` "
+                        "has null type.",
+                args_check.at(i)->toStr(), this->name));
         if (!args_check.at(i)->getType()->isType(this->getParamType(i)))
         {
             return false;
