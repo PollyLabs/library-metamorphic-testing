@@ -1690,6 +1690,18 @@ ApiFuzzerNew::parseDescriptor(std::string descriptor)
     assert(false);
 }
 
+/**
+* @brief A generic PrimitiveObject generation method
+*
+* This method generates a PrimitiveObject with a generic name based on given
+* type and hard-coded descriptor, defined further down the call chain. Useful
+* when need an object of the underlying primitive type, but without specific
+* requirements.
+*
+* @param obj_type The exposed PrimitiveType
+*
+* @return A pointer to the newly created ApiObject
+*/
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
 {
@@ -1697,6 +1709,17 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
         fmt::format("{}_{}", obj_type->toStr(), this->getNextID()));
 }
 
+/**
+* @brief Creates primitive objects with pre-defined descriptors
+*
+* For each primitive type, defines a specific descriptor in order to generate a
+* fairly generic and representative PrimitiveObject.
+*
+* @param obj_type The exposed PrimitiveType
+* @param name Name of the new ApiObject to create
+*
+* @return A pointer to the newly created ApiObject
+*/
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     std::string name)
@@ -1733,6 +1756,23 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     }
 }
 
+/**
+* @brief Generates data corresponding to the descriptor, then calls the
+* primitive object generation method
+*
+* Parses the given descriptor into a single value of the corresponding
+* underlying primitive type, via the parseDescriptor functions. As the
+* descriptor is a string, specially handles the situation where a string
+* PrimitiveObject must be generated, by creating the object on the spot, after
+* parsing the descriptor (which might represent a value or a comprehension)
+*
+* @param obj_type The exposed PrimitiveType
+* @param name Name of the eventual ApiObject
+* @param descriptor String representation of comprehension which dictates
+* content of the object
+*
+* @return A pointer to the newly created ApiObject
+*/
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     std::string name, std::string descriptor)
@@ -1773,6 +1813,16 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     }
 }
 
+/**
+* @brief Create a PrimitiveObject with data of primitive type T
+*
+* @tparam T The underlying primitive type
+* @param obj_type The fuzzer-exposed ApiType
+* @param name The name of the object (generally unused)
+* @param data The underlying data of type T
+*
+* @return A reference to the newly created ApiObject
+*/
 template<typename T>
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
@@ -1788,12 +1838,25 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     return new_obj;
 }
 
+/**
+* @brief Returns a reference to a singleton ApiObject
+*
+* For a `obj_type` that has the `singleton` flag set, searches and retrieves the
+* corresponding ApiObject from the symbol table, or creates one if no such
+* reference exists. Note that singleton objects are unique across a test file,
+* rather than a metamorphic input generation step.
+*
+* @param obj_type The singleton type to search for an instance of
+*
+* @return A reference to an ApiObject of that type
+*/
 const ApiObject*
 ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
 {
     std::vector<const ApiObject*> filtered_objs = this->filterAllObjs(
         &ApiObject::hasType, obj_type);
-    assert (filtered_objs.size() <= 1);
+    CHECK_CONDITION(filtered_objs.size() <= 1,
+        fmt::format("More than one singleton object instances found."));
     if (filtered_objs.size() == 0)
     {
         logDebug(fmt::format(
@@ -1804,6 +1867,12 @@ ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
     return filtered_objs.at(0);
 }
 
+/**
+* @brief Main entry-point for sequence generation in the fuzzer
+*
+* Reads information from the `seq_gen` field of the fuzzer specification and
+* dispatches it to the corresponding instruction generation function.
+*/
 void
 ApiFuzzerNew::generateSet()
 {
@@ -1834,11 +1903,25 @@ ApiFuzzerNew::generateSet()
         }
         else
         {
-            assert(false);
+            CHECK_CONDITION(false,
+                fmt::format("Not implemented sequence generation method {}.",
+                    gen_instr_type));
         }
     }
 }
 
+/**
+* @brief Generates a random sequence of instructions, up to the given
+* `seq_count`
+*
+* This generation method randomly chooses random function calls to be applied,
+* with minimal control, just like random testing. This might be useful to start
+* out a new fuzzer specification, but should eventually be replaced with a
+* proper thought-out generation sequence. Note that `seq_count` represents base
+* random instructions, to which the depth limit still applies.
+*
+* @param seq_count The number of **base** random instructions to generate
+*/
 void
 ApiFuzzerNew::generateSeq(size_t seq_count)
 {
@@ -1852,6 +1935,18 @@ ApiFuzzerNew::generateSeq(size_t seq_count)
     }
 }
 
+/**
+* @brief Generates a declaration for the corresponding variables
+*
+* Declares and adds a variable of the given `var_type` to the symbol table,
+* without initialising the variable. Useful in situation where variables are
+* requested for function which perform in-place transformations
+*
+* @param instr_config A YAML node with information pertaining to the declaration
+* instruction
+*
+* @todo Review why the false assertion is there
+*/
 void
 ApiFuzzerNew::generateDecl(YAML::Node instr_config)
 {
@@ -1875,6 +1970,18 @@ ApiFuzzerNew::generateDecl(YAML::Node instr_config)
     }
 }
 
+/**
+* @brief Generates sequences of function calls equivalent to unrolling a for
+* loop
+*
+* Correpsonds to a `for` type sequence instruction. Based on the given `counter`
+* range, this call generates `func` type sequence instructions, where each
+* instruction has access to a distinct, unique `loop_counter` variable. The
+* calls are generated unrolled in the eventual test case.
+*
+* @param instr_config A YAML node with information pertaining to the `counter`
+* and underlying `func` instruction
+*/
 void
 ApiFuzzerNew::generateForLoop(YAML::Node instr_config)
 {
@@ -1892,9 +1999,16 @@ ApiFuzzerNew::generateForLoop(YAML::Node instr_config)
 /* @brief Parses a string representation of a mathematical range into a pair of
  * integers
  *
+ * The given range_str argument is expected to have the same syntax as a
+ * mathematical range. Given that, it returns a pair of integers, representing
+ * the evaluated range limits. Further, the function also parses comprehensions
+ * that return integer values.
+ *
  * @param range_str A string representing a mathematical range
  * @return A pair of integers representing the minimum and maximum values,
  * inclusive, of the parsed range
+ *
+ * @todo Further polish comprehensions and ensure they return integer values
  */
 
 std::pair<int, int>
@@ -1947,7 +2061,8 @@ ApiFuzzerNew::parseRange(std::string range_str)
     return std::pair<int, int>(from_int, to_int);
 }
 
-/* @brief Parses a comprehension from a range string
+/**
+ * @brief Parses a comprehension from a range string
  *
  * @details For a range comprehension, allow usage of further comprehensions to
  * represent specific values for sides of the interval, especially useful for
@@ -2012,7 +2127,8 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
     assert(false);
 }
 
-/* @brief Builds a function call from provided YAML instructions
+/**
+ * @brief Builds a function call from provided YAML instructions
  *
  * @details Uses information contained within `instr_config` to yield a single
  * function call, as described. `instr_config` must at the least contain the
@@ -2149,6 +2265,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         func_params);
 }
 
+[[deprecated]]
 std::string
 ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
 {
@@ -2180,9 +2297,10 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
     return expr_ss.str();
 }
 
-/* @brief Creates a concrete application of a MetaRelation
+/**
+ * @brief Creates a concrete application of a MetaRelation
  *
- * @details Takes a pointer to an abstract MetaRelation object (including
+ * Takes a pointer to an abstract MetaRelation object (including
  * comprehensions and metamorphic generators) and yields a MetaRelation object
  * which references only existing objects in the current test generation.
  * Handles any additional object creation requirements
@@ -2217,14 +2335,15 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
         concrete_func_obj, concrete_result_var);
 }
 
-/* @brief Concretizes the comprehensions used in a FuncObject
+/**
+ * @brief Concretizes the comprehensions used in a FuncObject
+ *
+ * Goes over the target object and each parameter of the provided FuncObject; if
+ * a MetaVarObject is detected, it is transformed into the corresponding
+ * ApiObject; if a FuncObject is detected, the function is called recursively.
  *
  * @param func_obj The FuncObject which to make concrete
- * @param curr_meta_variant The metamorphic variant variable instance for which
- * a test is currently being generated
  * @return A FuncObject with all comprehensions replaced with explcit objects
- *
- * @todo Replace curr_meta_variant with reference from meta_tester instance
  */
 
 const FuncObject*
@@ -2268,6 +2387,26 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
     return new FuncObject(func_obj->getFunc(), func_target,
         concrete_params);
 }
+
+
+/**
+* @brief Returns the corresponding ApiObject of a given MetaVarObject
+*
+* Parses the given MetaVarObject and returns the concrete reference to the
+* actual object as part of the symbol table. Handles the following situations:
+* * %m - represents the current metamorphic variant being generated
+* * %mn - where n is a number, represents the nth metamorphic variant
+* * %n - where n is a number, represents the nth metamorphic input
+* * %i - represents a random input, guaranteed to be the same across metamorphic
+* variants at the same call site
+* * other identifiers are permitted after a % symbol, as long as they are
+* declared as generators prior
+* An object might be created when concretizing certain MetaVarObjects
+*
+* @param mv_obj The MetaVarObject to be concretized
+*
+* @return A reference to the corresponding ApiObject
+*/
 
 const ApiObject*
 ApiFuzzerNew::concretizeMetaVarObject(const MetaVarObject* mv_obj)
