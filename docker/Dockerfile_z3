@@ -1,4 +1,4 @@
-FROM alascu/metalib:base
+FROM alascu/metalib:base_z3
 
 # Pull repo
 RUN \
