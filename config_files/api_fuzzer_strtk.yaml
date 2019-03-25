@@ -30,53 +30,52 @@ types:
 
 funcs:
     - name: 'strtk::split'
-      member_type: ''
+      enclosing_class: ''
       param_types: ['<char=random=>', 'strtk_str', '<var=type=list_it>']
     - name: 'append'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: ['string']
     - name: 'append'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: ['strtk_str']
     - name: 'operator+='
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: ['strtk_str']
     - name: 'subtract_int'
-      member_type: ''
+      enclosing_class: ''
       param_types: ['int','int']
       return_type: 'int'
       special: true
     - name: 'erase'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: ['int', 'int']
       special: true
     - name: 'erase'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: ['int', 'unsigned int']
       special: true
     - name: 'pop_back'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: []
-      condition
     - name: 'substr'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: []
       return_type: 'strtk_str'
     - name: 'substr'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: ['int','int']
       return_type: 'strtk_str'
       special: true
     - name: 'clear'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: []
       special: true
     - name: 'resize'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       param_types: ['int']
       special: true
     - name: 'size'
-      member_type: 'strtk_str'
+      enclosing_class: 'strtk_str'
       return_type: 'int'
       param_types: []
       special: true
