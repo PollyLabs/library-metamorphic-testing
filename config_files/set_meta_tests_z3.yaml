@@ -1,7 +1,7 @@
 ---
 input_count: 3
 variant_count: 15
-meta_test:count: 7
+meta_test_count: 7
 meta_var_type: "z3::expr"
 meta_check:
     - "assert(checkValid(%m,%m0));"
