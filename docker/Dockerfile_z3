@@ -15,7 +15,7 @@ RUN \
     sed 's|<work_dir>|'`pwd`'\/|' \
         < ./config_files/config.yaml.template \
         > ./config_files/config_z3.yaml && \
-    sed -i 's|<lib>|meta_tests_z3|' ./config_files/config_z3.yaml && \
+    sed -i 's|<lib>|z3|' ./config_files/config_z3.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_z3.sh"|' ./config_files/config_z3.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/z3/build/"|' ./config_files/config_z3.yaml && \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/z3/"|' ./config_files/config_z3.yaml && \
