@@ -1,4 +1,5 @@
 #include "set_meta_tester.hpp"
+#include "api_fuzzer.hpp"
 
 int
 getRandInt(std::mt19937* rng, int min, int max)
@@ -111,6 +112,15 @@ SetMetaTesterNew::addMetaTest(MetaTest* test)
     return true;
 }
 
+/* @brief Randomly select a metamorphic relation for the corresponding family
+ *
+ * @param rel_type String representing the family of relations to choose from
+ * @param meta_variant_var Instance of curerntly generated metamorphic variant
+ * @param input_vars Vector containing all existing metamorphic inputs
+ * @return A concrete instance of the randomly chosen abstract metamorphic
+ * relation
+ */
+
 const MetaRelation*
 SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
     const ApiObject* meta_variant_var, std::vector<const ApiObject*> input_vars)
@@ -129,14 +139,32 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
         fmt::format("No concrete candidates for relation `{}` found", rel_type));
     const MetaRelation* concrete_relation = concrete_relation_candidates.at(
         getRandInt(this->rng, 0, concrete_relation_candidates.size() - 1));
-    const MetaRelation* concretized_relation =
-        concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
-            input_vars);
+    return this->fuzzer->concretizeRelation(concrete_relation, meta_variant_var);
+    //const MetaRelation* concretized_relation =
+        //concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
+            //input_vars);
     //delete concrete_relation;
-    return concretized_relation;
+    //return concretized_relation;
 }
 
-void
+/* @brief Creates a complete metamorphic test based on the given relation chain
+ *
+ * @details Based on the given chain of abstract metamorphic family relations,
+ * randomly selects instances of operations for each abstract relation in turn,
+ * and parses the contained comprehensions to concretize the relations in valid
+ * test instructions, based on the existing symbol table. At the end, appends
+ * the declared metamorphic check. Also ensures that an identical test has not
+ * been generated before, by caching hashes of previously generated tests.
+ *
+ * @param rel_chain Represents, in order, the sequence of abstract metamorphic
+ * relations to generate
+ * @param meta_variant_var The metamorphic variant variable instance for which
+ * the test is generated
+ * @return A reference to the generated test case, if a unique one was
+ * generated, or nullptr otherwise
+ */
+
+const MetaTest*
 SetMetaTesterNew::genOneMetaTest(std::queue<std::string> rel_chain,
     const ApiObject* meta_variant_var)
 {
@@ -158,51 +186,65 @@ SetMetaTesterNew::genOneMetaTest(std::queue<std::string> rel_chain,
         this->finalizeTest(new_test);
         if (this->addMetaTest(new_test))
         {
-            return;
+            return new_test;
         }
         else
         {
             delete new_test;
         }
     }
+    return nullptr;
 }
 
 std::vector<const ApiInstructionInterface*>
-SetMetaTesterNew::testsToApiInstrs(void) const
+SetMetaTesterNew::testToApiInstrs(const MetaTest* meta_test) const
 {
     std::vector<const ApiInstructionInterface*> api_instrs;
-    std::for_each(this->meta_tests.begin(), this->meta_tests.end(),
-        [&](const MetaTest* meta_test)
-        {
-            api_instrs.push_back(new ApiComment(fmt::format(
-                "Test for {}", meta_test->getVariantVar()->toStr())));
-            api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
-            std::vector<const ApiInstructionInterface*> test_instrs = meta_test->getApiInstructions();
-            api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
-        });
+    api_instrs.push_back(new ApiComment(fmt::format(
+        "Test for {}", meta_test->getVariantVar()->toStr())));
+    api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
+    std::vector<const ApiInstructionInterface*> test_instrs = meta_test->getApiInstructions();
+    api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
     return api_instrs;
 }
 
-std::vector<const ApiInstructionInterface*>
+void
 SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
 {
-    assert(!this->meta_in_vars.empty());
+    CHECK_CONDITION(!this->meta_in_vars.empty(),
+        fmt::format("No metamorphic inputs found for tester."));
+    std::vector<const ApiInstructionInterface*> instrs;
     std::queue<std::string> rel_chain = this->makeAbstractMetaRelChain(rel_cnt);
+    CHECK_CONDITION(!this->abstract_rel_chain.empty(),
+        fmt::format("Abstract relation chain empty in metamorphic tester."));
+    this->fuzzer->addInstr(new ApiComment(
+        fmt::format("CURR META TEST: {}", this->getAbstractMetaRelChain())));
+
     size_t rel_counter = 0;
-    for (const ApiObject* variant : this->meta_variants)
+    for (const ApiObject* meta_variant : this->meta_variants)
     {
-        this->genOneMetaTest(rel_chain, variant);
+        this->curr_meta_variant = meta_variant;
+        const MetaTest* new_test = this->genOneMetaTest(rel_chain, meta_variant);
+        if (new_test)
+        {
+            this->fuzzer->addInstrVector(this->testToApiInstrs(new_test));
+        }
+        else
+        {
+            break;
+        }
     }
-    return this->testsToApiInstrs();
 }
 
-SetMetaTesterNew::SetMetaTesterNew(
-    const std::vector<const MetaRelation*>& _relations,
-    const std::vector<const MetaRelation*>& _meta_checks,
-    const std::vector<const ApiObject*>& _meta_in_vars,
-    const std::vector<const MetaVarObject*>& _meta_vars,
-    const std::vector<const ApiObject*>& _meta_variants,
-    const ApiType* _meta_var_type, std::mt19937* _rng
-    ) : relations(_relations), meta_checks(_meta_checks), meta_vars(_meta_vars),
-        meta_in_vars(_meta_in_vars), meta_variants(_meta_variants),
-        meta_var_type(_meta_var_type), rng(_rng), meta_var_name("r") { }
+SetMetaTesterNew::SetMetaTesterNew(ApiFuzzerNew* _fuzzer
+    //const std::vector<const MetaRelation*>& _relations,
+    //const std::vector<const MetaRelation*>& _meta_checks,
+    //const std::vector<const ApiObject*>& _meta_in_vars,
+    //const std::vector<const MetaVarObject*>& _meta_vars,
+    //const std::vector<const ApiObject*>& _meta_variants,
+    //const ApiType* _meta_var_type, std::mt19937* _rng
+    ) : relations(_fuzzer->relations), meta_checks(_fuzzer->meta_checks),
+        meta_vars(_fuzzer->meta_vars), meta_in_vars(_fuzzer->meta_in_vars),
+        meta_variants(_fuzzer->meta_variants), fuzzer(_fuzzer),
+        meta_var_type(_fuzzer->meta_variant_type), rng(_fuzzer->getRNG()),
+        meta_var_name(_fuzzer->meta_variant_name) { }

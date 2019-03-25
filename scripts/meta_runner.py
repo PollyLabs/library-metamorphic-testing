@@ -361,7 +361,7 @@ if __name__ == '__main__':
                 config_file_path))
             exit(1)
     with open(config_file_path, 'r') as config_file_fd:
-        config_file = yaml.load(config_file_fd)
+        config_file = yaml.load(config_file_fd, Loader=yaml.FullLoader)
     working_dir = config_file["working_dir"]
     assert working_dir[-1] == os.sep
     os.chdir(working_dir)

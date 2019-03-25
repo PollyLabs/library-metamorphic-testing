@@ -193,26 +193,30 @@ ApiFuzzer::hasFuncName(std::string func_check)
     return false;
 }
 
-inline void
+void
 ApiFuzzer::addInstr(const ApiInstructionInterface* instr)
 {
     this->instrs.push_back(instr);
 }
 
+void
+ApiFuzzer::addInstrVector(std::vector<const ApiInstructionInterface*> instr_vec)
+{ this->instrs.insert(this->instrs.end(), instr_vec.begin(), instr_vec.end());
+}
 
-inline std::string
+std::string
 ApiFuzzer::getGenericVariableName(const ApiType* type) const
 {
     return type->toStr().substr(type->toStr().rfind(':') + 1);
 }
 
-inline const ApiObject*
+const ApiObject*
 ApiFuzzer::addNewObj(const ApiType* type)
 {
     return this->addNewObj(this->getGenericVariableName(type), type);
 }
 
-inline const ApiObject*
+const ApiObject*
 ApiFuzzer::addNewObj(std::string name, const ApiType* type)
 {
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
@@ -220,38 +224,38 @@ ApiFuzzer::addNewObj(std::string name, const ApiType* type)
     return new_obj;
 }
 
-inline void
+void
 ApiFuzzer::addObj(const ApiObject* obj)
 {
     this->objs.push_back(obj);
     this->all_objs.push_back(obj);
 }
 
-inline void
+void
 ApiFuzzer::addType(const ApiType* type)
 {
     this->types.insert(type);
 }
 
-inline void
+void
 ApiFuzzer::addFunc(const ApiFunc* func)
 {
     this->funcs.insert(func);
 }
 
-inline void
+void
 ApiFuzzer::addRelation(const MetaRelation* meta_rel)
 {
     this->relations.push_back(meta_rel);
 }
 
-inline void
+void
 ApiFuzzer::addMetaCheck(const MetaRelation* meta_check)
 {
     this->meta_checks.push_back(meta_check);
 }
 
-inline void
+void
 ApiFuzzer::addMetaVar(std::string identifier, const ApiType* meta_var_type)
 {
     std::vector<const MetaRelation*> empty_relations({});
@@ -272,7 +276,7 @@ ApiFuzzer::addMetaVar(std::string identifier, const ApiType* meta_var_type,
     this->meta_vars.push_back(new_meta_obj);
 }
 
-inline void
+void
 ApiFuzzer::addInputMetaVar(size_t id)
 {
     this->addMetaVar(std::to_string(id), this->meta_variant_type);
@@ -556,11 +560,13 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
 
     /* Metamorphic testing initialization */
     YAML::Node meta_test_data = YAML::LoadFile(meta_test_path);
-    assert(meta_test_data["meta_var_type"].IsDefined());
-    assert(meta_test_data["variant_count"].IsDefined());
+    CHECK_YAML_FIELD(meta_test_data, "meta_var_type");
+    CHECK_YAML_FIELD(meta_test_data, "variant_count");
+    CHECK_YAML_FIELD(meta_test_data, "meta_test_count");
     this->meta_variant_type = this->getTypeByName(
         meta_test_data["meta_var_type"].as<std::string>());
     this->meta_variant_count = meta_test_data["variant_count"].as<size_t>();
+    this->meta_test_count = meta_test_data["meta_test_count"].as<size_t>();
     this->initMetaVariantVars();
     this->initMetaVarObjs(meta_test_data["generators"],
         meta_test_data["input_count"]);
@@ -572,8 +578,6 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     for (int i = 1; i <= input_var_count; ++i)
     {
         this->current_output_var = this->addNewObj("out", this->meta_variant_type);
-        //this->current_output_var =
-            //this->generateApiObjectDecl("out", this->meta_variant_type, true);
         this->objs.clear();
         this->output_vars.push_back(this->current_output_var);
         this->addInstr(new ApiComment(fmt::format(
@@ -582,6 +586,7 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         this->generateSet();
     }
     assert(this->output_vars.size() == input_var_count);
+    this->meta_in_vars = this->output_vars;
 
     // TODO reconsider how meta checks are generated; perhaps only generate
     // them when required
@@ -592,26 +597,8 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     // generator initialization process
     std::vector<const MetaVarObject*> meta_vars_const(this->meta_vars.begin(),
         this->meta_vars.end());
-    this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(
-        relations, meta_checks, this->output_vars, meta_vars_const, meta_variants,
-        this->meta_variant_type, rng));
-
-    std::vector<const ApiInstructionInterface*> meta_instrs = smt->genMetaTests(5);
-    logDebug(fmt::format("META TEST = {}", smt->getAbstractMetaRelChain()));
-    this->instrs.push_back(new ApiComment(fmt::format("CURR META TEST: {}",
-        smt->getAbstractMetaRelChain())));
-    // TODO move this initialisation in the meta tester
-    //for (const ApiInstructionInterface* meta_instr_interface : meta_instrs)
-    //{
-        //const ApiInstruction* meta_instr =
-            //dynamic_cast<const ApiInstruction*>(meta_instr_interface);
-        //if (meta_instr && meta_instr->getTargetObj() != nullptr &&
-                //!meta_instr->getTargetObj()->isDeclared())
-        //{
-            //this->addInstr(new ObjectDeclInstruction(meta_instr->getTargetObj()));
-        //}
-    //}
-    this->instrs.insert(this->instrs.end(), meta_instrs.begin(), meta_instrs.end());
+    this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(this));
+    smt->genMetaTests(this->meta_test_count);
 }
 
 ApiFuzzerNew::~ApiFuzzerNew()
@@ -643,9 +630,9 @@ ApiFuzzerNew::~ApiFuzzerNew()
     std::cout << ">> Cleaning meta relations..." << std::endl;
     std::for_each(this->relations.begin(), this->relations.end(),
         [](const MetaRelation* meta_rel){ delete meta_rel; });
-    std::cout << ">> Cleaning meta input variables..." << std::endl;
-    std::for_each(this->meta_in_vars.begin(), this->meta_in_vars.end(),
-        [](const ApiObject* meta_in_var){ delete meta_in_var; });
+    //std::cout << ">> Cleaning meta input variables..." << std::endl;
+    //std::for_each(this->meta_in_vars.begin(), this->meta_in_vars.end(),
+        //[](const ApiObject* meta_in_var){ delete meta_in_var; });
     std::cout << ">> Cleaning meta variants..." << std::endl;
     std::for_each(this->meta_variants.begin(), this->meta_variants.end(),
         [](const ApiObject* meta_var){ delete meta_var; });
@@ -896,6 +883,20 @@ ApiFuzzerNew::parseComprehension(std::string comprehension)
     return dynamic_cast<const ExplicitType*>(api_type);
 }
 
+/* @brief Returns an ApiType corresponding to the given string
+ *
+ * @details Parses the given string to generate a corresponding ApiType. There
+ * are two main ways of presenting strings: either as the name of an existing
+ * type, or as a comprehension. In case of the latter, the comprehension is
+ * transformed to an ExplicitType, passing the definition and evaluating the
+ * underlying type in order to maintain type safety until concretization to an
+ * object
+ *
+ * @param type_str A string representing a type or comprehension to parse
+ * @return An ApiType* is the string given represents an existing type, or an
+ * ExplicitType in the case of a comprehension
+ */
+
 const ApiType*
 ApiFuzzerNew::parseTypeStr(std::string type_str)
 {
@@ -912,6 +913,10 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
         else if (type_str.find("loop_counter") != std::string::npos)
         {
             return new ExplicitType(type_str, this->getTypeByName("unsigned int"));
+        }
+        else if (type_str.find("var_name") != std::string::npos)
+        {
+            return new ExplicitType(type_str, this->getTypeByName("string"));
         }
 
         size_t mid_1 = type_str.find(delim_mid);
@@ -971,6 +976,30 @@ ApiFuzzerNew::parseTypeStr(std::string type_str)
             }
             CHECK_CONDITION(false,
                 fmt::format("Var comprehension not implemented: {}", type_str));
+        }
+        else if (!out_type.compare("meta"))
+        {
+            if (!gen_type.compare("input"))
+            {
+                size_t input_id = stoi(descr);
+                CHECK_CONDITION(this->meta_in_vars.size() > input_id,
+                    fmt::format("Asked to retrieve input id {}, but only {} "
+                                "available.",
+                                input_id, this->meta_in_vars.size()));
+                return new ExplicitType(type_str,
+                    this->meta_in_vars.at(input_id)->getType());
+            }
+            else if (!gen_type.compare("gen"))
+            {
+                // TODO replace with generator type
+                return new ExplicitType(type_str, this->meta_variant_type);
+            }
+            else if (!gen_type.compare("var"))
+            {
+                return new ExplicitType(type_str, this->meta_variant_type);
+            }
+            CHECK_CONDITION(false,
+                fmt::format("Meta comprehension not implemented: {}", type_str));
         }
         return new ExplicitType(type_str, this->getTypeByName(out_type));
     }
@@ -1277,6 +1306,32 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     }
 }
 
+/* @brief Evaluate given comprehension into corresponding object
+ *
+ * @details Evaluates the definition of the given ExplicitType in order to
+ * return an object as requested, depending on the corresponding type,
+ * generation method and description in the definition. Currently implemented
+ * definitions, by type and generation method (note that description is used in
+ * by the generation method):
+ *  - var
+ *      - name
+ *      - type
+ *      - new - Does *not* initialize or otherwise declare the new object;
+ *      returns a reference to a freshly created object internally
+ *      - id
+ *      - input
+ *  - special
+ *      - output_var
+ *  - primitive type
+ *      - val
+ *      - len
+ *      - range
+ *      - random
+ *
+ * @param expl_type ExplicitType representing a comprehension
+ * @return Evaluation of given ExplicitType to corresponding object
+ */
+
 const ApiObject*
 ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
 {
@@ -1337,8 +1392,53 @@ ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
         {
             return this->getCurrOutputVar();
         }
+        else if (!expl_type->getGenMethod().compare("var_name"))
+        {
+            const PrimitiveType* str_type =
+                dynamic_cast<const PrimitiveType*>(this->getTypeByName("string"));
+            CHECK_CONDITION(str_type != nullptr,
+                "Could not retrieve primitive `string` type");
+            return this->generatePrimitiveObject(str_type,
+                this->getGenericVariableName(str_type),
+                fmt::format("var_{}", this->getNextID()));
+        }
         CHECK_CONDITION(false,
             fmt::format("Not implemented special object generation method for `{}`.",
+                expl_type->getGenMethod()));
+    }
+    else if (!expl_type->getGenType().compare("meta"))
+    {
+        if (!expl_type->getGenMethod().compare("input"))
+        {
+            size_t input_id = stoi(expl_type->getDescriptor());
+            CHECK_CONDITION(this->meta_in_vars.size() > input_id,
+                fmt::format("Asked to retrieve input id {}, but only {} "
+                            "available.",
+                            input_id, this->meta_in_vars.size()));
+            return this->meta_in_vars.at(input_id);
+        }
+        else if (!expl_type->getGenMethod().compare("gen"))
+        {
+
+        }
+        else if (!expl_type->getGenMethod().compare("var"))
+        {
+            if (!expl_type->getDescriptor().compare("current"))
+            {
+                return this->smt->getCurrentMetaVar();
+            }
+            else
+            {
+                size_t meta_variant_id = stoi(expl_type->getDescriptor());
+                CHECK_CONDITION(this->meta_vars.size() > meta_variant_id,
+                    fmt::format("Asked to retrieve meta variant id {}, but only "
+                                "{} available.",
+                                meta_variant_id, this->meta_vars.size()));
+                return this->meta_vars.at(meta_variant_id);
+            }
+        }
+        CHECK_CONDITION(false,
+            fmt::format("Not implemented meta object generation method for `{}`.",
                 expl_type->getGenMethod()));
     }
     else if (expl_type->getUnderlyingType()->isPrimitive())
@@ -1499,6 +1599,12 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
     return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
 }
 
+/* @brief Return a reference to the input object with given name
+ *
+ * @param input_name Name of input object to search for
+ * @return Reference to ApiObject representing respective input object
+ */
+
 const ApiObject*
 ApiFuzzerNew::getInputObject(std::string input_name)
 {
@@ -1506,6 +1612,12 @@ ApiFuzzerNew::getInputObject(std::string input_name)
     assert(this->fuzzer_input.count(input_name) != 0);
     return this->fuzzer_input[input_name];
 }
+
+/* @brief Return the data of the corresponding primitive input object
+ *
+ * @param input_name Name of primitive input object
+ * @return Data value of input object with given name
+ */
 
 template<typename T>
 T
@@ -1515,7 +1627,6 @@ ApiFuzzerNew::getInputObjectData(std::string input_name)
     assert(input_obj->isPrimitive());
     return dynamic_cast<const PrimitiveObject<T>*>(input_obj)->getData();
 }
-
 
 template<>
 unsigned int
@@ -1579,6 +1690,18 @@ ApiFuzzerNew::parseDescriptor(std::string descriptor)
     assert(false);
 }
 
+/**
+* @brief A generic PrimitiveObject generation method
+*
+* This method generates a PrimitiveObject with a generic name based on given
+* type and hard-coded descriptor, defined further down the call chain. Useful
+* when need an object of the underlying primitive type, but without specific
+* requirements.
+*
+* @param obj_type The exposed PrimitiveType
+*
+* @return A pointer to the newly created ApiObject
+*/
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
 {
@@ -1586,6 +1709,17 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type)
         fmt::format("{}_{}", obj_type->toStr(), this->getNextID()));
 }
 
+/**
+* @brief Creates primitive objects with pre-defined descriptors
+*
+* For each primitive type, defines a specific descriptor in order to generate a
+* fairly generic and representative PrimitiveObject.
+*
+* @param obj_type The exposed PrimitiveType
+* @param name Name of the new ApiObject to create
+*
+* @return A pointer to the newly created ApiObject
+*/
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     std::string name)
@@ -1622,6 +1756,23 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     }
 }
 
+/**
+* @brief Generates data corresponding to the descriptor, then calls the
+* primitive object generation method
+*
+* Parses the given descriptor into a single value of the corresponding
+* underlying primitive type, via the parseDescriptor functions. As the
+* descriptor is a string, specially handles the situation where a string
+* PrimitiveObject must be generated, by creating the object on the spot, after
+* parsing the descriptor (which might represent a value or a comprehension)
+*
+* @param obj_type The exposed PrimitiveType
+* @param name Name of the eventual ApiObject
+* @param descriptor String representation of comprehension which dictates
+* content of the object
+*
+* @return A pointer to the newly created ApiObject
+*/
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     std::string name, std::string descriptor)
@@ -1662,6 +1813,16 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     }
 }
 
+/**
+* @brief Create a PrimitiveObject with data of primitive type T
+*
+* @tparam T The underlying primitive type
+* @param obj_type The fuzzer-exposed ApiType
+* @param name The name of the object (generally unused)
+* @param data The underlying data of type T
+*
+* @return A reference to the newly created ApiObject
+*/
 template<typename T>
 const ApiObject*
 ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
@@ -1677,12 +1838,25 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
     return new_obj;
 }
 
+/**
+* @brief Returns a reference to a singleton ApiObject
+*
+* For a `obj_type` that has the `singleton` flag set, searches and retrieves the
+* corresponding ApiObject from the symbol table, or creates one if no such
+* reference exists. Note that singleton objects are unique across a test file,
+* rather than a metamorphic input generation step.
+*
+* @param obj_type The singleton type to search for an instance of
+*
+* @return A reference to an ApiObject of that type
+*/
 const ApiObject*
 ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
 {
     std::vector<const ApiObject*> filtered_objs = this->filterAllObjs(
         &ApiObject::hasType, obj_type);
-    assert (filtered_objs.size() <= 1);
+    CHECK_CONDITION(filtered_objs.size() <= 1,
+        fmt::format("More than one singleton object instances found."));
     if (filtered_objs.size() == 0)
     {
         logDebug(fmt::format(
@@ -1693,6 +1867,12 @@ ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
     return filtered_objs.at(0);
 }
 
+/**
+* @brief Main entry-point for sequence generation in the fuzzer
+*
+* Reads information from the `seq_gen` field of the fuzzer specification and
+* dispatches it to the corresponding instruction generation function.
+*/
 void
 ApiFuzzerNew::generateSet()
 {
@@ -1723,11 +1903,25 @@ ApiFuzzerNew::generateSet()
         }
         else
         {
-            assert(false);
+            CHECK_CONDITION(false,
+                fmt::format("Not implemented sequence generation method {}.",
+                    gen_instr_type));
         }
     }
 }
 
+/**
+* @brief Generates a random sequence of instructions, up to the given
+* `seq_count`
+*
+* This generation method randomly chooses random function calls to be applied,
+* with minimal control, just like random testing. This might be useful to start
+* out a new fuzzer specification, but should eventually be replaced with a
+* proper thought-out generation sequence. Note that `seq_count` represents base
+* random instructions, to which the depth limit still applies.
+*
+* @param seq_count The number of **base** random instructions to generate
+*/
 void
 ApiFuzzerNew::generateSeq(size_t seq_count)
 {
@@ -1741,6 +1935,18 @@ ApiFuzzerNew::generateSeq(size_t seq_count)
     }
 }
 
+/**
+* @brief Generates a declaration for the corresponding variables
+*
+* Declares and adds a variable of the given `var_type` to the symbol table,
+* without initialising the variable. Useful in situation where variables are
+* requested for function which perform in-place transformations
+*
+* @param instr_config A YAML node with information pertaining to the declaration
+* instruction
+*
+* @todo Review why the false assertion is there
+*/
 void
 ApiFuzzerNew::generateDecl(YAML::Node instr_config)
 {
@@ -1764,6 +1970,18 @@ ApiFuzzerNew::generateDecl(YAML::Node instr_config)
     }
 }
 
+/**
+* @brief Generates sequences of function calls equivalent to unrolling a for
+* loop
+*
+* Correpsonds to a `for` type sequence instruction. Based on the given `counter`
+* range, this call generates `func` type sequence instructions, where each
+* instruction has access to a distinct, unique `loop_counter` variable. The
+* calls are generated unrolled in the eventual test case.
+*
+* @param instr_config A YAML node with information pertaining to the `counter`
+* and underlying `func` instruction
+*/
 void
 ApiFuzzerNew::generateForLoop(YAML::Node instr_config)
 {
@@ -1778,6 +1996,21 @@ ApiFuzzerNew::generateForLoop(YAML::Node instr_config)
     }
 }
 
+/* @brief Parses a string representation of a mathematical range into a pair of
+ * integers
+ *
+ * The given range_str argument is expected to have the same syntax as a
+ * mathematical range. Given that, it returns a pair of integers, representing
+ * the evaluated range limits. Further, the function also parses comprehensions
+ * that return integer values.
+ *
+ * @param range_str A string representing a mathematical range
+ * @return A pair of integers representing the minimum and maximum values,
+ * inclusive, of the parsed range
+ *
+ * @todo Further polish comprehensions and ensure they return integer values
+ */
+
 std::pair<int, int>
 ApiFuzzerNew::parseRange(std::string range_str)
 {
@@ -1785,9 +2018,14 @@ ApiFuzzerNew::parseRange(std::string range_str)
     {
         range_str = this->getGeneratorData(range_str);
     }
-    assert(range_str.find(",") != std::string::npos);
-    assert(range_str.front() == '(' || range_str.front() == '[');
-    assert(range_str.back() == ')' || range_str.back() == ']');
+    CHECK_CONDITION(range_str.find(",") != std::string::npos,
+        fmt::format("Expected comma in range string not found."));
+    CHECK_CONDITION(range_str.front() == '(' || range_str.front() == '[',
+        fmt::format("Invalid start character for range parsing; `{}` given, "
+                    "expected `(` or `[`", range_str.front()));
+    CHECK_CONDITION(range_str.back() == ')' || range_str.back() == ']',
+        fmt::format("Invalid end character for range parsing; `{}` given, "
+                    "expected `)` or `]`", range_str.back()));
     bool from_exclusive = false;
     int from_int, to_int;
     std::string accumulator = "";
@@ -1822,6 +2060,20 @@ ApiFuzzerNew::parseRange(std::string range_str)
     }
     return std::pair<int, int>(from_int, to_int);
 }
+
+/**
+ * @brief Parses a comprehension from a range string
+ *
+ * @details For a range comprehension, allow usage of further comprehensions to
+ * represent specific values for sides of the interval, especially useful for
+ * cases fuch as a `for` generation instruction.
+ *
+ * @param range_substr Part of a range comprehension referring to one of the
+ * limits of the interval
+ * @return The integer value of the given limit comprehension
+ *
+ * @todo Consider replacing with `parseTypeStr`
+ */
 
 int
 ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
@@ -1874,6 +2126,23 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
     }
     assert(false);
 }
+
+/**
+ * @brief Builds a function call from provided YAML instructions
+ *
+ * @details Uses information contained within `instr_config` to yield a single
+ * function call, as described. `instr_config` must at the least contain the
+ * name of the function to be generated. `instr_config` might optionally set an
+ * enclosing object for member functions, a target to return the result to, or
+ * specific parameter values to be passed to the function.
+ *
+ * @param instr_config A node containing information about the function to be
+ * generated; must include name of function.
+ * @param loop_counter Reference to loop counter for functions calls generated
+ * by an unrolled `for` loop
+ * @return void - the results are stored directly in the symbol table of the
+ * fuzzer
+ */
 
 void
 ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
@@ -1938,33 +2207,6 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         {
             return_obj = retrieveExplicitObject(parseComprehension(return_type_str));
         }
-        //if (obj_name.find(fmt::format("new{}", delim_mid)) !=
-            //std::string::npos)
-        //{
-            //gen_new_obj = true;
-        //}
-        //else if (obj_name.find(fmt::format("var{}", delim_mid)) !=
-            //std::string::npos)
-        //{
-            //std::vector<const ApiObject*> candidate_objs =
-                //this->filterAllObjs(&ApiObject::hasName,
-                //this->getGeneratorData(instr_config["return"].as<std::string>()));
-            //assert(candidate_objs.size() <= 1);
-            //if (candidate_objs.size() == 1)
-            //{
-                //return_obj = candidate_objs.at(0);
-            //}
-            //else
-            //{
-                //gen_new_named_obj = true;
-                //// TODO check for singleton object? Pipe this through generateObject
-            //}
-        //}
-        //else if (return_type_str.find("output_var") != std::string::npos)
-        //{
-            //// TODO collapse this into first case
-            //return_obj = this->getCurrOutputVar(func->getReturnType());
-        //}
         else
         {
             std::vector<const ApiObject*> candidate_objs =
@@ -1992,16 +2234,6 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
         for (YAML::Node func_param_yaml : instr_config["func_params"])
         {
             std::string type_str = func_param_yaml.as<std::string>();
-            // TODO might need further checks for loop_counter?
-            //if (type_str.find("<loop_counter>") != std::string::npos)
-            //{
-                //func_params.push_back(new PrimitiveObject<unsigned int>(
-                    //dynamic_cast<const PrimitiveType*>(
-                    //this->getTypeByName("unsigned int")), loop_counter,
-                    //this->getNextID()));
-            //}
-            //else
-            //{
             const ApiType* type = this->parseTypeStr(type_str);
             if (type->isExplicit() &&
                    !dynamic_cast<const ExplicitType*>(type)->getGenMethod()
@@ -2021,10 +2253,6 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
                 {
                     this->generateNewObject(type->getUnderlyingType(), param_obj);
                 }
-                //if (!param_obj->isDeclared() && param_obj->notIsPrimitive())
-                //{
-                    //this->generateNewObject(type->getUnderlyingType(), param_obj);
-                //}
                 func_params.push_back(param_obj);
             }
         }
@@ -2033,29 +2261,11 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         func_params = this->getFuncArgs(func);
     }
-    //if (gen_new_obj)
-    //{
-        //const ApiType* return_type = this->parseTypeStr(
-            //instr_config["return"].as<std::string>());
-        //std::string var_name = return_type->toStr();
-        //var_name = var_name.substr(var_name.rfind(':') + 1);
-        //return_obj = this->generateApiObject(var_name, return_type, func,
-            //target_obj, func_params);
-    //}
-    //else if (gen_new_named_obj)
-    //{
-        //return_obj = this->generateNamedObject(
-            //this->getGeneratorData(instr_config["return"].as<std::string>()),
-            //func->getReturnType(), func, target_obj, func_params);
-        ////this->addObj(return_obj);
-    //}
-    //else
-    //{
     this->applyFunc(func, target_obj, return_obj,
         func_params);
-    //}
 }
 
+[[deprecated]]
 std::string
 ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
 {
@@ -2070,6 +2280,7 @@ ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
 // TODO PPL doesn't like strict inequalities; why?
 std::string expr_ops[3] = {"==", "<=", ">="};
 
+[[deprecated]]
 std::string
 ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
 {
@@ -2085,3 +2296,151 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
         << "0";
     return expr_ss.str();
 }
+
+/**
+ * @brief Creates a concrete application of a MetaRelation
+ *
+ * Takes a pointer to an abstract MetaRelation object (including
+ * comprehensions and metamorphic generators) and yields a MetaRelation object
+ * which references only existing objects in the current test generation.
+ * Handles any additional object creation requirements
+ *
+ * @param abstract_rel Abstract metamorphic relation to concretize
+ * @param curr_meta_variant Instance of currently generated metamorphic variant
+ * @return Concrete instance of abstract relation, with all comprehensions
+ * solved
+ *
+ * @remark Metamorphic testing generation function
+ */
+
+const MetaRelation*
+ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
+    const ApiObject* curr_meta_variant)
+{
+    const MetaVarObject* abstract_result_var =
+        dynamic_cast<const MetaVarObject*>(curr_meta_variant);
+    const ApiObject* concrete_result_var = nullptr;
+    if (abstract_result_var)
+    {
+        concrete_result_var =
+            abstract_result_var->getConcreteVar(
+                curr_meta_variant, this->meta_variants, this->meta_in_vars);
+    }
+    const FuncObject* concrete_func_obj =
+        this->concretizeFuncObject(abstract_rel->getBaseFunc());
+    //const FuncObject* concrete_func_obj =
+        //abstract_rel->getBaseFunc()->concretizeVars(
+            //curr_meta_variant, this->meta_variants, this->meta_in_vars);
+    return new MetaRelation(abstract_rel->getAbstractRelation(),
+        concrete_func_obj, concrete_result_var);
+}
+
+/**
+ * @brief Concretizes the comprehensions used in a FuncObject
+ *
+ * Goes over the target object and each parameter of the provided FuncObject; if
+ * a MetaVarObject is detected, it is transformed into the corresponding
+ * ApiObject; if a FuncObject is detected, the function is called recursively.
+ *
+ * @param func_obj The FuncObject which to make concrete
+ * @return A FuncObject with all comprehensions replaced with explcit objects
+ */
+
+const FuncObject*
+ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
+{
+    /* Concretize class instance, if member function */
+    const ApiObject* func_target = func_obj->getTarget();
+    if (func_target != nullptr)
+    {
+        if (dynamic_cast<const MetaVarObject*>(func_target))
+        {
+            func_target = this->concretizeMetaVarObject(
+                dynamic_cast<const MetaVarObject*>(func_target));
+        }
+        else if (dynamic_cast<const FuncObject*>(func_target))
+        {
+            func_target = this->concretizeFuncObject(
+                dynamic_cast<const FuncObject*>(func_target));
+        }
+        else
+        {
+            CHECK_CONDITION(false, "Should not get here");
+        }
+    }
+
+    /* Concretize parameters */
+    std::vector<const ApiObject*> concrete_params;
+    for (const ApiObject* param : func_obj->getParams())
+    {
+        if (dynamic_cast<const MetaVarObject*>(param))
+        {
+            concrete_params.push_back(this->concretizeMetaVarObject(
+                dynamic_cast<const MetaVarObject*>(param)));
+        }
+        else if (dynamic_cast<const FuncObject*>(param))
+        {
+            concrete_params.push_back(this->concretizeFuncObject(
+                dynamic_cast<const FuncObject*>(param)));
+        }
+    }
+    return new FuncObject(func_obj->getFunc(), func_target,
+        concrete_params);
+}
+
+
+/**
+* @brief Returns the corresponding ApiObject of a given MetaVarObject
+*
+* Parses the given MetaVarObject and returns the concrete reference to the
+* actual object as part of the symbol table. Handles the following situations:
+* * %m - represents the current metamorphic variant being generated
+* * %mn - where n is a number, represents the nth metamorphic variant
+* * %n - where n is a number, represents the nth metamorphic input
+* * %i - represents a random input, guaranteed to be the same across metamorphic
+* variants at the same call site
+* * other identifiers are permitted after a % symbol, as long as they are
+* declared as generators prior
+* An object might be created when concretizing certain MetaVarObjects
+*
+* @param mv_obj The MetaVarObject to be concretized
+*
+* @return A reference to the corresponding ApiObject
+*/
+
+const ApiObject*
+ApiFuzzerNew::concretizeMetaVarObject(const MetaVarObject* mv_obj)
+{
+    if (mv_obj->meta_relations.empty())
+    {
+        if (!mv_obj->getIdentifier().compare("<m_curr>"))
+        {
+            return this->smt->getCurrentMetaVar();
+        }
+        else if (mv_obj->getIdentifier().front() == 'm')
+        {
+            assert(std::isdigit(mv_obj->getIdentifier()[1]));
+            size_t meta_variant_id = stoi(mv_obj->getIdentifier().substr(1));
+            for (const ApiObject* mv : meta_variants)
+            {
+                if (mv->getID() == meta_variant_id)
+                {
+                    return mv;
+                }
+            }
+            assert(false);
+        }
+        else if (std::isdigit(mv_obj->getIdentifier().front()))
+        {
+            size_t input_id = stoi(mv_obj->getIdentifier()) - 1;
+            CHECK_CONDITION(input_id < this->meta_in_vars.size(),
+                fmt::format("Expected input var id `{}`, but have only `{}`.",
+                input_id, this->meta_in_vars.size()));
+            return this->meta_in_vars.at(input_id);
+        }
+        assert(false);
+    }
+    return this->concretizeFuncObject(mv_obj->meta_relations.at(
+        (*this->rng)() % mv_obj->meta_relations.size())->getBaseFunc());
+}
+

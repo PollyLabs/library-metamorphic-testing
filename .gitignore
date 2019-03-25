@@ -2,6 +2,8 @@ build/
 env/
 out/
 third_party/
+doxygen/html
+doxygen/latex
 config_files/config.yaml
 compile_commands.json
 *.swp

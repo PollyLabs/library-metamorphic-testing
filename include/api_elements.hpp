@@ -416,12 +416,12 @@ class MetaRelation {
 };
 
 class MetaVarObject : public ApiObject {
-    const std::string identifier;
-    const ApiType* type;
-    std::vector<const MetaRelation*> meta_relations;
-    std::mt19937* rng;
-
     public:
+        const std::string identifier;
+        const ApiType* type;
+        std::vector<const MetaRelation*> meta_relations;
+        std::mt19937* rng;
+
         MetaVarObject(std::string _identifier, const ApiType* _type,
             std::mt19937* _rng) :
             ApiObject(_identifier, -1, _type), identifier(_identifier),

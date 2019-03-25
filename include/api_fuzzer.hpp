@@ -49,20 +49,22 @@ class ApiFuzzer {
         const unsigned int seed;
         std::mt19937* rng;
 
+
+        virtual const ApiObject* generateObject(const ApiType*) = 0;
+
+    public:
         /* Metamorphic testing members */
         // TODO change these to sets
-        const ApiType* meta_variant_type;
-        const std::string meta_variant_name = "r";
-        size_t meta_variant_count;
         std::vector<MetaVarObject*> meta_vars;
         std::vector<const MetaRelation*> relations;
         std::vector<const MetaRelation*> meta_checks;
         std::vector<const ApiObject*> meta_in_vars;
         std::vector<const ApiObject*> meta_variants;
+        const ApiType* meta_variant_type;
+        const std::string meta_variant_name = "r";
+        size_t meta_variant_count;
+        size_t meta_test_count;
 
-        virtual const ApiObject* generateObject(const ApiType*) = 0;
-
-    public:
         ApiFuzzer(unsigned int _seed, std::mt19937* _rng): next_obj_id(0), depth(0),
             instrs(std::vector<const ApiInstructionInterface*>()),
             objs(std::vector<const ApiObject*>()),
@@ -97,12 +99,13 @@ class ApiFuzzer {
         const ApiFunc* getFuncBySignature(std::string, const ApiType*,
             const ApiType*, std::vector<const ApiType*>) const;
 
-        inline void addInstr(const ApiInstructionInterface*);
-        inline const ApiObject* addNewObj(const ApiType*);
-        inline const ApiObject* addNewObj(std::string, const ApiType*);
-        inline void addObj(const ApiObject*);
-        inline void addType(const ApiType*);
-        inline void addFunc(const ApiFunc*);
+        void addInstr(const ApiInstructionInterface*);
+        void addInstrVector(std::vector<const ApiInstructionInterface*>);
+        const ApiObject* addNewObj(const ApiType*);
+        const ApiObject* addNewObj(std::string, const ApiType*);
+        void addObj(const ApiObject*);
+        void addType(const ApiType*);
+        void addFunc(const ApiFunc*);
 
         virtual void generateSet() = 0;
 
@@ -119,15 +122,15 @@ class ApiFuzzer {
             std::vector<const ApiObject*>);
         std::vector<const ApiObject*> getFuncArgs(const ApiFunc*);
 
-        inline void addRelation(const MetaRelation*);
-        inline void addMetaCheck(const MetaRelation*);
-        inline void addMetaVar(std::string, const ApiType*);
-        inline void addMetaVar(std::string, const ApiType*, std::vector<const MetaRelation*>&);
-        inline void addInputMetaVar(size_t);
+        void addRelation(const MetaRelation*);
+        void addMetaCheck(const MetaRelation*);
+        void addMetaVar(std::string, const ApiType*);
+        void addMetaVar(std::string, const ApiType*, std::vector<const MetaRelation*>&);
+        void addInputMetaVar(size_t);
         MetaVarObject* getMetaVar(std::string) const;
         const ApiObject* getMetaVariant(size_t id) const;
 
-        inline std::string getGenericVariableName(const ApiType*) const;
+        std::string getGenericVariableName(const ApiType*) const;
 
     private:
         std::string emitFuncCond(const ApiFunc*, const ApiObject*,
@@ -147,6 +150,9 @@ class ApiFuzzerNew : public ApiFuzzer {
     public:
         ApiFuzzerNew(std::string&, std::string&, unsigned int, std::mt19937*);
         ~ApiFuzzerNew();
+
+        const MetaRelation* concretizeRelation(const MetaRelation*,
+            const ApiObject*);
 
     private:
         void initPrimitiveTypes();
@@ -196,6 +202,10 @@ class ApiFuzzerNew : public ApiFuzzer {
         const ApiType* parseTypeStr(std::string);
         std::string getGeneratorData(std::string) const;
         std::string makeLinearExpr(std::vector<const ApiObject*>);
+
+        const FuncObject* concretizeFuncObject(const FuncObject*);
+        const ApiObject* concretizeMetaVarObject(const MetaVarObject*);
+
 };
 
 #endif
