@@ -8,6 +8,7 @@
 ---
 input_count: 3
 meta_var_type: "mpz_class"
+meta_test_count: 5
 variant_count: 20
 meta_check:
     - "assert(operator==(%m0,%m))"
@@ -29,22 +30,22 @@ generators:
 
 relations:
     identity_idempotent_absorption:
-        - "%m=operator+(%1,%z)" 
-        - "%m=operator-(%1,%z)" 
-        - "%m=operator*(%1,%o)" 
-        - "%m=lcm(%1,%1)" 
-        - "%m=gcd(%1,%1)" 
-        - "%m=lcm(%1,gcd(%1, %2))" 
-        - "%m=gcd(%1,lcm(%1, %2))" 
+        - "%m=operator+(%1,%z)"
+        - "%m=operator-(%1,%z)"
+        - "%m=operator*(%1,%o)"
+        - "%m=lcm(%1,%1)"
+        - "%m=gcd(%1,%1)"
+        - "%m=lcm(%1,gcd(%1, %2))"
+        - "%m=gcd(%1,lcm(%1, %2))"
 
     addition_commut:
         - "%m=operator+(%1,%2)"
         - "%m=operator+(%2,%1)"
-     
+
     multiplication_commut:
         - "%m=operator*(%1,%2)"
         - "%m=operator*(%2,%1)"
-        
+
     multiplication_assoc:
         - "%m=operator*(operator*(%1,%2),%3)"
         - "%m=operator*(%1,operator*(%2,%3))"
