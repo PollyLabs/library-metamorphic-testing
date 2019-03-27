@@ -425,12 +425,29 @@ ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
     return new_obj;
 }
 
+
+/**
+* @brief Create a new ApiObject, and optionally emit a declaration instruction,
+* without initialization
+*
+* Creates a new ApiObject instance, based on the given name and type parameters,
+* and optionally emits an ApiInstruction which declares, but not initializes,
+* that object.
+*
+* @param name Name for created ApiObject
+* @param type Type for created ApiObject
+* @param emit_instr Whether to emit a declaration instruction or not
+*
+* @return A pointer to the newly generated ApiObject
+*/
 const ApiObject*
 ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
     bool emit_instr)
 {
-    assert(!type->checkFlag("singleton") ||
-        this->filterAllObjs(&ApiObject::hasType, type).size() == 0);
+    CHECK_CONDITION(!type->checkFlag("singleton") ||
+        this->filterAllObjs(&ApiObject::hasType, type).size() == 0,
+        fmt::format("Asked to generate another object of singleton type `{}`.",
+            type->toStr()));
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
     this->addObj(new_obj);
     if (emit_instr)
@@ -439,9 +456,9 @@ ApiFuzzer::generateApiObjectDecl(std::string name, const ApiType* type,
             new ObjectDeclInstruction(new_obj);
         this->addInstr(new_instr);
     }
-    new_obj->setDeclared();
     return new_obj;
 }
+
 
 void
 ApiFuzzer::applyFunc(const ApiFunc* func)
@@ -519,6 +536,8 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
+            //candidate_params = filterObjList(candidate_params,
+                //&ApiObject::isDeclared);
             if (!candidate_params.empty())
             {
                 params.push_back(getRandomVectorElem(candidate_params, this->getRNG()));
@@ -601,6 +620,20 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     smt->genMetaTests(this->meta_test_count);
 }
 
+/**
+ * @brief Destroy all references generated throughout the fuzzing process
+ *
+ * Current references freed:
+ * * ApiObjects (including meta variants)
+ * * ApiTypes (excludes certain ExplicitTypes)
+ * * ApiInstructionInterface
+ * * MetaRelations (expressing metamorphic checks, abstract metamorphic
+ * relations)
+ *
+ * @todo Extend these to other containers containing references, and further log
+ * other allocated memory to remove all memory leaks
+ */
+
 ApiFuzzerNew::~ApiFuzzerNew()
 {
     std::cout << ">> Cleaning funcs..." << std::endl;
@@ -638,6 +671,19 @@ ApiFuzzerNew::~ApiFuzzerNew()
         [](const ApiObject* meta_var){ delete meta_var; });
 }
 
+/**
+* @brief Return a pointer to the current metamorphic input being generated
+*
+* If an instance of the ApiObject representing the currently generated
+* metamorphic input has been already generated, ensures that the expected type
+* corresponds; otherwise, generates a new ApiObject to reference the metamorphic
+* input variable.
+*
+* @param output_type The expected type of the metamorphic input
+*
+* @return A pointer to the current metamorphic input object
+*/
+
 const ApiObject*
 ApiFuzzerNew::getCurrOutputVar(const ApiType* output_type = nullptr)
 {
@@ -648,7 +694,6 @@ ApiFuzzerNew::getCurrOutputVar(const ApiType* output_type = nullptr)
     }
     return this->current_output_var;
 }
-
 
 void
 ApiFuzzerNew::initPrimitiveTypes()
@@ -678,17 +723,6 @@ ApiFuzzerNew::initInputs(YAML::Node inputs_config)
             fmt::format("Expected comprehension, got `{}`.", descriptor));
         obj = this->retrieveExplicitObject(
             dynamic_cast<const ExplicitType*>(input_type));
-            //obj = this->generatePrimitiveObject(
-                //dynamic_cast<const PrimitiveType*>(obj_type),
-                //name, input_yaml["descriptor"].as<std::string>());
-            //logDebug(fmt::format("Generated object with data {} for range {}.",
-                //dynamic_cast<const PrimitiveObject<unsigned int>*>(obj)->getData(),
-                //input_yaml["range"].as<std::string>()));
-        //}
-        //else
-        //{
-            //obj = this->generateObject(obj_type);
-        //}
         this->fuzzer_input.insert(std::pair<std::string, const ApiObject*>(name, obj));
     }
 }
@@ -770,7 +804,6 @@ ApiFuzzerNew::genNewApiFunc(YAML::Node func_yaml)
     return new ApiFunc(func_name, enclosing_class, return_type, param_type_list,
         cond_list, special, statik);
 }
-
 
 void
 ApiFuzzerNew::initVariables(YAML::Node vars_yaml)
@@ -1281,6 +1314,27 @@ ApiFuzzerNew::parseRelationString(std::string rel_string, std::string rel_name)
     return new MetaRelation(rel_name, base_func, store_result_var);
 }
 
+/**
+* @brief Create or retrieve a reference, dispatching to appropriate functions
+* based on given type
+*
+* Distinguish between four types of distinct ApiTypes, and appopriately call the
+* respective function, which will either generate a new ApiObject, or retrieve
+* a pointer to one, respectively. The distinct types we observe are:
+* * Singleton ApiTypes, in which case if such an object exists, it is retrieved,
+* otherwise a new instance is generated
+* * Primitive types, for which the `generatePrimitiveObject` function is called
+* * comprehensions (encoded as ExplicitType), which defers to
+* `retrieveExplicitObject`
+* * if none of the above apply, a new object is generated via a call to
+* `generateNewObject`
+*
+* @param obj_type The type of the object to be retrieved or constructed
+*
+* @return A pointer to the appropriate object, generally newly constructed, or
+* retrieved in special instances
+*/
+
 const ApiObject*
 ApiFuzzerNew::generateObject(const ApiType* obj_type)
 {
@@ -1512,6 +1566,11 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
                         "targeted result obj"));
         return generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
     }
+    //else if (result_obj && result_obj->toInitialize() && !result_obj->isDeclared())
+    //{
+        //this->generateApiObjectDecl(
+        //return result_obj;
+    //}
     ++this->depth;
     std::set<const ApiFunc*> ctor_func_candidates = this->filterFuncs(
         &ApiFunc::hasReturnType, obj_type);
@@ -1549,14 +1608,9 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
     logDebug(fmt::format("Selected func = {}", gen_func->getName()));
     logDebug("Generating " + obj_type->toStr() + " type object with func " +
         gen_func->getName());
-    std::vector<const ApiObject*> ctor_args = this->getFuncArgs(gen_func);
-    //for (const ApiObject* ctor_arg : ctor_args)
-    //{
-        //if (!ctor_arg->isDeclared())
-        //{
-            //this->generateNewObject(ctor_arg->getType(), ctor_arg);
-        //}
-    //}
+
+    /* Check for target type; if exists, retrieve appropriate ApiObject pointer.
+     * If object not declared, recursively call `generateNewObject` */
     const ApiObject* target_obj = nullptr;
     if (gen_func->getClassType() != nullptr)
     {
@@ -1571,7 +1625,23 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
         {
             target_obj = getRandomVectorElem(target_obj_candidates, this->getRNG());
         }
+        if (!target_obj->isDeclared())
+        {
+            this->generateNewObject(target_type, target_obj);
+        }
     }
+
+    /* Retrieve appropriate function arguments; initialise those pointers which
+     * have not been previously declared. */
+    std::vector<const ApiObject*> ctor_args = this->getFuncArgs(gen_func);
+    for (const ApiObject* ctor_arg : ctor_args)
+    {
+        if (!ctor_arg->isDeclared())
+        {
+            this->generateNewObject(ctor_arg->getType(), ctor_arg);
+        }
+    }
+
     if (result_obj != nullptr)
     {
         CHECK_CONDITION(result_obj->hasType(obj_type),
@@ -1583,12 +1653,6 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
         return result_obj;
     }
 
-    //if (obj_type->toStr().find(delim_mid) != std::string::npos)
-    //{
-        //var_name = obj_type->toStr().substr(obj_type->toStr().rfind(delim_mid) + 1);
-    //}
-    //else
-    //{
     std::string var_name = this->getGenericVariableName(obj_type);
     // hack
     while (var_name.find('*') != std::string::npos)
@@ -1855,8 +1919,8 @@ ApiFuzzerNew::getSingletonObject(const ApiType* obj_type)
 {
     std::vector<const ApiObject*> filtered_objs = this->filterAllObjs(
         &ApiObject::hasType, obj_type);
-    CHECK_CONDITION(filtered_objs.size() <= 1,
-        fmt::format("More than one singleton object instances found."));
+    //CHECK_CONDITION(filtered_objs.size() <= 1,
+        //fmt::format("More than one singleton object instances found."));
     if (filtered_objs.size() == 0)
     {
         logDebug(fmt::format(
@@ -2247,9 +2311,9 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
             else
             {
                 const ApiObject* param_obj = this->generateObject(type);
-                if (type->isExplicit() &&
+                if ((type->isExplicit() &&
                         !dynamic_cast<const ExplicitType*>(type)->getGenMethod()
-                            .compare("new"))
+                            .compare("new")) || !param_obj->isDeclared())
                 {
                     this->generateNewObject(type->getUnderlyingType(), param_obj);
                 }
@@ -2318,7 +2382,7 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
     const ApiObject* curr_meta_variant)
 {
     const MetaVarObject* abstract_result_var =
-        dynamic_cast<const MetaVarObject*>(curr_meta_variant);
+        dynamic_cast<const MetaVarObject*>(abstract_rel->getStoreVar());
     const ApiObject* concrete_result_var = nullptr;
     if (abstract_result_var)
     {
@@ -2383,6 +2447,10 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
             concrete_params.push_back(this->concretizeFuncObject(
                 dynamic_cast<const FuncObject*>(param)));
         }
+        else
+        {
+            concrete_params.push_back(param);
+        }
     }
     return new FuncObject(func_obj->getFunc(), func_target,
         concrete_params);
@@ -2390,23 +2458,23 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
 
 
 /**
-* @brief Returns the corresponding ApiObject of a given MetaVarObject
-*
-* Parses the given MetaVarObject and returns the concrete reference to the
-* actual object as part of the symbol table. Handles the following situations:
-* * %m - represents the current metamorphic variant being generated
-* * %mn - where n is a number, represents the nth metamorphic variant
-* * %n - where n is a number, represents the nth metamorphic input
-* * %i - represents a random input, guaranteed to be the same across metamorphic
-* variants at the same call site
-* * other identifiers are permitted after a % symbol, as long as they are
-* declared as generators prior
-* An object might be created when concretizing certain MetaVarObjects
-*
-* @param mv_obj The MetaVarObject to be concretized
-*
-* @return A reference to the corresponding ApiObject
-*/
+ * @brief Returns the corresponding ApiObject of a given MetaVarObject
+ *
+ * Parses the given MetaVarObject and returns the concrete reference to the
+ * actual object as part of the symbol table. Handles the following situations:
+ * * %m - represents the current metamorphic variant being generated
+ * * %mn - where n is a number, represents the nth metamorphic variant
+ * * %n - where n is a number, represents the nth metamorphic input
+ * * %i - represents a random input, guaranteed to be the same across metamorphic
+ * variants at the same call site
+ * * other identifiers are permitted after a % symbol, as long as they are
+ * declared as generators prior
+ * An object might be created when concretizing certain MetaVarObjects
+ *
+ * @param mv_obj The MetaVarObject to be concretized
+ *
+ * @return A reference to the corresponding ApiObject
+ */
 
 const ApiObject*
 ApiFuzzerNew::concretizeMetaVarObject(const MetaVarObject* mv_obj)

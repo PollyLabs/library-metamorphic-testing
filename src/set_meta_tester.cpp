@@ -196,17 +196,43 @@ SetMetaTesterNew::genOneMetaTest(std::queue<std::string> rel_chain,
     return nullptr;
 }
 
+/**
+* @brief Yields the corresponding ApiInstructionInterfaces from a given MetaTest
+*
+* Transforms a given MetaTest object into a sequence of
+* ApiInstructionInterfaces, including a comment to distinguish each generated
+* variant. This is used to transform the variants into printable form.
+*
+* @param meta_test The MetaTest to convert to ApiInstructionInterfaces
+*
+* @return A vector containing corresponding ApiInstructionInterfaces for each
+* metamorphic relation in the given MetaTest
+*/
+
 std::vector<const ApiInstructionInterface*>
 SetMetaTesterNew::testToApiInstrs(const MetaTest* meta_test) const
 {
     std::vector<const ApiInstructionInterface*> api_instrs;
     api_instrs.push_back(new ApiComment(fmt::format(
         "Test for {}", meta_test->getVariantVar()->toStr())));
-    api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
+    //api_instrs.push_back(new ObjectDeclInstruction(meta_test->getVariantVar()));
     std::vector<const ApiInstructionInterface*> test_instrs = meta_test->getApiInstructions();
     api_instrs.insert(api_instrs.end(), test_instrs.begin(), test_instrs.end());
     return api_instrs;
 }
+
+/**
+* @brief Generates specified number of metamorphic variants
+*
+* @details Wrapper function which dispatches calls to generate variants via
+* `genOneMetaTest`, based on a generated sequence of metamorphic families,
+* common across all generated variants. While there is a hard limit imposed on
+* the number of total variants generated, if a variant fails to generate, then
+* the function does not attempt to change anything and retry, instead it simply
+* returns however much it generated.
+*
+* @param rel_cnt The number of variants to generate
+*/
 
 void
 SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)

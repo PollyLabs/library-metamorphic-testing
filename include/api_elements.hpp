@@ -45,6 +45,13 @@ class ApiFunc;
 class MetaRelation;
 class MetaVarObject;
 
+struct ApiFunctionElems {
+    const ApiObject* result;
+    const ApiObject* class_instance;
+    std::vector<const ApiObject*> params;
+};
+
+
 class ApiType {
     const std::string name;
     std::map<std::string, bool> flags;
@@ -146,29 +153,33 @@ class ApiObject {
         const size_t id;
         const std::string name;
         const ApiType* type;
+        const bool initialize;
 
     public:
         mutable bool declared;
 
-        ApiObject(std::string _name, size_t _id, const ApiType* _type) :
-            id(_id), name(_name), type(_type), declared(false) {};
+        ApiObject(std::string _name, size_t _id, const ApiType* _type,
+            bool _initialize = true) :
+            id(_id), name(_name), type(_type), declared(false),
+            initialize(_initialize) {};
         virtual ~ApiObject() = default;
 
-        inline const ApiType* getType() const { return this->type; };
-        inline size_t getID() const { return this->id; };
+        const ApiType* getType() const { return this->type; };
+        size_t getID() const { return this->id; };
 
-        virtual inline void setDeclared() const { this->declared = true; };
+        virtual void setDeclared() const { this->declared = true; };
 
-        inline bool isPrimitive() const { return this->getType()->isPrimitive(); };
-        inline bool notIsPrimitive() const { return !this->getType()->isPrimitive(); };
-        inline bool isDeclared() const { return this->declared; };
-        inline bool hasName(std::string name_check) const {
+        virtual bool isPrimitive() const { return this->getType()->isPrimitive(); };
+        virtual bool notIsPrimitive() const { return !this->getType()->isPrimitive(); };
+        virtual bool isDeclared() const { return this->declared; };
+        virtual bool toInitialize() const { return this->initialize; };
+        bool hasName(std::string name_check) const {
             return !this->name.compare(name_check);
         };
-        inline bool hasType(const ApiType* type_check) const {
+        bool hasType(const ApiType* type_check) const {
             return this->getType()->isType(type_check);
         };
-        inline bool hasID(size_t id_check) const {
+        bool hasID(size_t id_check) const {
             return this->getID() == id_check;
         };
 
@@ -194,7 +205,7 @@ class PrimitiveObject : public ApiObject {
 
         T getData() const { return this->data; };
 
-        inline bool isDeclared() const { return true; };
+        bool isDeclared() const { return true; };
 
         std::string toStr() const;
         std::string toStrWithType() const { assert(false); };
@@ -289,20 +300,10 @@ class ApiFunc {
             return !this->getName().compare(name_check);
         };
         bool hasParamTypes(std::vector<const ApiType*>) const;
-        bool checkFlag(std::string flag) const
-        {
-            bool negative = flag.front() == '!';
-            if (negative)
-            {
-                flag.erase(flag.begin());
-            }
-            assert(flags.count(flag) != 0);
-            return negative ^ this->flags.find(flag)->second;
-        }
+        bool checkFlag(std::string flag) const;
 
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
-        std::string printInvocation(std::vector<const ApiObject*>) const;
 
         inline bool operator<(const ApiFunc& other) const {
             return this->printSignature() < other.printSignature();
@@ -343,27 +344,29 @@ class ApiInstructionInterface
 class ApiInstruction : public ApiInstructionInterface
 {
     const ApiFunc* func;
-    const ApiObject* target_obj;
-    const ApiObject* result_obj;
-    std::vector<const ApiObject*> func_params;
+    const ApiFunctionElems func_elems;
+    bool decl_instr;
 
     public:
-        ApiInstruction(const ApiFunc* _func, const ApiObject* _result = nullptr,
-            const ApiObject* _target = nullptr,
-            std::vector<const ApiObject*> _params =
-            std::vector<const ApiObject*>()) :
-            func(_func), target_obj(_target), result_obj(_result),
-            func_params(_params) {};
+        ApiInstruction(const ApiFunc*, const ApiObject* = nullptr,
+            const ApiObject* = nullptr,
+            std::vector<const ApiObject*> = std::vector<const ApiObject*>(),
+            bool _decl_instr = false);
 
         const ApiFunc* getFunc() const { return this->func; }
-        const ApiObject* getTargetObj() const { return this->target_obj; };
-        const ApiObject* getResultObj() const { return this->result_obj; };
+        const ApiObject* getTargetObj() const { return this->func_elems.class_instance; };
+        const ApiObject* getResultObj() const { return this->func_elems.result; };
+        const bool isDeclInstr() const { return this->decl_instr; };
         std::vector<const ApiObject*> getFuncParams() const
         {
-            return this->func_params;
+            return this->func_elems.params;
         };
 
         std::string toStr() const;
+
+    private:
+        std::string printFuncInvocation(const ApiFunc*,
+            std::vector<const ApiObject*>) const;
 };
 
 class ObjectDeclInstruction : public ApiInstructionInterface
@@ -376,7 +379,21 @@ class ObjectDeclInstruction : public ApiInstructionInterface
             { _obj->setDeclared(); };
 
         const ApiObject* getObject() const { return this->obj; };
-        std::string toStr() const;
+        virtual std::string toStr() const;
+};
+
+class ObjectConstructionInstruction : public ObjectDeclInstruction
+{
+    private:
+        const ApiFunc* ctor;
+        const std::vector<const ApiObject*> params;
+
+    public:
+        ObjectConstructionInstruction(const ApiObject* _obj, const ApiFunc* _ctor,
+            const std::vector<const ApiObject*> _params) :
+            ObjectDeclInstruction(_obj), ctor(_ctor), params(_params) {};
+
+        virtual std::string toStr() const;
 };
 
 class ApiComment : public ApiInstructionInterface

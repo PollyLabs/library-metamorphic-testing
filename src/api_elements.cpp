@@ -373,6 +373,20 @@ ApiFunc::hasParamTypes(std::vector<const ApiType*> param_types_check) const
     return true;
 }
 
+/**
+* @brief Checks whether the given arguments are compatible with the declared
+* function signature
+*
+* Ensures that the given arguments match with those in the function declaration,
+* both in terms of number of provided arguments and in terms of individual types
+* for each argument. Checks that given arguments are not null pointers, which
+* might happend due to issues further above the generation chain.
+*
+* @param args_check A vector containing ApiObjects to be checked against the
+* provided function signature
+*
+* @return `True` is all arguments given are compatible; `False` otherwise
+*/
 bool
 ApiFunc::checkArgs(std::vector<const ApiObject*> args_check) const
 {
@@ -397,6 +411,32 @@ ApiFunc::checkArgs(std::vector<const ApiObject*> args_check) const
     return true;
 }
 
+/**
+* @brief Returns the value for the given flag string
+*
+* Looks inside the `flags` map and returns the appropriate bool value for the
+* corresponding `flag` key. The given parameter can be transformed by the
+* following operators:
+* * '!' - negates the returned value of the flag
+*
+* @param flag A string representing a flag value to be returned
+*
+* @return The corresponding value from the `flags` map
+*/
+bool
+ApiFunc::checkFlag(std::string flag) const
+{
+    bool negative = flag.front() == '!';
+    if (negative)
+    {
+        flag.erase(flag.begin());
+    }
+    CHECK_CONDITION(flags.count(flag) != 0,
+        fmt::format("Could not find flag {} for ApiFunc {}.",
+            flag, this->name));
+    return negative ^ this->flags.find(flag)->second;
+}
+
 std::string
 ApiFunc::printSignature() const
 {
@@ -408,16 +448,6 @@ ApiFunc::printSignature() const
     print_ss << this->getName() << "(";
     print_ss << makeArgString(this->getParamTypes()) << ")";
     return print_ss.str();
-}
-
-std::string
-ApiFunc::printInvocation(std::vector<const ApiObject*> params) const
-{
-    assert(params.size() == this->getParamCount());
-    std::stringstream print_inv_ss;
-    print_inv_ss << this->getName() << "(";
-    print_inv_ss << makeArgString(params) << ")";
-    return print_inv_ss.str();
 }
 
 /*******************************************************************************
@@ -441,7 +471,27 @@ UnaryExpr::toStr() const
 /*******************************************************************************
  * ApiInstruction functions
  ******************************************************************************/
+ApiInstruction::ApiInstruction(const ApiFunc* _func, const ApiObject* _result,
+    const ApiObject* _target, std::vector<const ApiObject*> _params,
+    bool _decl_instr) : func(_func), func_elems{_result, _target, _params}
+{
+    if (func_elems.result)
+    {
+        decl_instr = !func_elems.result->isDeclared();
+        func_elems.result->setDeclared();
+    }
+}
 
+/**
+* @brief Returns the string representation of an ApiInstruction
+*
+* Appropriately transforms each member of an ApiInstruction via `toStr()` calls
+* to each object, and collates them together in a C++ syntax. In essence, the
+* `target` and `result` fields are directly translated into strings, while an
+* invocation of `func` is constructed by applying it to `func_params`.
+*
+* @return A string representation of all internal constructs.
+*/
 std::string
 ApiInstruction::toStr() const
 {
@@ -464,14 +514,13 @@ ApiInstruction::toStr() const
     }
     if (this->getResultObj() != nullptr)
     {
-        if (!this->getResultObj()->isDeclared())
+        if (this->isDeclInstr())
         {
-            instr_ss << result_obj->toStrWithType();
-            result_obj->declared = true;
+            instr_ss << this->getResultObj()->toStrWithType();
         }
         else
         {
-            instr_ss << result_obj->toStr();
+            instr_ss << this->getResultObj()->toStr();
         }
         instr_ss << " = ";
     }
@@ -485,7 +534,7 @@ ApiInstruction::toStr() const
         //instr_ss << this->emitFuncCond(this->getFunc, this->getTargetObj,
             //this->getFuncParams());
     }
-    if (!this->getFunc()->checkFlag("statik") && target_obj != nullptr)
+    if (!this->getFunc()->checkFlag("statik") && this->getTargetObj() != nullptr)
     {
         // TODO consider pointer objects
         std::string invocation_string =
@@ -501,17 +550,50 @@ ApiInstruction::toStr() const
                 this->getFunc()->getName()));
         instr_ss << this->getFunc()->getClassType()->toStr() << "::";
     }
-    instr_ss << this->getFunc()->printInvocation(this->getFuncParams());
-    //if (!this->getFunc()->getConditions().empty())
-    //{
-        //apply_func_ss << " : " << this->generateObject(func->getReturnType())->toStr();
-    //}
+    instr_ss << this->printFuncInvocation(this->getFunc(), this->getFuncParams());
     instr_ss << ";";
     return instr_ss.str();
+}
+
+/**
+* @brief Helper function to print the invocation of a ApiFunc
+*
+* Fully prints an ApiFunc invocation for the given parameters, in the form
+* `name(params...). Appropriate checks are performed by the
+* ApiInstruction::toStr() caller.
+*
+* @param func A pointer to the ApiFunc to be invoked
+* @param params A vector containing the parameter to pass to the function
+* invocation
+*
+* @return A string representing the invocation in plain text.
+*/
+std::string
+ApiInstruction::printFuncInvocation(const ApiFunc* func,
+    std::vector<const ApiObject*> params) const
+{
+    std::stringstream print_inv_ss;
+    print_inv_ss << func->getName() << "(";
+    print_inv_ss << makeArgString(params) << ")";
+    return print_inv_ss.str();
 }
 
 std::string
 ObjectDeclInstruction::toStr() const
 {
     return this->getObject()->toStrWithType() + ";";
+}
+
+std::string
+ObjectConstructionInstruction::toStr() const
+{
+    // TODO move this check somewhere else
+    CHECK_CONDITION(this->ctor->checkArgs(this->params),
+        fmt::format("Invalid arguments given to constructor `{}` for object `{}`.",
+            this->ctor->getName(), this->getObject()->toStr()));
+    std::stringstream obj_ctor_instr_ss;
+    obj_ctor_instr_ss << this->getObject()->toStrWithType();
+    obj_ctor_instr_ss << this->ctor->getName() << "(";
+    obj_ctor_instr_ss << makeArgString(this->params) << ");";
+    return obj_ctor_instr_ss.str();
 }
