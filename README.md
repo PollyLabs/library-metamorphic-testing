@@ -48,3 +48,29 @@ specification files and a compilation script for produced test cases. Finally,
 the path to the new configuration file must be set in `./src/test_emitter.cpp`
 (namely the `config_file_path` variable at the beginning of the file), and the
 project rebuilt.
+
+### Docker initMetaGenerators
+
+Docker images are built automatically from them `master` branch at every push,
+and are stored in the `alascu/metalib` repository on Docker Hub, available
+[here](https://cloud.docker.com/repository/docker/alascu/metalib). Images are
+tagged based on the library which they target.
+
+The latest version of an image with the tag `<tag>` can be downloaded and executed via the following sequence of commands:
+```
+$ docker pull alascu/metalib:<tag>
+$ docker run -ti -aSTDOUT -v=/<local_output_folder>/:/output/ alascu/metalib:<tag>
+```
+In the above, `<local_output_folder>` refers to a folder on the host in which to
+store output from the testing process from the container (**CAUTION:** linking
+host folders with container folders is essentially providing root access to the
+host)
+
+The image can be internally inspected and potentially modified by appending
+`/bin/bash` to the `docker run` command, and after appropriate changes are made,
+the testing process can be executed by invoking from within the container the
+`meta_runner` script. For completion, the invocation encoded in the images is
+(where `<lib>` represents an identifier for the library under test):
+```
+$ python3.7 ./scripts/meta_runner.py continuous --append-id --config-file ./config_files/config_<lib>.yaml
+```
