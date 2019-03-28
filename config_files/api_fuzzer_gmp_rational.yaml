@@ -161,3 +161,6 @@ set_gen:
       func_params: 
         - '<special=output_var=>'
         - '<var=new=mpq_class>'
+    - type: 'func'
+      func: 'canonicalize_w'
+      return: '<special=output_var=>'
