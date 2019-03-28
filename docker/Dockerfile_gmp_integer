@@ -24,5 +24,5 @@ RUN \
 RUN mkdir build && cd build && cmake .. && make
 
 # Set command to run experiments
-CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_gmp.yaml", "continuous", "--append-id"]
+CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_gmp_integer.yaml", "continuous", "--append-id"]
 

@@ -5,8 +5,10 @@ includes:
 pre_setup:
 
 inputs:
+    - name: 'size'
+      descriptor: '<unsigned int=range=[10,20]>'
     - name: 'depth_max'
-      descriptor: '<unsigned int=val=40>'
+      descriptor: '<unsigned int=val=20>'
 
 # START HERE
 
@@ -145,8 +147,17 @@ constructors:
 # END HERE
 
 set_gen:
-    - type: 'func'
-      func: 'operator+'
-    - type: 'func'
-      func: 'canonicalize_w'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'operator*'
       return: '<special=output_var=>'
+      func_params: 
+        - '<special=output_var=>'
+        - '<var=new=mpq_class>'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'operator+'
+      return: '<special=output_var=>'
+      func_params: 
+        - '<special=output_var=>'
+        - '<var=new=mpq_class>'
