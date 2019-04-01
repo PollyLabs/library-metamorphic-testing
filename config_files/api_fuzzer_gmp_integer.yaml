@@ -7,8 +7,10 @@ pre_setup:
 inputs:
     - name: 'var2'
       descriptor: '<unsigned int=range=[1,10000]>'
+    - name: 'size'
+      descriptor: '<unsigned int=range=[10,20]>'
     - name: 'depth_max'
-      descriptor: '<unsigned int=val=10>'
+      descriptor: '<unsigned int=val=15>'
 
 types:
     - name: 'mpz_class'
@@ -95,6 +97,18 @@ constructors:
       param_types: ['<int=random=[0,1000]>']
 
 set_gen:
-    - type: 'func'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'operator*'
+      return: '<special=output_var=>'
+      func_params: 
+        - '<special=output_var=>'
+        - '<var=new=mpz_class>'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
       func: 'operator+'
       return: '<special=output_var=>'
+      func_params: 
+        - '<special=output_var=>'
+        - '<var=new=mpz_class>'
+
