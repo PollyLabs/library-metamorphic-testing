@@ -17,7 +17,6 @@
 #include "api_elements.hpp"
 #include "set_meta_tester.hpp"
 
-#include "isl-noexceptions.h"
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 

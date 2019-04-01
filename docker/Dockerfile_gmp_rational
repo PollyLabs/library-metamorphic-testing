@@ -18,12 +18,11 @@ RUN \
     sed -i 's|lib_path:.*|lib_path: "/home/gmp/.libs/"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/gmp/"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_gmp.sh"|' ./config_files/config_gmp_rational.yaml && \
-    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_gmp_rational.yaml
-#    sed -i 's|api_fuzzer_<name>|api_fuzzer_gmp|' ./config_files/config_gmp.yaml && \
-#    sed -i 's|meta_tests_<lib>|meta_tests_gmp|' ./config_files/config_gmp.yaml && \
+    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_gmp_rational.yaml && \
+    ln -s `pwd`/scripts/compile/compile_gmp.sh ./out/compile_gmp.sh
 
 # Build project
-RUN mkdir build && cd build && cmake .. && make
+RUN mkdir build && cd build && cmake .. && make -j4
 
 # Set command to run experiments
 CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_gmp_rational.yaml", "continuous", "--append-id"]
