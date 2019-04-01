@@ -56,9 +56,10 @@ def print_debug(message, debug):
         print("*** {} - {}".format(message, datetime.datetime.now().strftime("%H:%M:%S")))
 
 def set_path_env_var(env_var, value):
-    if not os.path.exists(value):
-        print("Could not find given path {} for env var {}.".format(value, env_var))
-        exit(1)
+    for path_value in value.split(':'):
+        if not os.path.exists(path_value):
+            print("Could not find given path {} for env var {}.".format(path_value, env_var))
+            exit(1)
     os.environ[env_var] = value
 
 def generate_test(seed, test_id, runtime_data, log_data, par_data):
