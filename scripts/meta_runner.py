@@ -438,6 +438,7 @@ if __name__ == '__main__':
     if args.lib_path:
         lib_path = args.lib_path
     set_path_env_var("LD_LIBRARY_PATH", lib_path)
+    set_path_env_var("LIBRARY_PATH", lib_path)
     if args.include_path:
         include_path = args.include_path
     set_path_env_var("CPATH", include_path)
