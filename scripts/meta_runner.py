@@ -34,6 +34,8 @@ parser.add_argument("--config-file", type=str,
     help = "Overwrite default config file to use.")
 parser.add_argument("--lib-path", type=str,
     help = "Overwrite library path specified in config file")
+parser.add_argument("--include-path", type=str,
+    help = "Overwrite include path specified in config file")
 parser.add_argument("--timeout", type=int,
     help = "The amount of time (in seconds) to run each test before giving up.")
 parser.add_argument("--append-id", action='store_true',
@@ -52,6 +54,12 @@ parser.add_argument("--max-par-proc", type=int, default=1,
 def print_debug(message, debug):
     if debug:
         print("*** {} - {}".format(message, datetime.datetime.now().strftime("%H:%M:%S")))
+
+def set_path_env_var(env_var, value):
+    if not os.path.exists(value):
+        print("Could not find given path {} for env var {}.".format(value, env_var))
+        exit(1)
+    os.environ[env_var] = value
 
 def generate_test(seed, test_id, runtime_data, log_data, par_data):
     print_debug("generate_test START", runtime_data["debug"])
@@ -370,6 +378,7 @@ if __name__ == '__main__':
 # Path setup
     test_emitter_path = runner_config_data["test_emitter_path"]
     lib_path = runner_config_data["lib_path"]
+    include_path = runner_config_data["include_path"]
     lib_build_dir = runner_config_data["lib_build_dir"]
     if (runner_config_data["lib_coverage_dir"]):
         lib_coverage_dir = runner_config_data["lib_coverage_dir"]
@@ -427,10 +436,10 @@ if __name__ == '__main__':
 
     if args.lib_path:
         lib_path = args.lib_path
-    if not os.path.exists(lib_path):
-        print("Could not find given lib path " + lib_path)
-        exit(1)
-    os.environ["LD_LIBRARY_PATH"] = lib_path
+    set_path_env_var("LD_LIBRARY_PATH", lib_path)
+    if args.include_path:
+        include_path = args.include_path
+    set_path_env_var("CPATH", include_path)
 
     dim_set_regex = re.compile("^DIM SET = [0-9]+$", re.M)
     dim_param_regex = re.compile("^DIM PARAM = [0-9]+$", re.M)

@@ -16,6 +16,7 @@ RUN \
         > ./config_files/config_gmp_rational.yaml && \
     sed -i 's|<lib>|gmp_rational|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/gmp/.libs/"|' ./config_files/config_gmp_rational.yaml && \
+    sed -i 's|include_path:.*|include_path: "/home/gmp/"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/gmp/"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_gmp.sh"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_gmp_rational.yaml && \

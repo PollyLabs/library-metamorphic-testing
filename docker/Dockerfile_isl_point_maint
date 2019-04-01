@@ -17,6 +17,7 @@ RUN \
         > ./config_files/config_isl.yaml && \
     sed -i 's|<lib>|isl_point|' ./config_files/config_isl.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl.yaml && \
+    sed -i 's|include_path:.*|include_path: "/home/isl/include/"|' ./config_files/config_isl.yaml && \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/isl"|' ./config_files/config_isl.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_isl.sh"|' ./config_files/config_isl.yaml && \
     sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_isl.yaml && \

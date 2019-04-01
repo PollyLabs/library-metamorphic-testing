@@ -6,7 +6,8 @@ test_emitter_output_file: "./out/test.cpp"
 meta_runner:
 # Path setup
     test_emitter_path: "./build/test_emitter"
-    lib_path: "./libs"
+    lib_path: "./libs_local"
+    include_path: "./include_local"
     lib_build_dir: ~
     lib_coverage_dir: ~
     test_compile_dir: "./out"
