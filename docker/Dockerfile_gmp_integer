@@ -13,16 +13,17 @@ RUN mkdir /output && ln -s /output ./output
 # Copy config file template over and update paths
 RUN \
     sed 's|<work_dir>|'`pwd`'\/|' < ./config_files/config.yaml.template \
-        > ./config_files/config_gmp.yaml && \
-    sed -i 's|<lib>|gmp_integer|' ./config_files/config_gmp.yaml && \
-    sed -i 's|lib_path:.*|lib_path: "/home/gmp/.libs/"|' ./config_files/config_gmp.yaml && \
-    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/gmp/"|' ./config_files/config_gmp.yaml && \
-    sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_gmp.sh"|' ./config_files/config_gmp.yaml && \
-    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_gmp.yaml
+        > ./config_files/config_gmp_integer.yaml && \
+    sed -i 's|<lib>|gmp_integer|' ./config_files/config_gmp_integer.yaml && \
+    sed -i 's|lib_path:.*|lib_path: "/home/gmp/.libs/"|' ./config_files/config_gmp_integer.yaml && \
+    sed -i 's|include_path:.*|include_path: "/home/gmp/"|' ./config_files/config_gmp_integer.yaml && \
+    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/gmp/"|' ./config_files/config_gmp_integer.yaml && \
+    sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_gmp.sh"|' ./config_files/config_gmp_integer.yaml && \
+    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_gmp_integer.yaml && \
+    ln -s `pwd`/scripts/compile/compile_gmp.sh ./out/compile_gmp.sh
 
 # Build project
-RUN mkdir build && cd build && cmake .. && make
+RUN mkdir build && cd build && cmake .. && make -j4
 
 # Set command to run experiments
-CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_gmp.yaml", "continuous", "--append-id"]
-
+CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_gmp_integer.yaml", "continuous", "--append-id"]

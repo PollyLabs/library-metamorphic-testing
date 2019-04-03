@@ -18,18 +18,17 @@ RUN \
     sed -i 's|<lib>|z3|' ./config_files/config_z3.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_z3.sh"|' ./config_files/config_z3.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/z3/build/"|' ./config_files/config_z3.yaml && \
+    sed -i 's|include_path:.*|include_path: "/home/z3/src/api/c++:/home/z3/src/api/"|' \
+        ./config_files/config_z3.yaml && \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/z3/"|' ./config_files/config_z3.yaml && \
-    sed -i 's|default_timeout:.*|default_timeout: 60|' ./config_files/config_z3.yaml
+    sed -i 's|default_timeout:.*|default_timeout: 60|' ./config_files/config_z3.yaml && \
+    ln -s `pwd`/scripts/compile/compile_z3.sh ./out/compile_z3.sh
 
 RUN \
-    sed -i 's|-L../libs|-L/home/z3/build|' ./out/compile_z3.sh
-
-# Update config file path in test_emitter
-RUN \
-    sed -i "/^const std::string config_file_path/{n;s|.*|\t\"`pwd`/config_files/config_z3.yaml\";|}" ./src/test_emitter.cpp
+    sed -i 's|-L../libs_local|-L/home/z3/build|' ./out/compile_z3.sh
 
 # Build project
-RUN mkdir build && cd build && cmake .. && make -j
+RUN mkdir build && cd build && cmake .. && make -j4
 
 # Set command to run experiments
 CMD ["python3.7", "./scripts/meta_runner.py", "continuous", "--append-id",\

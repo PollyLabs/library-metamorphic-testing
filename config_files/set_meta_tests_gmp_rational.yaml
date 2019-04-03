@@ -1,6 +1,7 @@
 ---
 input_count: 3
 meta_var_type: "mpq_class"
+meta_test_count: 5
 variant_count: 20
 meta_check:
     - "assert(operator==(%m0,%m))"
