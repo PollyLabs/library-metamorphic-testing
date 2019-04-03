@@ -123,7 +123,8 @@ SetMetaTesterNew::addMetaTest(MetaTest* test)
 
 const MetaRelation*
 SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
-    const ApiObject* meta_variant_var, std::vector<const ApiObject*> input_vars)
+    const ApiObject* meta_variant_var, std::vector<const ApiObject*> input_vars,
+    bool first)
     const
 {
     std::vector<const MetaRelation*> concrete_relation_candidates;
@@ -139,7 +140,7 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
         fmt::format("No concrete candidates for relation `{}` found", rel_type));
     const MetaRelation* concrete_relation = concrete_relation_candidates.at(
         getRandInt(this->rng, 0, concrete_relation_candidates.size() - 1));
-    return this->fuzzer->concretizeRelation(concrete_relation, meta_variant_var);
+    return this->fuzzer->concretizeRelation(concrete_relation, meta_variant_var, first);
     //const MetaRelation* concretized_relation =
         //concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
             //input_vars);
@@ -175,12 +176,13 @@ SetMetaTesterNew::genOneMetaTest(std::queue<std::string> rel_chain,
         //std::unique_ptr<MetaTest*> new_test = std::unique_ptr<MetaTest*>(new MetaTest());
         std::queue<std::string> rel_chain_copy(rel_chain);
         std::vector<const ApiObject*> input_vars(this->meta_in_vars);
+        bool first = true;
         while (!rel_chain_copy.empty())
         {
             const MetaRelation* concrete_meta_rel = this->getConcreteMetaRel(
-                rel_chain_copy.front(), meta_variant_var, input_vars);
+                rel_chain_copy.front(), meta_variant_var, input_vars, first);
+            first = false;
             new_test->addRelation(concrete_meta_rel);
-            input_vars.at(0) = meta_variant_var;
             rel_chain_copy.pop();
         }
         this->finalizeTest(new_test);

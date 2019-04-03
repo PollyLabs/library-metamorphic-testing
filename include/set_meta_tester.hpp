@@ -98,7 +98,7 @@ class SetMetaTesterNew {
         const MetaTest* genOneMetaTest(std::queue<std::string>, const ApiObject*);
         bool addMetaTest(MetaTest* expr);
         const MetaRelation* getConcreteMetaRel(std::string, const ApiObject*,
-            std::vector<const ApiObject*>) const;
+            std::vector<const ApiObject*>, bool) const;
         std::vector<const ApiInstructionInterface*> testToApiInstrs(
             const MetaTest*) const;
         void finalizeTest(MetaTest*) const;

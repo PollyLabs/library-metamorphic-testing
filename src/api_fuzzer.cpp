@@ -23,7 +23,7 @@ CHECK_YAML_FIELD(YAML::Node node, std::string field_name)
 
 template<typename T>
 T
-getRandomVectorElem(std::vector<T>& vector_in, std::mt19937* rng)
+getRandomVectorElem(const std::vector<T>& vector_in, std::mt19937* rng)
 {
     unsigned int rand_val = (*rng)();
     logDebug(fmt::format("RAND GEN {}", rand_val));
@@ -34,7 +34,7 @@ getRandomVectorElem(std::vector<T>& vector_in, std::mt19937* rng)
 
 template<typename T>
 T
-getRandomSetElem(std::set<T>& set_in, std::mt19937* rng)
+getRandomSetElem(const std::set<T>& set_in, std::mt19937* rng)
 {
     typename std::set<T>::iterator it = set_in.begin();
     unsigned int rand_val = (*rng)();
@@ -292,9 +292,9 @@ ApiFuzzer::getMetaVariant(size_t id) const
             return meta_var;
         }
     }
-    std::cout << "Failed retrieving meta variant variable with id " << id;
-    std::cout  << std::endl;
-    assert(false);
+    CHECK_CONDITION(false,
+        fmt::format("Did not find metamorphic input with id {}.", id));
+    return nullptr; /* Should not get here */
 }
 
 MetaVarObject*
@@ -309,8 +309,9 @@ ApiFuzzer::getMetaVar(std::string id_check) const
             return *it;
         }
     }
-    std::cout << "Could not find MetaVar of type " << id_check << std::endl;
-    assert(false);
+    CHECK_CONDITION(false,
+        fmt::format("Unable to find MetaVar with id {}.", id_check));
+    return nullptr; /* Should not get here */
 }
 
 const ApiType*
@@ -2362,6 +2363,125 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
 }
 
 /**
+* @brief Returns a corresponding FuncObject for a given generator MetaVarObject
+*
+* For the given `mv_obj`, which must be a generator type (i.e. have a list of
+* `meta_relations`), randomly select one such relation and return its base
+* FuncObject, which is a template to be further concretized.
+*
+* @param mv_obj A generator MetaVarObject to unroll into a given expression as
+* defined in the metamorphic specification
+*
+* @return A random, unconcretized FuncObject, representing the generated type of
+* the given `mv_obj`
+*/
+const FuncObject*
+ApiFuzzerNew::concretizeGenerators(const MetaVarObject* mv_obj)
+{
+    CHECK_CONDITION(mv_obj->isGenerator(),
+        fmt::format("Asked to concretize non-generator metamorphic "\
+                    " comprehension {}.", mv_obj->identifier));
+    return this->concretizeGenerators(
+        getRandomVectorElem(mv_obj->meta_relations, this->getRNG())->getBaseFunc());
+}
+
+/**
+* @brief Unrolls all instances of generator metamorphic comprehensions
+*
+* Iterates through all possible ApiObject references for `func_obj` (i.e. target
+* object and all parameters), and unrolls any generator MetaVarObjs into
+* corresponding FuncObjs. Is called recursively on any FuncObj references in the
+* given func_obj.
+*
+* @param func_obj Base FuncObj for which to unroll generator comprehensions
+*
+* @return A new FuncObj instance with all generator comprehensions replaced by
+* concrete ApiObject references
+*/
+const FuncObject*
+ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj)
+{
+    const ApiObject* target_obj = func_obj->getTarget();
+    if (func_obj->getTarget())
+    {
+        const MetaVarObject* mv_target_obj = dynamic_cast<const MetaVarObject*>(target_obj);
+        if (mv_target_obj && mv_target_obj->isGenerator())
+        {
+            target_obj =
+                this->concretizeGenerators(mv_target_obj);
+        }
+    }
+    std::vector<const ApiObject*> gen_concrete_params;
+    for (const ApiObject* param : func_obj->getParams())
+    {
+        const FuncObject* func_obj_param = dynamic_cast<const FuncObject*>(param);
+        const MetaVarObject* mv_obj_param = dynamic_cast<const MetaVarObject*>(param);
+        if (func_obj_param)
+        {
+            gen_concrete_params.push_back(this->concretizeGenerators(func_obj_param));
+        }
+        else if (mv_obj_param && mv_obj_param->isGenerator())
+        {
+            gen_concrete_params.push_back(this->concretizeGenerators(mv_obj_param));
+        }
+        else
+        {
+            gen_concrete_params.push_back(param);
+        }
+    }
+    return new FuncObject(func_obj->getFunc(), target_obj, gen_concrete_params);
+}
+
+/**
+* @brief Creates a map which describes how to replace the abstract MetaVarObjs
+* for a given relation
+*
+* @param mvo_list
+*
+* @return
+*/
+std::map<const MetaVarObject*, const ApiObject*>
+ApiFuzzerNew::makeConcretizationMap(std::vector<const ApiObject*> obj_list)
+{
+    std::map<const MetaVarObject*, const ApiObject*> concrete_map;
+    for (const ApiObject* obj : obj_list)
+    {
+        const MetaVarObject* mv_obj = dynamic_cast<const MetaVarObject*>(obj);
+        if (!mv_obj)
+        {
+            continue;
+        }
+        const ApiObject* value = nullptr;
+        CHECK_CONDITION(mv_obj->meta_relations.empty(),
+            fmt::format("Found unrolled generator comprehension {}.", 
+                mv_obj->getIdentifier()));
+        if (!mv_obj->getIdentifier().compare("<m_curr>"))
+        {
+            value = this->smt->getCurrentMetaVar();
+        }
+        else if (mv_obj->getIdentifier().front() == 'm')
+        {
+            assert(std::isdigit(mv_obj->getIdentifier()[1]));
+            size_t meta_variant_id = stoi(mv_obj->getIdentifier().substr(1));
+            value = this->getMetaVariant(meta_variant_id);
+        }
+        else if (std::isdigit(mv_obj->getIdentifier().front()))
+        {
+            size_t input_id = stoi(mv_obj->getIdentifier()) - 1;
+            CHECK_CONDITION(input_id < this->meta_in_vars.size(),
+                fmt::format("Expected input var id `{}`, but have only `{}`.",
+                input_id, this->meta_in_vars.size()));
+            value = this->meta_in_vars.at(input_id);
+        }
+        CHECK_CONDITION(value,
+            fmt::format("Unable to resolve comprehension {}.",
+                mv_obj->getIdentifier()));
+        concrete_map.emplace(std::make_pair(mv_obj, value));
+    }
+    return concrete_map;
+}
+
+/**
  * @brief Creates a concrete application of a MetaRelation
  *
  * Takes a pointer to an abstract MetaRelation object (including
@@ -2379,7 +2499,7 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
 
 const MetaRelation*
 ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
-    const ApiObject* curr_meta_variant)
+    const ApiObject* curr_meta_variant, bool first)
 {
     const MetaVarObject* abstract_result_var =
         dynamic_cast<const MetaVarObject*>(abstract_rel->getStoreVar());
@@ -2390,11 +2510,17 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
             abstract_result_var->getConcreteVar(
                 curr_meta_variant, this->meta_variants, this->meta_in_vars);
     }
+    const FuncObject* unrolled_func_obj =
+        this->concretizeGenerators(abstract_rel->getBaseFunc());
+    std::map<const MetaVarObject*, const ApiObject*> concretize_map
+        = this->makeConcretizationMap(unrolled_func_obj->getAllObjs());
+    // HACK should perform the initialization check better
+    if (!first)
+    {
+        concretize_map.at(this->getMetaVar("1")) = curr_meta_variant;
+    }
     const FuncObject* concrete_func_obj =
-        this->concretizeFuncObject(abstract_rel->getBaseFunc());
-    //const FuncObject* concrete_func_obj =
-        //abstract_rel->getBaseFunc()->concretizeVars(
-            //curr_meta_variant, this->meta_variants, this->meta_in_vars);
+        this->concretizeFuncObject(unrolled_func_obj, concretize_map);
     return new MetaRelation(abstract_rel->getAbstractRelation(),
         concrete_func_obj, concrete_result_var);
 }
@@ -2411,7 +2537,8 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
  */
 
 const FuncObject*
-ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
+ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj,
+    std::map<const MetaVarObject*, const ApiObject*> concretize_map)
 {
     /* Concretize class instance, if member function */
     const ApiObject* func_target = func_obj->getTarget();
@@ -2419,13 +2546,12 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
     {
         if (dynamic_cast<const MetaVarObject*>(func_target))
         {
-            func_target = this->concretizeMetaVarObject(
-                dynamic_cast<const MetaVarObject*>(func_target));
+            func_target = concretize_map.at(dynamic_cast<const MetaVarObject*>(func_target));
         }
         else if (dynamic_cast<const FuncObject*>(func_target))
         {
             func_target = this->concretizeFuncObject(
-                dynamic_cast<const FuncObject*>(func_target));
+                dynamic_cast<const FuncObject*>(func_target), concretize_map);
         }
         else
         {
@@ -2439,13 +2565,13 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
     {
         if (dynamic_cast<const MetaVarObject*>(param))
         {
-            concrete_params.push_back(this->concretizeMetaVarObject(
-                dynamic_cast<const MetaVarObject*>(param)));
+            concrete_params.push_back(
+                concretize_map.at(dynamic_cast<const MetaVarObject*>(param)));
         }
         else if (dynamic_cast<const FuncObject*>(param))
         {
             concrete_params.push_back(this->concretizeFuncObject(
-                dynamic_cast<const FuncObject*>(param)));
+                dynamic_cast<const FuncObject*>(param), concretize_map));
         }
         else
         {
@@ -2476,39 +2602,39 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj)
  * @return A reference to the corresponding ApiObject
  */
 
-const ApiObject*
-ApiFuzzerNew::concretizeMetaVarObject(const MetaVarObject* mv_obj)
-{
-    if (mv_obj->meta_relations.empty())
-    {
-        if (!mv_obj->getIdentifier().compare("<m_curr>"))
-        {
-            return this->smt->getCurrentMetaVar();
-        }
-        else if (mv_obj->getIdentifier().front() == 'm')
-        {
-            assert(std::isdigit(mv_obj->getIdentifier()[1]));
-            size_t meta_variant_id = stoi(mv_obj->getIdentifier().substr(1));
-            for (const ApiObject* mv : meta_variants)
-            {
-                if (mv->getID() == meta_variant_id)
-                {
-                    return mv;
-                }
-            }
-            assert(false);
-        }
-        else if (std::isdigit(mv_obj->getIdentifier().front()))
-        {
-            size_t input_id = stoi(mv_obj->getIdentifier()) - 1;
-            CHECK_CONDITION(input_id < this->meta_in_vars.size(),
-                fmt::format("Expected input var id `{}`, but have only `{}`.",
-                input_id, this->meta_in_vars.size()));
-            return this->meta_in_vars.at(input_id);
-        }
-        assert(false);
-    }
-    return this->concretizeFuncObject(mv_obj->meta_relations.at(
-        (*this->rng)() % mv_obj->meta_relations.size())->getBaseFunc());
-}
+//const ApiObject*
+//ApiFuzzerNew::concretizeMetaVarObject(const MetaVarObject* mv_obj)
+//{
+    //if (mv_obj->meta_relations.empty())
+    //{
+        //if (!mv_obj->getIdentifier().compare("<m_curr>"))
+        //{
+            //return this->smt->getCurrentMetaVar();
+        //}
+        //else if (mv_obj->getIdentifier().front() == 'm')
+        //{
+            //assert(std::isdigit(mv_obj->getIdentifier()[1]));
+            //size_t meta_variant_id = stoi(mv_obj->getIdentifier().substr(1));
+            //for (const ApiObject* mv : meta_variants)
+            //{
+                //if (mv->getID() == meta_variant_id)
+                //{
+                    //return mv;
+                //}
+            //}
+            //assert(false);
+        //}
+        //else if (std::isdigit(mv_obj->getIdentifier().front()))
+        //{
+            //size_t input_id = stoi(mv_obj->getIdentifier()) - 1;
+            //CHECK_CONDITION(input_id < this->meta_in_vars.size(),
+                //fmt::format("Expected input var id `{}`, but have only `{}`.",
+                //input_id, this->meta_in_vars.size()));
+            //return this->meta_in_vars.at(input_id);
+        //}
+        //assert(false);
+    //}
+    //return this->concretizeFuncObject(mv_obj->meta_relations.at(
+        //(*this->rng)() % mv_obj->meta_relations.size())->getBaseFunc());
+//}
 

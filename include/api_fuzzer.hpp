@@ -24,8 +24,8 @@
 extern char delim_front, delim_back, delim_mid;
 
 void CHECK_YAML_FIELD(std::string);
-template<typename T> T getRandomVectorElem(std::vector<T>&, std::mt19937*);
-template<typename T> T getRandomSetElem(std::set<T>&, std::mt19937*);
+template<typename T> T getRandomVectorElem(const std::vector<T>&, std::mt19937*);
+template<typename T> T getRandomSetElem(const std::set<T>&, std::mt19937*);
 std::vector<const ApiObject*> filterObjList
     (std::vector<const ApiObject*>, bool (ApiObject::*)() const);
 template<typename T> std::vector<const ApiObject*> filterObjList
@@ -152,7 +152,7 @@ class ApiFuzzerNew : public ApiFuzzer {
         ~ApiFuzzerNew();
 
         const MetaRelation* concretizeRelation(const MetaRelation*,
-            const ApiObject*);
+            const ApiObject*, bool);
 
     private:
         void initPrimitiveTypes();
@@ -203,7 +203,12 @@ class ApiFuzzerNew : public ApiFuzzer {
         std::string getGeneratorData(std::string) const;
         std::string makeLinearExpr(std::vector<const ApiObject*>);
 
-        const FuncObject* concretizeFuncObject(const FuncObject*);
+        const FuncObject* concretizeGenerators(const MetaVarObject*);
+        const FuncObject* concretizeGenerators(const FuncObject*);
+        std::map<const MetaVarObject*, const ApiObject*>
+            makeConcretizationMap(std::vector<const ApiObject*>);
+        const FuncObject* concretizeFuncObject(const FuncObject*,
+            std::map<const MetaVarObject*, const ApiObject*>);
         const ApiObject* concretizeMetaVarObject(const MetaVarObject*);
 
 };

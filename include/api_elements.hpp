@@ -166,6 +166,8 @@ class ApiObject {
 
         const ApiType* getType() const { return this->type; };
         size_t getID() const { return this->id; };
+        virtual std::vector<const ApiObject*> getAllObjs(void) const
+            { return std::vector<const ApiObject*>({this}); };
 
         virtual void setDeclared() const { this->declared = true; };
 
@@ -245,6 +247,7 @@ class FuncObject : public ApiObject {
         const ApiFunc* getFunc() const { return this->func; };
         std::vector<const ApiObject*> getParams() const { return this->params; };
         const ApiObject* getTarget() const { return this->target; };
+        std::vector<const ApiObject*> getAllObjs(void) const;
 
         std::string toStr() const;
         std::string toStrWithType() const { assert(false); };
@@ -454,6 +457,7 @@ class MetaVarObject : public ApiObject {
             const std::vector<const ApiObject*>&) const;
 
         std::string getIdentifier() const { return this->identifier; };
+        bool isGenerator() const { return !this->meta_relations.empty(); };
         std::string toStr() const { assert(false); };
         std::string toStrWithType() const { assert(false); };
 };

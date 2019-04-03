@@ -238,6 +238,35 @@ FuncObject::concretizeVars(const ApiObject* curr_meta_variant,
     return new FuncObject(this->func, concrete_target, concrete_params);
 }
 
+/**
+* @brief Returns all ApiObject references from current FuncObject
+*
+* Iterates over all object fields of current FuncObject and gathers valid
+* ApiObject pointers; if any such field points to another FuncObject,
+* recursively calls `getAllObjs` over the respective pointers.
+*
+* @return A vector containing all ApiObject pointers of this and any children
+* FuncObjects
+*/
+
+std::vector<const ApiObject*>
+FuncObject::getAllObjs(void) const
+{
+    std::vector<const ApiObject*> all_objs;
+    if (this->target)
+    {
+        std::vector<const ApiObject*> target_objs = target->getAllObjs();
+        all_objs.insert(all_objs.end(), target_objs.begin(), target_objs.end());
+    }
+    std::for_each(this->params.begin(), this->params.end(),
+        [&all_objs](const ApiObject* param)
+        {
+            std::vector<const ApiObject*> param_objs = param->getAllObjs();
+            all_objs.insert(all_objs.end(), param_objs.begin(), param_objs.end());
+        });
+    return all_objs;
+}
+
 std::string
 FuncObject::toStr() const
 {
