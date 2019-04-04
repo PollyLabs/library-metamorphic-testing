@@ -91,10 +91,11 @@ such:
   - `value` - [**OPTIONAL**] value to initialize the variable with (generally used
     for objects of primitive type)
 * `inputs` - a list of variables given as input to the fuzzer, controlling the
-  generation process  
+  generation process
   - `name` - name of the input variable
   - `descriptor` - a comprehension describing how to initialize the variable
-* `types` - a list of types from the library under test (__Note__ the tool has knowledge of primitive types, such as _int_ or _bool_)
+* `types` - a list of types from the library under test (__Note__ the tool has
+  knowledge of primitive types, such as _int_ or _bool_)
   - `name` - type name as defined in the library under test
   - `singleton` - [**OPTIONAL**, defaults to `false`] boolean field which defines
     whether a given type is a singleton; a singleton type will have only a
@@ -135,14 +136,26 @@ such:
   singleton objects, or specially referenced objects
  - `type` - specifies how to interpret further fields; available values are:
    - `func` - a single function invocation should be generated
-   - `for` - a sequence of functions should be generated, similar to an unrolled `for` loop; this value provides access to a special `loop_counter` comprehension variable, and requires the `counter` field be given
+   - `for` - a sequence of functions should be generated, similar to an
+     unrolled `for` loop; this value provides access to a special
+     `loop_counter` comprehension variable, and requires the `counter` field be
+     given
    - `decl` - a variable declaration, with no initialization, should be generated
-   - `seq` - a random sequence of function calls, with no particular special control information, should be generated
-  - `func`
-  - `target`
-  - `return`
-  - `params`
-  - `counter`
+   - `seq` - a random sequence of function calls, with no particular special
+     control information, should be generated
+  - `func` - the name of the function to be invoked
+  - `target` - [**OPTIONAL**] if the function is a member function, a comprehension
+    indicating which object the function should be called on
+  - `return` - [**OPTIONAL**] a comprehension indicating in which object the result
+    of the function invocation should be stored
+  - `params` - [**OPTIONAL**] a list of comprehensions which indicate which objects
+    to pass as parameters to the function invocation; not all parameters must
+    be a comprehension, and if a compatible type is passed, then a random
+    object of that type will be passed as parameter
+  - `counter` - only available for use with a `for` type, expects a range-type
+    field with integer boundaries (i.e. `[min,max]`); iterates over the range
+    with a step of 1, and emits a corresponding function invocation for each
+    step
 
 Comprehensions are pieces of special syntax in the specification files which can
 be used to control the random choices made throughout the generation process.
@@ -165,22 +178,33 @@ field, and is essentially an argument to the latter.
 
 The following comprehensions are provided, split by `method`, then by `type`:
 
-* `var`
-  - `name`
-  - `type`
-  - `new`
-  - `id`
-  - `input`
-* `meta`
+* `var` - the result should be a variable
+  - `name` - retrieve the variable with the name as in the `descriptor`
+  - `type` - retrieve a variable of the type as given in the `descriptor`
+  - `new` - build a new variable of the type given in the `descriptor` and
+    use that new reference
+  - `id` - retrieve a variable by the internal id as given in the `descriptor`
+  - `input` - retrieve the value of the input variable with the name given in
+    the `descriptor`
+* `meta` - **WIP**
   - `input`
   - `var`
-* `special`
-  - `output_var`
-  - `var_name`
-* primitive comprehensions have the type of the returned primitive value, such as `int` or `string`
-  - `val`
-  - `len`
-  - `random`
+* `special` - comprehensions which refer to special, potentially scope-limited
+  objects or values
+  - `output_var` - return a reference to the currently generated metamorphic input
+  - `loop_counter` - only available in the `set_gen` dictionary and under a
+    `for` type entry, returns the current value of the counter, which is of
+    primitive type `unsigned int`
+  - `var_name` - return a primitive type `string` value representing a variable
+    name, which is guaranteed to be a unique string value; the form is
+    `var_id`, where `id` is a unique numerical identifier
+* primitive comprehensions have the type of the returned primitive value, such
+  as `int` or `string`; the result will be a value of the respective primitive
+  type, not a variable containing the result
+  - `val` - return a value of the requested type with the value as given in the
+    descriptor
+  - `len` - return a value with length as given in the descriptor
+  - `random` - return a completely random value of the requested type
 
 ### `meta_tests.yaml`
 
