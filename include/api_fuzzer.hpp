@@ -209,7 +209,6 @@ class ApiFuzzerNew : public ApiFuzzer {
         const FuncObject* concretizeFuncObject(const FuncObject*,
             std::map<const MetaVarObject*, const ApiObject*>);
         const ApiObject* concretizeMetaVarObject(const MetaVarObject*);
-
 };
 
 #endif

@@ -458,6 +458,8 @@ class MetaVarObject : public ApiObject {
 
         std::string getIdentifier() const { return this->identifier; };
         bool isGenerator() const { return !this->meta_relations.empty(); };
+        bool isInput() const;
+
         std::string toStr() const { assert(false); };
         std::string toStrWithType() const { assert(false); };
 };

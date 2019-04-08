@@ -286,6 +286,14 @@ FuncObject::toStr() const
     return fmt::format("{}({})", this->name, getStringWithDelims(param_names, ','));
 }
 
+bool
+MetaVarObject::isInput(void) const
+{
+    size_t pos;
+    std::stoul(this->getIdentifier(), &pos);
+    return pos == this->getIdentifier().size();
+}
+
 const ApiObject*
 MetaVarObject::getConcreteVar(const ApiObject* curr_meta_variant,
     const std::vector<const ApiObject*>& meta_variants,

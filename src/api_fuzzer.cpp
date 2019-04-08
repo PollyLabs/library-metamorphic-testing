@@ -2436,9 +2436,16 @@ ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj)
 * @brief Creates a map which describes how to replace the abstract MetaVarObjs
 * for a given relation
 *
-* @param mvo_list
+* Expects a list of objects from a FuncObj representing a concrete metamorphic
+* relation after all generator comprehensions have been resolved. First filters
+* all those objects which are not MetaVarObjs. Then, for each MetaVarObj
+* remaining, looks for the corresponding concrete object in the symbol table,
+* and adds the resulting pair as an entry to the concretizing map.
 *
-* @return
+* @param mvo_list A list of ApiObjects of a concrete metamorphic relations
+*
+* @return A map representing pairs of abstract comprehensions and their
+* respective concrete objects
 */
 std::map<const MetaVarObject*, const ApiObject*>
 ApiFuzzerNew::makeConcretizationMap(std::vector<const ApiObject*> obj_list)
@@ -2453,7 +2460,7 @@ ApiFuzzerNew::makeConcretizationMap(std::vector<const ApiObject*> obj_list)
         }
         const ApiObject* value = nullptr;
         CHECK_CONDITION(mv_obj->meta_relations.empty(),
-            fmt::format("Found unrolled generator comprehension {}.", 
+            fmt::format("Found unrolled generator comprehension {}.",
                 mv_obj->getIdentifier()));
         if (!mv_obj->getIdentifier().compare("<m_curr>"))
         {
@@ -2518,6 +2525,25 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
     if (!first)
     {
         concretize_map.at(this->getMetaVar("1")) = curr_meta_variant;
+        // TODO once unified maps, can do random input replacement
+        /*
+        do
+        {
+            try
+            {
+                MetaVarObject* mv_obj = this->getMetaVar(std::to_string(
+                    getRandInt(1, this->meta_in_vars.size())));
+                concretize_map.at(mv_obj) = curr_meta_variant;
+                logDebug(fmt::format("Replaced meta var {} with curr_meta_var.",
+                    mv_obj->getIdentifier()));
+                break;
+            }
+            catch (const std::out_of_range e)
+            {
+                continue;
+            }
+        } while (true);
+        */
     }
     const FuncObject* concrete_func_obj =
         this->concretizeFuncObject(unrolled_func_obj, concretize_map);
@@ -2535,7 +2561,6 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
  * @param func_obj The FuncObject which to make concrete
  * @return A FuncObject with all comprehensions replaced with explcit objects
  */
-
 const FuncObject*
 ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj,
     std::map<const MetaVarObject*, const ApiObject*> concretize_map)
