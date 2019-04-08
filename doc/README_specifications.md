@@ -15,6 +15,10 @@ files covered are:
 * `api_fuzzer.yaml`
 * `set_meta_tests.yaml`
 
+This document is meant to be comprehensive, covering all possible fields and
+values for each specification file. In practice, certain fields will be used
+more often than others, and some fields only need be set-up once.
+
 ### `config.yaml.template`
 
 This file covers path setup information for the main entry point to the
@@ -267,8 +271,31 @@ the name of the family relation (the name has no meaning in the generator
 itself), while the value is a list of strings representing a single line
 instruction in the API of the library under test.
 
-###### Comprehensions (metamorphic_)
+###### Comprehensions (metamorphic)
 
-* `m`
-* digits
-* generators
+Metamorphic comprehensions are used to refer to certain variables in relations
+and generators. Each comprehension is a string starting with a `%` symbol,
+followed by usually a one-character identifier, but sometimes more. We
+distinguish the following categories of values we can refer to:
+
+* metamorphic variants - each generated test case will produce a number of
+  semantically equivalent by construction variants, over which we would like to
+  define some checks to ensure that the variants indeed have the expected
+  properties. In order to refer to a variant, the identifier used is `m`.
+  Furthermore, we distinguish the _current metamorphic variant being produced_,
+  which can be retrieved by `%m`, and the specific metamorphic variant which was
+  the *n*th produced, retrieve by `%mn`, where *n* is an integer. In practice,
+  `%m0` is expected to be used overwhelmingly in metamorphic checks for
+  pair-wise equality.
+* metamorphic inputs - generally these will be represented the variables
+  produced by the fuzzer, but it might be the case that the variables are loaded
+  in from existing data. No matter the origin, we expect there to be a number of
+  readily available variable of the corresponding `meta_var_type` type available
+  for the metamorphic test generator to use. These can be retrieved by passing a
+  number to the comprehension. Thus, `%5` would expect there to be at least 5
+  inputs available, and would pick the fifth input given chronologically.
+* generators - user-defined generators can be used at practically any point to
+  replace a variable, which we know would have a specific property. They are
+  retrieved by passing the user-defined generator identifier, currently limited
+  to a single alphabetical character. The comprehension will expand to an inline
+  instruction used to generate the required object.  
