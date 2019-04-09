@@ -1,0 +1,75 @@
+includes:
+    - 'boost/integer/common_factor.hpp'
+    - 'boost/multiprecision/cpp_int.hpp'
+
+
+pre_setup:
+    - 'using namespace boost::multiprecision;'
+
+inputs:
+    - name: 'size'
+      descriptor: '<unsigned int=range=[10,10]>'
+    - name: 'depth_max'
+      descriptor: '<unsigned int=val=15>'
+
+types:
+    - name: 'cpp_int'
+    - name: 'mpz_t'
+
+funcs:
+    - name: 'operator+'
+      return_type: 'cpp_int'
+      param_types: ['cpp_int', 'cpp_int']
+      conditions: []
+    - name: 'operator-'
+      return_type: 'cpp_int'
+      param_types: ['cpp_int', 'cpp_int']
+      conditions: []
+    - name: 'operator*'
+      return_type: 'cpp_int'
+      param_types: ['cpp_int', 'cpp_int']
+      conditions: []
+    - name: 'operator=='
+      return_type: 'bool'
+      param_types: ['cpp_int', 'cpp_int']
+      conditions: []
+    - name: 'abs'
+      return_type: 'cpp_int'
+      param_types: ['cpp_int']
+      conditions: []
+    - name: 'assert'
+      enclosing_class: ''
+      return_type: ''
+      param_types: ['bool']
+      condition: []
+      special: true
+    - name: 'gcd'
+      return_type: 'cpp_int'
+      param_types: ['cpp_int', 'cpp_int']
+      conditions: []
+    - name: 'lcm'
+      return_type: 'cpp_int'
+      param_types: ['cpp_int', 'cpp_int']
+      conditions: []
+
+
+constructors:
+    - return_type: 'cpp_int'
+      param_types: ['<int=random=[0,1000]>']
+
+set_gen:
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'operator*'
+      return: '<special=output_var=>'
+      func_params: 
+        - '<special=output_var=>'
+        - '<var=new=cpp_int>'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'operator+'
+      return: '<special=output_var=>'
+      func_params: 
+        - '<special=output_var=>'
+        - '<var=new=cpp_int>'
+
