@@ -6,7 +6,7 @@ pre_setup:
 
 inputs:
     - name: 'size'
-      descriptor: '<unsigned int=range=[10,20]>'
+      descriptor: '<unsigned int=range=[10,10]>'
     - name: 'depth_max'
       descriptor: '<unsigned int=val=20>'
 

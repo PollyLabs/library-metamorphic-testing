@@ -33,10 +33,10 @@ relations:
         - "%m=operator+(%1,%z)"
         - "%m=operator-(%1,%z)"
         - "%m=operator*(%1,%o)"
-        - "%m=lcm(%1,%1)"
-        - "%m=gcd(%1,%1)"
-        - "%m=lcm(%1,gcd(%1, %2))"
-        - "%m=gcd(%1,lcm(%1, %2))"
+        - "%m=operator*(mpz_class(sgn(%1)),lcm(%1,%1))"
+        - "%m=operator*(mpz_class(sgn(%1)),gcd(%1,%1))"
+        - "%m=operator*(mpz_class(sgn(%1)),lcm(%1,gcd(%1, %2)))"
+        - "%m=operator*(mpz_class(sgn(%1)),gcd(%1,lcm(%1, %2)))"
 
     addition_commut:
         - "%m=operator+(%1,%2)"
