@@ -21,8 +21,9 @@ RUN \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/isl"|' ./config_files/config_isl.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_isl.sh"|' ./config_files/config_isl.yaml && \
     sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_isl.yaml && \
-    cp ./config_files/set_meta_tests_isl.yaml ./config_files/set_meta_tests_isl_point.yaml && \
-    ln -s `pwd`/scripts/compile/compile_isl.sh ./out/compile_isl.sh
+    ln -s `pwd`/config_files/isl/set_meta_tests_isl.yaml ./config_files/set_meta_tests_isl_point.yaml && \
+    ln -s `pwd`/config_files/isl/api_fuzzer_isl_point.yaml ./config_files/api_fuzzer_isl_point.yaml && \
+    ln -s `pwd`/scripts/compile/compile_isl.sh ./out/compile_isl.sh && \
 
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4
