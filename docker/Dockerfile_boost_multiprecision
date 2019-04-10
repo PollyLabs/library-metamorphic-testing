@@ -7,6 +7,9 @@ RUN \
 # Set workdir to repo location
 WORKDIR /home/library-metamorphic-testing
 
+# Checkout my branch
+RUN  git checkout boost
+
 # Setup output folder and link
 RUN mkdir /output && ln -s /output ./output
 
@@ -26,5 +29,5 @@ RUN \
 RUN mkdir build && cd build && cmake .. && make -j4
 
 # Set command to run experiments
-CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_boost_multiprecision.yaml", "continuous", "--append-id"]
+#CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_boost_multiprecision.yaml", "continuous", "--append-id"]
 
