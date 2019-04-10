@@ -86,7 +86,10 @@ such:
   these can be header files required for the library under test, or additional
   user-created header files which contain helpful functions to be used in the
   test generation process
-* `pre_setup` - DEPRECATED
+* `pre_setup` - a list of source code instructions to emit as provided at the
+  beginning of the generated test case; useful for any specific context setup or
+  parameter setting; variable declarations can be made here, but it is suggested
+  to us `var_decl`, in order to make us of the fuzzer symbol table
 * `var_decl` - a list of variables to declare at the beginning of the generated
   test case
   - `name` - name of the variable to generate
