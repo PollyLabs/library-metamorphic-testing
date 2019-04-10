@@ -4,10 +4,10 @@
 #include <ctime>
 #include <fstream>
 
-#include "api_fuzzer.hpp"
-
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
+
+#include "api_fuzzer.hpp"
 
 enum Modes {
     SET_FUZZ,
