@@ -7,6 +7,6 @@ include_local/
 libs_local/
 doxygen/html
 doxygen/latex
-config_files/config.yaml
+config_files/wip
 compile_commands.json
 *.swp
