@@ -15,7 +15,7 @@ RUN \
     sed 's|<work_dir>|'`pwd`'\/|' \
         < ./config_files/config.yaml.template \
         > ./config_files/config_z3.yaml && \
-    sed -i 's|<lib>|z3_par|' ./config_files/config_z3.yaml && \
+    sed -i 's|<lib>|z3_par|g' ./config_files/config_z3.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_z3.sh"|' ./config_files/config_z3.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/z3/build/"|' ./config_files/config_z3.yaml && \
     sed -i 's|include_path:.*|include_path: "/home/z3/src/api/c++:/home/z3/src/api/"|' \
@@ -23,7 +23,8 @@ RUN \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/z3/"|' ./config_files/config_z3.yaml && \
     sed -i 's|default_timeout:.*|default_timeout: 60|' ./config_files/config_z3.yaml && \
     ln -s `pwd`/scripts/compile/compile_z3.sh ./out/compile_z3.sh && \
-    ln -s `pwd`/config_files/z3/set_meta_tests_z3.yaml `pwd`/config_files/z3/set_meta_tests_z3_par.yaml
+    ln -s `pwd`/config_files/z3/set_meta_tests_z3.yaml `pwd`/config_files/z3/set_meta_tests_z3_par.yaml && \
+    ln -s `pwd`/config_files/z3 `pwd`/config_files/z3_par
 
 RUN \
     sed -i 's|-L../libs_local|-L/home/z3/build|' ./out/compile_z3.sh
