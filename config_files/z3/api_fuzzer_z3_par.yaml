@@ -4,7 +4,7 @@ includes:
     - "testing/z3-meta-check.h"
 
 pre_setup:
-    - 'z3::set_params("parallel.enable", true);'
+    - 'z3::set_param("parallel.enable", true);'
 
 inputs:
     - name: 'var_count'

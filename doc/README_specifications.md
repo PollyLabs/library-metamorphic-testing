@@ -20,6 +20,7 @@ values for each specification file. In practice, certain fields will be used
 more often than others, and some fields only need be set-up once.
 
 <a name='config' />
+
 ### `config.yaml.template`
 
 This file covers path setup information for the main entry point to the
@@ -65,6 +66,7 @@ provided:
     been generated during the testing process
 
 <a name='fuzzer-spec' />
+
 ### `api_fuzzer.yaml`
 
 This specification exposes parts of the API of the library under test and allows
@@ -218,6 +220,7 @@ The following comprehensions are provided, split by `method`, then by `type`:
   - `random` - return a completely random value of the requested type
 
 <a name='meta-spec' />
+
 ### `meta_tests.yaml`
 
 The metamorphic specification specifies certain parameters regarding the
