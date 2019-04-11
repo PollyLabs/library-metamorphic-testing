@@ -6,7 +6,7 @@
 z3::expr
 val_to_expr(int val, z3::expr expr)
 {
-    return expr.ctx().num_val(val, expr.get_sort());
+    return expr.ctx().int_val(val);
 }
 
 z3::expr
@@ -27,23 +27,57 @@ expr_abs(z3::expr expr)
     return ite(expr < 0, -expr, expr);
 }
 
+namespace wrap {
+
+/*******************************************************************************
+ * Division wrap
+ ******************************************************************************/
+
 z3::expr
-divWrap(z3::expr e1, z3::expr e2)
+div(z3::expr e1, z3::expr e2)
 {
     return ite(e2 != 0, e1/e2, e1);
 }
 
 z3::expr
-divWrap(int i, z3::expr e)
+div(int i, z3::expr e)
 {
-    return divWrap(val_to_expr(i, e), e);
+    return wrap::div(val_to_expr(i, e), e);
 }
 
 z3::expr
-divWrap(z3::expr e, int i)
+div(z3::expr e, int i)
 {
-    return divWrap(e, val_to_expr(i, e));
+    return wrap::div(e, val_to_expr(i, e));
 }
+
+/*******************************************************************************
+ * Power wrap
+ ******************************************************************************/
+
+z3::expr
+pw(z3::expr e1, z3::expr e2)
+{
+    return ite(e1 != 0 && e2 != 0, z3::pw(e1, e2), val_to_expr(1, e1));
+}
+
+z3::expr
+pw(int i, z3::expr e)
+{
+    return wrap::pw(val_to_expr(i, e), e);
+}
+
+z3::expr
+pw(z3::expr e, int i)
+{
+    return wrap::pw(e, val_to_expr(i, e));
+}
+
+} // namespace wrap
+
+/*******************************************************************************
+ * Metamorphic check function
+ ******************************************************************************/
 
 bool
 checkValid(z3::expr& e1, z3::expr& e2)
