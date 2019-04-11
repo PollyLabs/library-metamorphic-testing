@@ -12,7 +12,7 @@ generators:
         relations:
             - "get_one(%1)"
             - "z3::ite(z3::operator!=(%1,0),z3::operator/(%1,%1),%o)"
-            - "z3::pw(%1,%z)"
+            - "wrap::pw(%1,%z)"
 
     zero:
         identifier: 'z'
