@@ -12,7 +12,7 @@ RUN mkdir /output && ln -s /output ./output
 
 # Copy config file template over and update paths
 RUN \
-    sed 's|<work_dir>|/home/library-metamorphic-testing|' \
+    sed 's|<work_dir>|'`pwd`'\/|' \
         < ./config_files/config.yaml.template \
         > ./config_files/config_isl.yaml && \
     sed -i 's|<lib>|isl_point|' ./config_files/config_isl.yaml && \
