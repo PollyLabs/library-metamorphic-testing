@@ -1,0 +1,164 @@
+---
+includes:
+    - "z3++.h"
+    - "testing/z3-meta-check.h"
+
+pre_setup:
+    - 'z3::set_params("parallel.enable", true);'
+
+inputs:
+    - name: 'var_count'
+      descriptor: '<unsigned int=val=3>'
+    - name: 'depth_max'
+      descriptor: '<unsigned int=range=[3,5]>'
+
+types:
+    - name: 'z3::expr'
+
+singleton_types:
+    - name: 'z3::solver'
+      singleton: true
+    - name: 'z3::context'
+      singleton: true
+
+funcs:
+    - name: 'z3::operator*'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+    - name: 'z3::operator*'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'unsigned int']
+    - name: 'z3::operator-'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr']
+    - name: 'z3::operator-'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+    - name: 'z3::operator-'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'unsigned int']
+    - name: 'z3::operator+'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+    - name: 'z3::operator+'
+      return_type: 'z3::expr'
+      param_types: ['unsigned int', 'z3::expr']
+    - name: 'z3::operator+'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'unsigned int']
+    - name: 'z3::operator/'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+      special: true
+    - name: 'wrap::div'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+    - name: 'wrap::div'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'unsigned int']
+    - name: 'wrap::div'
+      return_type: 'z3::expr'
+      param_types: ['unsigned int', 'z3::expr']
+    - name: 'z3::operator=='
+      return_type: 'bool'
+      param_types: ['z3::expr', 'z3::expr']
+      special: true
+    - name: 'z3::operator!='
+      return_type: 'bool'
+      param_types: ['z3::expr', 'unsigned int']
+      special: true
+    - name: 'wrap::pw'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+    - name: 'wrap::pw'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'unsigned int']
+    - name: 'add'
+      enclosing_class: 'z3::solver'
+      param_types: ['z3::expr']
+      conditions: []
+      special: true
+    - name: 'check'
+      enclosing_class: 'z3::solver'
+      param_types: []
+      conditions: []
+      special: true
+    - name: 'assert'
+      enclosing_class: ''
+      return_type: ''
+      param_types: ['bool']
+      condition: []
+      special: true
+    - name: 'checkValid'
+      return_type: 'bool'
+      param_types: ['z3::expr', 'z3::expr']
+      condition: []
+      special: true
+    - name: 'z3::ite'
+      return_type: 'z3::expr'
+      param_types: ['bool', 'z3::expr', 'z3::expr']
+      condition: []
+      special: true
+    - name: 'z3::ite'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr', 'z3::expr']
+      condition: []
+      special: true
+    - name: 'z3::operator>'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'unsigned int']
+      condition: []
+      special: true
+    - name: 'expr_abs'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr']
+      condition: []
+      special: true
+    - name: 'z3::mod'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+      condition: []
+      special: true
+    - name: 'z3::rem'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+      condition: []
+      special: true
+    - name: 'simplify'
+      return_type: 'z3::expr'
+      enclosing_class: 'z3::expr'
+      param_types: []
+      condition: []
+    - name: 'get_zero'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr']
+      condition: []
+      special: true
+    - name: 'get_one'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr']
+      condition: []
+      special: true
+
+
+constructors:
+    - return_type: 'z3::solver'
+      param_types: ['z3::context']
+    - return_type: 'z3::context'
+      param_types: []
+    - name: 'int_const'
+      enclosing_class: 'z3::context'
+      return_type: 'z3::expr'
+      param_types: ['<special=var_name=>']
+
+set_gen:
+    - type: 'decl'
+      var_type: 'z3::context'
+      var_name: 'ctx'
+      init: false
+    - type: 'func'
+      func: 'z3::operator+'
+      func_params:
+        - '<var=new=z3::expr>'
+        - '<var=new=z3::expr>'
+      return: '<special=output_var=>'

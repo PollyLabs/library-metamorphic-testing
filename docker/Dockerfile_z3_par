@@ -1,0 +1,36 @@
+FROM alascu/metalib:base_z3
+
+# Pull repo
+RUN \
+    git clone https://github.com/PollyLabs/library-metamorphic-testing.git
+
+# Set workdir to repo location
+WORKDIR /home/library-metamorphic-testing
+
+# Setup output folder and link
+RUN mkdir /output && ln -s /output ./output
+
+# Copy config file template over and update paths
+RUN \
+    sed 's|<work_dir>|'`pwd`'\/|' \
+        < ./config_files/config.yaml.template \
+        > ./config_files/config_z3.yaml && \
+    sed -i 's|<lib>|z3_par|' ./config_files/config_z3.yaml && \
+    sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_z3.sh"|' ./config_files/config_z3.yaml && \
+    sed -i 's|lib_path:.*|lib_path: "/home/z3/build/"|' ./config_files/config_z3.yaml && \
+    sed -i 's|include_path:.*|include_path: "/home/z3/src/api/c++:/home/z3/src/api/"|' \
+        ./config_files/config_z3.yaml && \
+    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/z3/"|' ./config_files/config_z3.yaml && \
+    sed -i 's|default_timeout:.*|default_timeout: 60|' ./config_files/config_z3.yaml && \
+    ln -s `pwd`/scripts/compile/compile_z3.sh ./out/compile_z3.sh && \
+    ln -s `pwd`/config_files/z3/set_meta_tests_z3.yaml `pwd`/config_files/z3/set_meta_tests_z3_par.yaml
+
+RUN \
+    sed -i 's|-L../libs_local|-L/home/z3/build|' ./out/compile_z3.sh
+
+# Build project
+RUN mkdir build && cd build && cmake .. && make -j4
+
+# Set command to run experiments
+CMD ["python3.7", "./scripts/meta_runner.py", "continuous", "--append-id",\
+    "--config-file", "./config_files/config_z3.yaml"]
