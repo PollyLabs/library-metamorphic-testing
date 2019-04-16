@@ -14,13 +14,18 @@ RUN mkdir /output && ln -s /output ./output
 RUN \
     sed 's|<work_dir>|'`pwd`'\/|' < ./config_files/config.yaml.template \
         > ./config_files/config_gmp_rational.yaml && \
-    sed -i 's|<lib>|gmp_rational|' ./config_files/config_gmp_rational.yaml && \
+    sed -i 's|<lib>|gmp_rational|g' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/gmp/.libs/"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|include_path:.*|include_path: "/home/gmp/"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/gmp/"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_gmp.sh"|' ./config_files/config_gmp_rational.yaml && \
     sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_gmp_rational.yaml && \
     ln -s `pwd`/scripts/compile/compile_gmp.sh ./out/compile_gmp.sh
+
+ENV \
+    CPATH="/home/gmp" \
+    LIBRARY_PATH="/home/gmp/.libs" \
+    LD_LIBRARY_PATH="/home/gmp/.libs"
 
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4

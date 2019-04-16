@@ -15,7 +15,7 @@ RUN \
     sed 's|<work_dir>|'`pwd`'\/|' \
         < ./config_files/config.yaml.template \
         > ./config_files/config_z3.yaml && \
-    sed -i 's|<lib>|z3|' ./config_files/config_z3.yaml && \
+    sed -i 's|<lib>|z3|g' ./config_files/config_z3.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_z3.sh"|' ./config_files/config_z3.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/z3/build/"|' ./config_files/config_z3.yaml && \
     sed -i 's|include_path:.*|include_path: "/home/z3/src/api/c++:/home/z3/src/api/"|' \
@@ -26,6 +26,11 @@ RUN \
 
 RUN \
     sed -i 's|-L../libs_local|-L/home/z3/build|' ./out/compile_z3.sh
+
+ENV \
+    CPATH="/home/z3/src/api/c++:/home/z3/src/api/" \
+    LIBRARY_PATH="/home/z3/build" \
+    LD_LIBRARY_PATH="/home/z3/build"
 
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4

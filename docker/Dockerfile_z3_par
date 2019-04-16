@@ -29,6 +29,11 @@ RUN \
 RUN \
     sed -i 's|-L../libs_local|-L/home/z3/build|' ./out/compile_z3.sh
 
+ENV \
+    CPATH="/home/z3/src/api/c++:/home/z3/src/api/" \
+    LIBRARY_PATH="/home/z3/build" \
+    LD_LIBRARY_PATH="/home/z3/build"
+
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4
 

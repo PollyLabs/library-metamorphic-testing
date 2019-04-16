@@ -15,16 +15,20 @@ RUN \
     sed 's|<work_dir>|'`pwd`'\/|' \
         < ./config_files/config.yaml.template \
         > ./config_files/config_isl.yaml && \
-    sed -i 's|<lib>|isl_point|' ./config_files/config_isl.yaml && \
+    sed -i 's|<lib>|isl_point|g' ./config_files/config_isl.yaml && \
     sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl.yaml && \
     sed -i 's|include_path:.*|include_path: "/home/isl/include/"|' ./config_files/config_isl.yaml && \
     sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/isl"|' ./config_files/config_isl.yaml && \
     sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_isl.sh"|' ./config_files/config_isl.yaml && \
     sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_isl.yaml && \
-    ln -s `pwd`/config_files/isl/set_meta_tests_isl.yaml ./config_files/set_meta_tests_isl_point.yaml && \
-    ln -s `pwd`/config_files/isl/api_fuzzer_isl_point.yaml ./config_files/api_fuzzer_isl_point.yaml && \
+    ln -s `pwd`/config_files/isl `pwd`/config_files/isl_point && \
     ln -s `pwd`/scripts/compile/compile_isl.sh ./out/compile_isl.sh && \
     curl -o ./include/isl-noexceptions.h www.doc.ic.ac.uk/~al2510/isl-noexceptions-noprint.h
+
+ENV \
+    CPATH="/home/isl/include \
+    LIBRARY_PATH="/home/isl/.libs" \
+    LD_LIBRARY_PATH="/home/isl/.libs"
 
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4
