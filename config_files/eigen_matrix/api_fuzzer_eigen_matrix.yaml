@@ -1,0 +1,60 @@
+includes:
+    - "Eigen/Dense"
+
+pre_setup:
+##    - "typedef Eigen::Matrix<float,Dynamic,Dynamic> Eigen::MatrixXf;"
+
+inputs:
+    - name: 'var2'
+      descriptor: '<unsigned int=range=[1,10000]>'
+    - name: 'size'
+      descriptor: '<unsigned int=range=[10,10]>'
+    - name: 'depth_max'
+      descriptor: '<unsigned int=val=15>'
+    - name: 'Dynamic'
+      descriptor: '<unsigned int=range=[1,10000]>'
+
+types:
+##    - name: 'Eigen::Matrix'
+    - name: 'Eigen::MatrixXf'
+
+funcs:
+    - name: 'operator-'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []
+      special: true
+    - name: 'operator+'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []
+      special: true
+    - name: 'operator=='
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'bool'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []
+      special: true
+    - name: 'assert'
+      return_type: 'bool'
+      param_types: ['bool']
+      conditions: []
+      special: true
+
+constructors:
+    - name: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+##      param_types: []
+      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>']
+
+set_gen:
+    - type: 'func'
+##     counter: '[0,<var=input=size>)'
+      func: 'operator+'
+##      target: '<special=output_var=>'
+      return: '<special=output_var=>'
+##      func_params:
+##        - '<special=output_var=>'
+##        - '<var=new=Eigen::MatrixXf>'

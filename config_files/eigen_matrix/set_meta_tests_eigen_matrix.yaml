@@ -1,0 +1,28 @@
+# %n, where n is an integer = input set
+# %e = empty set
+# %u = universe
+# %m = metamorphic test variable
+#
+# formula names taken from
+# https://www.allaboutcircuits.com/technical-articles/boolean-identities/
+---
+input_count: 3
+meta_var_type: "Eigen::MatrixXf"
+meta_test_count: 5
+variant_count: 20
+meta_check:
+    - "assert(%m.operator==(%m0))"
+
+generators:
+    zero:
+        identifier: 'z'
+        relations:
+            - "%1.operator-(%1)"
+relations:
+    identity_idempotent_absorption:
+        - "%m=%1.operator+(%z)"
+        - "%m=%1.operator-(%z)"
+
+    addition_commut:
+        - "%m=%1.operator+(%2)"
+        - "%m=%2.operator+(%1)"
