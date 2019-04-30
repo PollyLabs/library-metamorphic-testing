@@ -18,11 +18,37 @@ generators:
         identifier: 'z'
         relations:
             - "%1.operator-(%1)"
+            - "%1.operator*(%z)"
+            - "%z.operator*(%1)"
+    identity:
+        identifier: 'i'
+        relations:
+            - "getIdentity()"
 relations:
     identity_idempotent_absorption:
         - "%m=%1.operator+(%z)"
         - "%m=%1.operator-(%z)"
+        - "%m=%1.operator*(%i)"
+        - "%m=%i.operator*(%1)"
 
     addition_commut:
         - "%m=%1.operator+(%2)"
         - "%m=%2.operator+(%1)"
+
+    addition:
+        - "%m=%1.operator+(%2)"
+
+    substraction:
+        - "%m=%1.operator-(%2)"
+        - "%m=%1.operator+(%2.operator*(getMinusOne()))"
+        
+    multiplication:
+        - "%m=%1.operator*(%2)"
+        
+    multiplication_assoc:
+        - "%m=%1.operator*(%2).operator*(%3)"
+        - "%m=%1.operator*(%2.operator*(%3))"
+
+    distrib_mul_add:
+        - "%m=%1.operator*(%2.operator+(%3))"
+        - "%m=%1.operator*(%2).operator+(%1.operator*(%3))"
