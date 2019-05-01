@@ -63,6 +63,35 @@ funcs:
       return_type: 'unsigned int'
       param_types: []
       conditions: []	
+    - name: 'transpose'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: []
+      conditions: []	
+    - name: 'eval'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: []
+      conditions: []	
+    - name: 'adjoint'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: []
+      conditions: []	
+    - name: 'inverse'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: []
+      conditions: []	
+    - name: 'Inverse'	
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []	
+    - name: 'determinant'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'int'
+      param_types: []
+      conditions: []	
     - name: 'getMinusOne'
       return_type: 'int'
       param_types: []
@@ -71,6 +100,11 @@ funcs:
     - name: 'getInteger'
       return_type: 'int'
       param_types: ['int']
+      conditions: []	
+      special: true
+    - name: 'isInvertible'
+      return_type: 'bool'
+      param_types: ['Eigen::MatrixXf']
       conditions: []	
       special: true
     - name: 'assert'

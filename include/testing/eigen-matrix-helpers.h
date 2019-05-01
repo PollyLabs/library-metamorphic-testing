@@ -2,6 +2,7 @@
 #define EIGEN_MATRIX_HELPERS
 
 #include "Eigen/Dense"
+#include <cassert>
 
 Eigen::MatrixXf getIdentity()
 {
@@ -26,6 +27,18 @@ int getMinusOne()
 int getInteger(int x)
 {
 	return x;
+}
+
+bool isInvertible(Eigen::MatrixXf m)
+{
+	return (m.determinant() != 0);
+}
+
+Eigen::MatrixXf Inverse(Eigen::MatrixXf m)
+{
+	assert(isInvertible(m));
+
+	return m.inverse();
 }
 
 #endif
