@@ -13,7 +13,7 @@ inputs:
     - name: 'depth_max'
       descriptor: '<unsigned int=val=15>'
     - name: 'Dynamic'
-      descriptor: '<unsigned int=range=[1,10000]>'
+      descriptor: '<unsigned int=range=[1,10]>'
 
 types:
     - name: 'Eigen::MatrixXf'
@@ -102,21 +102,32 @@ funcs:
       param_types: ['int']
       conditions: []	
       special: true
-    - name: 'isInvertible'
-      return_type: 'bool'
-      param_types: ['Eigen::MatrixXf']
-      conditions: []	
-      special: true
     - name: 'assert'
       return_type: 'bool'
       param_types: ['bool']
       conditions: []
       special: true
+    - name: 'addMatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
+      conditions: []
+      special: true
+    - name: 'subMatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
+      conditions: []
+    - name: 'mulMatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
+      conditions: []
 
 constructors:
     - name: 'Eigen::MatrixXf::Random'
       return_type: 'Eigen::MatrixXf'
       param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>']
+    - name: 'Eigen::MatrixXf::Random'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['<var=input=Dynamic>', '<var=input=Dynamic>']
 
 set_gen:
     - type: 'func'
