@@ -14,19 +14,20 @@ RUN mkdir /output && ln -s /output ./output
 RUN \
     sed 's|<work_dir>|'`pwd`'\/|' \
         < ./config_files/config.yaml.template \
-        > ./config_files/config_isl.yaml && \
-    sed -i 's|<lib>|isl_point|g' ./config_files/config_isl.yaml && \
-    sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl.yaml && \
-    sed -i 's|include_path:.*|include_path: "/home/isl/include/"|' ./config_files/config_isl.yaml && \
-    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/isl"|' ./config_files/config_isl.yaml && \
-    sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_isl.sh"|' ./config_files/config_isl.yaml && \
-    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_isl.yaml && \
+        > ./config_files/config_isl_point.yaml && \
+    sed -i 's|<lib>|isl_point|g' ./config_files/config_isl_point.yaml && \
+    sed -i 's|lib_path:.*|lib_path: "/home/isl/.libs/"|' ./config_files/config_isl_point.yaml && \
+    sed -i 's|include_path:.*|include_path: "/home/isl/include/"|' ./config_files/config_isl_point.yaml && \
+    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/isl"|' ./config_files/config_isl_point.yaml && \
+    sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_isl.sh"|' ./config_files/config_isl_point.yaml && \
+    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_isl_point.yaml && \
     ln -s `pwd`/config_files/isl `pwd`/config_files/isl_point && \
-    ln -s `pwd`/scripts/compile/compile_isl.sh ./out/compile_isl.sh && \
+    ln -s `pwd`/scripts/compile/compile_isl.sh `pwd`/out/compile_isl.sh && \
+    ln -s `pwd`/config_files/isl/set_meta_tests_isl.yaml `pwd`/config_files/isl/set_meta_tests_isl_point.yaml && \
     curl -o ./include/isl-noexceptions.h www.doc.ic.ac.uk/~al2510/isl-noexceptions-noprint.h
 
 ENV \
-    CPATH="/home/isl/include \
+    CPATH="/home/isl/include" \
     LIBRARY_PATH="/home/isl/.libs" \
     LD_LIBRARY_PATH="/home/isl/.libs"
 
@@ -34,4 +35,4 @@ ENV \
 RUN mkdir build && cd build && cmake .. && make -j4
 
 # Set command to run experiments
-CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_isl.yaml", "continuous", "--append-id"]
+CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_isl_point.yaml", "continuous", "--append-id"]
