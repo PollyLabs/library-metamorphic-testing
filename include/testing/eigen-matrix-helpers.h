@@ -2,7 +2,6 @@
 #define EIGEN_MATRIX_HELPERS
 
 #include "Eigen/Dense"
-#include <cassert>
 
 Eigen::MatrixXf getIdentity()
 {
@@ -29,16 +28,37 @@ int getInteger(int x)
 	return x;
 }
 
-bool isInvertible(Eigen::MatrixXf m)
-{
-	return (m.determinant() != 0);
-}
-
 Eigen::MatrixXf Inverse(Eigen::MatrixXf m)
 {
-	assert(isInvertible(m));
+	if((m.rows() == m.cols()) && (m.determinant() != 0)) // Returns true for a square matrix with a non-zero determinant
+		return m;
 
 	return m.inverse();
 }
+
+Eigen::MatrixXf addMatrixXf(Eigen::MatrixXf m1, Eigen::MatrixXf m2)
+{
+	if(((m1.rows() == m2.rows()) && (m1.cols() == m2.cols())))
+		return m1;
+
+	return m1.operator+(m2);
+}
+
+Eigen::MatrixXf subMatrixXf(Eigen::MatrixXf m1, Eigen::MatrixXf m2)
+{
+	if(((m1.rows() == m2.rows()) && (m1.cols() == m2.cols())))
+		return m1;
+
+	return m1.operator-(m2);
+}
+
+Eigen::MatrixXf mulMatrixXf(Eigen::MatrixXf m1, Eigen::MatrixXf m2)
+{
+	if(m1.cols() == m2.rows())
+		return m1;
+
+	return m1.operator*(m2);
+}
+
 
 #endif
