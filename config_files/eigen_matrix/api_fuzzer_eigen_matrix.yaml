@@ -19,26 +19,26 @@ types:
     - name: 'Eigen::MatrixXf'
 
 funcs:
-    - name: 'operator-'
-      enclosing_class: 'Eigen::MatrixXf'
-      return_type: 'Eigen::MatrixXf'
-      param_types: ['Eigen::MatrixXf']
-      conditions: []
-    - name: 'operator+'
-      enclosing_class: 'Eigen::MatrixXf'
-      return_type: 'Eigen::MatrixXf'
-      param_types: ['Eigen::MatrixXf']
-      conditions: []
+##    - name: 'operator-'
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['Eigen::MatrixXf']
+##      conditions: []
+##    - name: 'operator+'
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['Eigen::MatrixXf']
+##      conditions: []
     - name: 'operator=='
       enclosing_class: 'Eigen::MatrixXf'
       return_type: 'bool'
       param_types: ['Eigen::MatrixXf']
       conditions: []
-    - name: 'operator*'
-      enclosing_class: 'Eigen::MatrixXf'
-      return_type: 'Eigen::MatrixXf'
-      param_types: ['Eigen::MatrixXf']
-      conditions: []
+##    - name: 'operator*'
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['Eigen::MatrixXf']
+##      conditions: []
     - name: 'operator*'
       enclosing_class: 'Eigen::MatrixXf'
       return_type: 'Eigen::MatrixXf'
@@ -63,26 +63,26 @@ funcs:
       return_type: 'unsigned int'
       param_types: []
       conditions: []	
-    - name: 'transpose'	
-      enclosing_class: 'Eigen::MatrixXf'
-      return_type: 'Eigen::MatrixXf'
-      param_types: []
-      conditions: []	
+##    - name: 'transpose'	
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: []
+##      conditions: []	
     - name: 'eval'	
       enclosing_class: 'Eigen::MatrixXf'
       return_type: 'Eigen::MatrixXf'
       param_types: []
       conditions: []	
-    - name: 'adjoint'	
-      enclosing_class: 'Eigen::MatrixXf'
-      return_type: 'Eigen::MatrixXf'
-      param_types: []
-      conditions: []	
-    - name: 'inverse'	
-      enclosing_class: 'Eigen::MatrixXf'
-      return_type: 'Eigen::MatrixXf'
-      param_types: []
-      conditions: []	
+##    - name: 'adjoint'	
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: []
+##      conditions: []	
+##    - name: 'inverse'	
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: []
+##      conditions: []	
     - name: 'Inverse'	
       return_type: 'Eigen::MatrixXf'
       param_types: ['Eigen::MatrixXf']
@@ -130,9 +130,30 @@ constructors:
       param_types: ['<var=input=Dynamic>', '<var=input=Dynamic>']
 
 set_gen:
-    - type: 'func'
-      func: 'operator+'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'mulMatrixXf'
       return: '<special=output_var=>'
-    - type: 'func'
-      func: 'operator*'
+      func_params:
+        - '<var=new=Eigen::MatrixXf>'
+        - '<var=new=Eigen::MatrixXf>'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'addMatrixXf'
       return: '<special=output_var=>'
+      func_params:
+        - '<var=new=Eigen::MatrixXf>'
+        - '<var=new=Eigen::MatrixXf>'
+    - type: 'func'
+      func: 'Inverse'
+      return: '<special=output_var=>'
+      func_params:
+        - '<var=new=Eigen::MatrixXf>'
+    - type: 'func'
+      func: 'subMatrixXf'
+      return: '<special=output_var=>'
+      func_params:
+        - '<var=new=Eigen::MatrixXf>'
+        - '<var=new=Eigen::MatrixXf>'
+ 	
+    

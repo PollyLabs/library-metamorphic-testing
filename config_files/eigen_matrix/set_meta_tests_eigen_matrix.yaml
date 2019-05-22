@@ -34,7 +34,7 @@ relations:
         - "%m=mulMatrixXf(%1,%i)"
         - "%m=mulMatrixXf(%i,%1)"
         - "%m=Inverse(Inverse(%1))"
-        - "%m=%1.transpose().eval().transpose().eval()"
+#        - "%m=%1.transpose().eval().transpose().eval()"
 
     addition_commut:
         - "%m=addMatrixXf(%1,%2)"
@@ -61,22 +61,22 @@ relations:
     inverse:
         - "%m=Inverse(%1)"
 
-    transpose:
-        - "%m=%1.transpose().eval()"
+#    transpose:
+#        - "%m=%1.transpose().eval()"
 
     inverse_mul:
         - "%m=Inverse(mulMatrixXf(%1,%2))"
         - "%m=mulMatrixXf(Inverse(%2),Inverse(%1))"
 
-    adjoint:
-        - "%m=%1.adjoint().eval()"
-
-    adj_mul2:
-        - "%m=mulMatrixXf(%1,%2).adjoint().eval()"
-        - "%m=mulMatrixXf(%2.adjoint().eval(),%1.adjoint().eval())"
-
-    adj_mul1:
-        - "%m=mulMatrixXf(%1,%1.adjoint().eval())"
-        - "%m=mulMatrixXf(%1.adjoint().eval(),%1)"
+##    adjoint:
+##        - "%m=%1.adjoint().eval()"
+##
+##    adj_mul2:
+##        - "%m=mulMatrixXf(%1,%2).adjoint().eval()"
+##        - "%m=mulMatrixXf(%2.adjoint().eval(),%1.adjoint().eval())"
+##
+##    adj_mul1:
+##        - "%m=mulMatrixXf(%1,%1.adjoint().eval())"
+##        - "%m=mulMatrixXf(%1.adjoint().eval(),%1)"
 
         
