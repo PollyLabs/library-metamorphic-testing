@@ -7,7 +7,7 @@
 # https://www.allaboutcircuits.com/technical-articles/boolean-identities/
 ---
 input_count: 3
-meta_var_type: "Eigen::MatrixXf"
+meta_var_type: "Eigen::Matrix3i"
 meta_test_count: 5
 variant_count: 20
 meta_check:
@@ -15,68 +15,63 @@ meta_check:
 
 generators:
     zero:
-        identifier: 'z'
+        identifier: 'Z'
         relations:
-            - "subMatrixXf(%1,%1)"
-            - "addMatrixXf(%z,%z)"
-            - "mulMatrixXf(%1,%z)"
-            - "mulMatrixXf(%z,%1)"
+            - "%1.operator-(%1)"
+            - "%1.operator*(%Z)"
+            - "%Z.operator*(%1)"
     identity:
-        identifier: 'i'
+        identifier: 'I'
         relations:
             - "getIdentity()"
-            - "mulMatrixXf(%1,Inverse(%1))"
-            - "mulMatrixXf(Inverse(%1),%1)"
 relations:
     identity_idempotent_absorption:
-        - "%m=addMatrixXf(%1,%z)"
-        - "%m=subMatrixXf(%1,%z)"
-        - "%m=mulMatrixXf(%1,%i)"
-        - "%m=mulMatrixXf(%i,%1)"
-        - "%m=Inverse(Inverse(%1))"
-#        - "%m=%1.transpose().eval().transpose().eval()"
+        - "%m=%1.operator+(%Z)"
+        - "%m=%Z.operator+(%1)"
+        - "%m=%1.operator-(%Z)"
+        - "%m=%Z.operator-(%1).operator*(getMinusOne())"
+        - "%m=%1.operator*(%I)"
+        - "%m=%I.operator*(%1)"
+        - "%m=%1.transpose().eval().transpose().eval()"
 
     addition_commut:
-        - "%m=addMatrixXf(%1,%2)"
-        - "%m=addMatrixXf(%2,%1)"
+        - "%m=%1.operator+(%2)"
+        - "%m=%2.operator+(%1)"
 
     addition:
-        - "%m=addMatrixXf(%1,%2)"
+        - "%m=%1.operator+(%2)"
 
     substraction:
-        - "%m=subMatrixXf(%1,%2)"
-        - "%m=subMatrixXf(%1,%2.operator*(getMinusOne()))"
+        - "%m=%1.operator-(%2)"
+        - "%m=%1.operator+(%2.operator*(getMinusOne()))"
 
     multiplication:
-        - "%m=mulMatrixXf(%1,%2)"
+        - "%m=%1.operator*(%2)"
         
     multiplication_assoc:
-        - "%m=mulMatrixXf(mulMatrixXf(%1,%2),%3)"
-        - "%m=mulMatrixXf(%1,mulMatrixXf(%2,%3))"
+        - "%m=%1.operator*(%2).operator*(%3)"
+        - "%m=%1.operator*(%2.operator*(%3))"
 
     distrib_mul_add:
-        - "%m=mulMatrixXf(%1,addMatrixXf(%2,%3))"
-        - "%m=addMatrixXf(mulMatrixXf(%1,%2),mulMatrixXf(%1,%3))"
+        - "%m=%1.operator*(%2.operator+(%3))"
+        - "%m=%1.operator*(%2).operator+(%1.operator*(%3))"
 
-    inverse:
-        - "%m=Inverse(%1)"
-
-#    transpose:
-#        - "%m=%1.transpose().eval()"
-
-    inverse_mul:
-        - "%m=Inverse(mulMatrixXf(%1,%2))"
-        - "%m=mulMatrixXf(Inverse(%2),Inverse(%1))"
-
+    transpose:
+        - "%m=%1.transpose().eval()"
+##    inverse:
+##        - "%m=Inverse(%1)"
+##
+##    inverse_mul:
+##        - "%m=Inverse(%1.operator*(%2))"
+##        - "%m=Inverse(%2).operator*(Inverse(%1))"
+##
 ##    adjoint:
 ##        - "%m=%1.adjoint().eval()"
 ##
 ##    adj_mul2:
-##        - "%m=mulMatrixXf(%1,%2).adjoint().eval()"
-##        - "%m=mulMatrixXf(%2.adjoint().eval(),%1.adjoint().eval())"
+##        - "%m=%1.operator*(%2).adjoint().eval()"
+##        - "%m=%2.adjoint().eval().operator*(%1.adjoint().eval())"
 ##
 ##    adj_mul1:
-##        - "%m=mulMatrixXf(%1,%1.adjoint().eval())"
-##        - "%m=mulMatrixXf(%1.adjoint().eval(),%1)"
-
-        
+##        - "%m=%1.operator*(%1.adjoint().eval())"
+##        - "%m=%1.adjoint().eval().operator*(%1)"
