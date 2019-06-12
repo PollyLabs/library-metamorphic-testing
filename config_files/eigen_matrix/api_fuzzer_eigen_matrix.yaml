@@ -73,11 +73,11 @@ funcs:
       return_type: 'Eigen::Matrix3i'
       param_types: []
       conditions: []	
-##    - name: 'adjoint'	
-##      enclosing_class: 'Eigen::Matrix3i'
-##      return_type: 'Eigen::Matrix3i'
-##      param_types: []
-##      conditions: []	
+    - name: 'adjoint'	
+      enclosing_class: 'Eigen::Matrix3i'
+      return_type: 'Eigen::Matrix3i'
+      param_types: []
+      conditions: []	
 ##    - name: 'inverse'	
 ##      enclosing_class: 'Eigen::Matrix3i'
 ##      return_type: 'Eigen::Matrix3i'
@@ -128,11 +128,12 @@ set_gen:
       return: '<special=output_var=>'
       func_params:
         - '<special=output_var=>'
-##    - type: 'func'
-##      func: 'Inverse'
-##      return: '<special=output_var=>'
-##      func_params:
-##        - '<special=output_var=>'
+    - type: 'func'
+      func: 'transpose'
+      return: '<special=output_var=>'
+    - type: 'func'
+      func: 'adjoint'
+      return: '<special=output_var=>'
     - type: 'func'
       func: 'operator-'
       return: '<special=output_var=>'

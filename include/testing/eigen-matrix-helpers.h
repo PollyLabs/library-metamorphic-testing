@@ -13,7 +13,10 @@ Eigen::Matrix3i getIdentity()
 	{
 		for(unsigned int j=0; j < 3; j++)
 		{
-			res(i,j) = 1;
+			if(i == j)
+				res(i,j) = 1;
+			else
+				res(i,j) = 0;
 		}
 	}
 

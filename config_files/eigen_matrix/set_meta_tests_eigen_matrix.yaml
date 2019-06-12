@@ -58,6 +58,7 @@ relations:
 
     transpose:
         - "%m=%1.transpose().eval()"
+
 ##    inverse:
 ##        - "%m=Inverse(%1)"
 ##
@@ -65,13 +66,13 @@ relations:
 ##        - "%m=Inverse(%1.operator*(%2))"
 ##        - "%m=Inverse(%2).operator*(Inverse(%1))"
 ##
-##    adjoint:
-##        - "%m=%1.adjoint().eval()"
-##
-##    adj_mul2:
-##        - "%m=%1.operator*(%2).adjoint().eval()"
-##        - "%m=%2.adjoint().eval().operator*(%1.adjoint().eval())"
-##
-##    adj_mul1:
-##        - "%m=%1.operator*(%1.adjoint().eval())"
-##        - "%m=%1.adjoint().eval().operator*(%1)"
+    adjoint:
+        - "%m=%1.adjoint()"
+
+    adj_mul2:
+        - "%m=%1.operator*(%2).adjoint()"
+        - "%m=%2.adjoint().operator*(%1.adjoint())"
+
+    adj_mul1:
+        - "%m=%1.operator*(%1.adjoint())"
+        - "%m=%1.adjoint().operator*(%1)"
