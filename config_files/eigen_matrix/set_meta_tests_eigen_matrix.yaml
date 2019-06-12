@@ -32,6 +32,8 @@ relations:
         - "%m=%Z.operator-(%1).operator*(getMinusOne())"
         - "%m=%1.operator*(%I)"
         - "%m=%I.operator*(%1)"
+        - "%m=%I.transpose().eval().operator*(%1)"
+        - "%m=%I.adjoint().eval().operator*(%1)"
         - "%m=%1.transpose().eval().transpose().eval()"
 
     addition_commut:
@@ -58,6 +60,18 @@ relations:
 
     transpose:
         - "%m=%1.transpose().eval()"
+   
+    transpose-add:
+        - "%m=%1.operator+(%2).transpose().eval()"
+        - "%m=%1.transpose().eval().operator+(%2.transpose().eval())"
+
+    transpose-scalar:
+        - "%m=%1.operator*(getMinusOne()).transpose().eval()"
+        - "%m=%1.transpose().eval().operator*(getMinusOne())"
+
+    transpose-mul:
+        - "%m=%1.operator*(%2).transpose().eval()"
+        - "%m=%2.transpose().eval().operator*(%1.transpose().eval())"
 
 ##    inverse:
 ##        - "%m=Inverse(%1)"
@@ -67,12 +81,25 @@ relations:
 ##        - "%m=Inverse(%2).operator*(Inverse(%1))"
 ##
     adjoint:
-        - "%m=%1.adjoint()"
+        - "%m=%1.adjoint().eval()"
+
+    adjoint-transpose:
+        - "%m=%1.adjoint().eval().transpose().eval()"
+        - "%m=%1.transpose().eval().adjoint().eval()"
+
+    adjoint-exp:
+        - "%m=%1.operator*(%1).adjoint().eval()"
+        - "%m=%1.adjoint().eval().operator*(%1.adjoint().eval())"
+
+    adjoint-ident:
+        - "%m=%1.operator*(%1.operator+(%2).adjoint().eval()).operator*(%2)"
+        - "%m=%2.operator*(%1.operator+(%2).adjoint().eval()).operator*(%1)"
 
     adj_mul2:
-        - "%m=%1.operator*(%2).adjoint()"
-        - "%m=%2.adjoint().operator*(%1.adjoint())"
+        - "%m=%1.operator*(%2).adjoint().eval()"
+        - "%m=%2.adjoint().eval().operator*(%1.adjoint().eval())"
 
     adj_mul1:
-        - "%m=%1.operator*(%1.adjoint())"
-        - "%m=%1.adjoint().operator*(%1)"
+        - "%m=%1.operator*(%1.adjoint().eval())"
+        - "%m=%1.adjoint().eval().operator*(%1)"
+        - "%m=operator*(%1.determinant(), getIdentity())"

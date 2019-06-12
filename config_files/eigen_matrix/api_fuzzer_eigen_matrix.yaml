@@ -1,6 +1,7 @@
 includes:
     - "Eigen/Dense"
     - "testing/eigen-matrix-helpers.h"
+    - "stdlib.h"
 
 pre_setup:
 ##    - "typedef Eigen::Matrix<float,Dynamic,Dynamic> Eigen::Matrix3i;"
@@ -102,6 +103,11 @@ funcs:
       param_types: ['int']
       conditions: []	
       special: true
+    - name: 'Truncate'
+      return_type: 'Eigen::Matrix3i'
+      param_types: ['Eigen::Matrix3i']
+      conditions: []	
+      special: true
     - name: 'assert'
       return_type: 'bool'
       param_types: ['bool']
@@ -109,16 +115,18 @@ funcs:
       special: true
 
 constructors:
-    - name: 'Eigen::Matrix3i::Random'
+    - name: 'Eigen::Matrix3i::Constant'
       return_type: 'Eigen::Matrix3i'
-      param_types: []
+      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>', '<unsigned int=range=[-10,10]>']
+##    - name: 'Eigen::Matrix3i::Random'
+##      return_type: 'Eigen::Matrix3i'
+##      param_types: []
 ##      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>']
 
 set_gen:
     - type: 'for'
       counter: '[0,<var=input=size>)'
       func: 'operator*'
-#      target: '<special=output_var=>'
       return: '<special=output_var=>'
       func_params:
         - '<special=output_var=>'

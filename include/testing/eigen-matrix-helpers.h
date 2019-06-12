@@ -4,6 +4,7 @@
 #include "Eigen/Dense"
 #include <cassert>
 #include<iostream>
+#include <stdlib.h>
 
 Eigen::Matrix3i getIdentity()
 {
@@ -47,6 +48,25 @@ int getMinusOne()
 int getInteger(int x)
 {
 	return x;
+}
+
+Eigen::Matrix3i Truncate(Eigen::Matrix3i m)
+{
+	Eigen::Matrix3i res;
+
+	for(unsigned int i=0; i < 3; i++)
+	{
+		for(unsigned int j=0; j < 3; j++)
+		{
+			if(res(i,j) > 100 || res(i,j) < -100)
+			{
+				res(i,j) = rand()%100;
+			}
+		}
+	}
+
+	return res;
+
 }
 
 /*
