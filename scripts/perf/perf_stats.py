@@ -21,3 +21,6 @@ def calc_samples_sum_rank(datas, out_file):
         curr_index += len(sample)
     ranked_data_sum = [sum(x) for x in ranked_samples]
     return ranked_data_sum
+
+def utest(data1, data2):
+    return sp_stats.mannwhitneyu(data1, data2, alternative='two_sided')
