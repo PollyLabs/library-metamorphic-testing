@@ -24,3 +24,6 @@ def calc_samples_sum_rank(datas, out_file):
 
 def utest(data1, data2):
     return sp_stats.mannwhitneyu(data1, data2, alternative='two_sided')
+
+def htest(*args):
+    return sp_stats.kruskal(*args, nan_policy='raise')

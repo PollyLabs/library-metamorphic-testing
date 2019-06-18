@@ -31,11 +31,23 @@ parser.add_argument("--input_file", type=argparse.FileType('r'), default=None,
     help = "A file with runtime data to be used to generate statistics instead\
     of generating them from scratch.")
 parser.add_argument("--debug", action='store_true', help = "Emit debug messages.")
+parser.add_argument("--plots", action='store_true',
+    help = "Whether to generate plots or not.")
+parser.add_argument("--terminal", action='store_true',
+    help = "Wether to emit statistics to terminal (if unset, will emit\
+    statistics to default output file.")
 args = parser.parse_args()
 
 def debug_log(msg):
     if args.debug:
         print("DEBUG:" + msg)
+
+def emit_handler(msg, output_file):
+    if args.terminal:
+        print(msg)
+    else:
+        with open(output_file, 'w') as emit_file:
+            emit_file.write(msg)
 
 ################################################################################
 # Setup
@@ -100,16 +112,17 @@ else:
 
 for test_name,runtime_data in file_run_times.items():
     fig_name_out = out_folder + "/" + os.path.split(test_name)[-1]
+    stats_name_out = f"{fig_name_out}.stats"
     debug_log(f"OUTPUT FOLDER: {fig_name_out}")
     # pdb.set_trace()
-    # debug_log("Start histogram...")
-    # pfgraph.plot_histogram(runtime_data, bin_count, fig_name_out)
-    # debug_log("Start data point plot...")
-    # pfgraph.plot_data_points(runtime_data, fig_name_out)
-    # debug_log("Start sorted data point plot...")
-    # pfgraph.plot_sorted(runtime_data, fig_name_out)
-    with open(f"{fig_name_out}.stats", 'w') as stats_out:
-        debug_log("Start median...")
-        pfstats.calc_median(runtime_data, stats_out)
-        debug_log("Start mean...")
-        pfstats.calc_mean(runtime_data, stats_out)
+    if (args.plots):
+        debug_log("Start histogram...")
+        pfgraph.plot_histogram(runtime_data, bin_count, fig_name_out)
+        debug_log("Start data point plot...")
+        pfgraph.plot_data_points(runtime_data, fig_name_out)
+        debug_log("Start sorted data point plot...")
+        pfgraph.plot_sorted(runtime_data, fig_name_out)
+    debug_log("Start median...")
+    emit_handler(pfstats.calc_median(runtime_data), stats_name_out)
+    debug_log("Start mean...")
+    emit_handler(pfstats.calc_mean(runtime_data), stats_name_out)
