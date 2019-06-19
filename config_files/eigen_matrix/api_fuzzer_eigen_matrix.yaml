@@ -79,6 +79,11 @@ funcs:
       return_type: 'Eigen::Matrix3i'
       param_types: []
       conditions: []	
+    - name: 'adjointInPlace'	
+      enclosing_class: 'Eigen::Matrix3i'
+      return_type: 'Eigen::Matrix3i'
+      param_types: []
+      conditions: []	
 ##    - name: 'inverse'	
 ##      enclosing_class: 'Eigen::Matrix3i'
 ##      return_type: 'Eigen::Matrix3i'
@@ -115,12 +120,13 @@ funcs:
       special: true
 
 constructors:
-    - name: 'Eigen::Matrix3i::Constant'
+    - name: 'Eigen::Matrix3i::Random'
+##    - name: 'Eigen::Matrix3i::Constant'
       return_type: 'Eigen::Matrix3i'
-      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>', '<unsigned int=range=[-10,10]>']
+##      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>', '<unsigned int=range=[1,10]>']
+      param_types: []
 ##    - name: 'Eigen::Matrix3i::Random'
 ##      return_type: 'Eigen::Matrix3i'
-##      param_types: []
 ##      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>']
 
 set_gen:

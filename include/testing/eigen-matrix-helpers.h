@@ -58,15 +58,11 @@ Eigen::Matrix3i Truncate(Eigen::Matrix3i m)
 	{
 		for(unsigned int j=0; j < 3; j++)
 		{
-			if(res(i,j) > 100 || res(i,j) < -100)
-			{
-				res(i,j) = rand()%100;
-			}
+			res(i,j) = res(i,j)%100;
 		}
 	}
 
 	return res;
-
 }
 
 /*
