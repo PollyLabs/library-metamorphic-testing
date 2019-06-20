@@ -24,7 +24,7 @@ RUN \
     ln -s `pwd`/scripts/compile/compile_eigen.sh ./out/compile_eigen.sh
 
 ENV \
-    CPATH="/home/eigen \
+    CPATH="/home/eigen"
 
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4
