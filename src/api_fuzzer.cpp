@@ -892,7 +892,8 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         bool new_func_ctor = true;
         bool max_depth = ctor_yaml["max_depth"].IsDefined() &&
             ctor_yaml["max_depth"].as<bool>();
-        this->addFunc(new ApiFunc(func_name, enclosing_class, return_type,
+
+	this->addFunc(new ApiFunc(func_name, enclosing_class, return_type,
             param_types_list, cond_list, new_func_special, new_func_statik,
             new_func_ctor));
     }
@@ -2404,11 +2405,15 @@ ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj)
     const ApiObject* target_obj = func_obj->getTarget();
     if (func_obj->getTarget())
     {
+        const FuncObject* func_obj_param = dynamic_cast<const FuncObject*>(target_obj);
         const MetaVarObject* mv_target_obj = dynamic_cast<const MetaVarObject*>(target_obj);
-        if (mv_target_obj && mv_target_obj->isGenerator())
+        if (func_obj_param)
         {
-            target_obj =
-                this->concretizeGenerators(mv_target_obj);
+            target_obj = this->concretizeGenerators(func_obj_param);
+        }
+        else if (mv_target_obj && mv_target_obj->isGenerator())
+        {
+            target_obj = this->concretizeGenerators(mv_target_obj);
         }
     }
     std::vector<const ApiObject*> gen_concrete_params;
