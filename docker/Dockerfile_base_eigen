@@ -1,0 +1,6 @@
+FROM alascu/metalib:base
+
+RUN \
+    apt-get install -y wget && \
+    wget http://bitbucket.org/eigen/eigen/get/3.3.7.tar.gz && \
+    tar -xf 3.3.7.tar.gz && mv eigen-eigen-323c052e1731 eigen
