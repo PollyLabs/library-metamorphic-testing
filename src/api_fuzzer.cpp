@@ -201,7 +201,8 @@ ApiFuzzer::addInstr(const ApiInstructionInterface* instr)
 
 void
 ApiFuzzer::addInstrVector(std::vector<const ApiInstructionInterface*> instr_vec)
-{ this->instrs.insert(this->instrs.end(), instr_vec.begin(), instr_vec.end());
+{
+    this->instrs.insert(this->instrs.end(), instr_vec.begin(), instr_vec.end());
 }
 
 std::string
