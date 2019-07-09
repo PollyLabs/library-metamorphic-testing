@@ -17,6 +17,8 @@ import matplotlib.rcsetup as rcs
 ################################################################################
 
 parser = argparse.ArgumentParser()
+parser.add_argument("cmd", type=str, default="", nargs=argparse.REMAINDER,
+    help = "A custom command to run.")
 parser.add_argument("--cpu", type=int, default=1,
     help = "Which cpu core to pin the process to; core id passed to `taskset`.")
 parser.add_argument("--timeout", type=int, default=60,
@@ -56,7 +58,10 @@ def emit_handler(msg, output_file):
 bin_count = int(args.repeat_count * args.bin_ratio / 100)
 
 test_dir = "./perf/"
-file_run = [x for x in glob.glob(test_dir + "*") if os.path.splitext(x)[1] == "" and "graph" not in x]
+if args.cmd:
+    file_run = [" ".join(args.cmd[1:])]
+else:
+    file_run = [x for x in glob.glob(test_dir + "*") if os.path.splitext(x)[1] == "" and "graph" not in x]
 file_run_times = {}
 file_warmup_times = {}
 
