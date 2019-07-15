@@ -9,6 +9,9 @@
 
 #include "api_fuzzer.hpp"
 
+extern std::stringstream new_ss_i, new_ss_mi, new_ss_p;
+extern const char *command, *exe_command;
+
 enum Modes {
     SET_FUZZ,
     API_FUZZ,
@@ -35,4 +38,6 @@ void prepareHeader(std::stringstream&, std::vector<std::string>&, Arguments&);
 void mainPreSetup(std::stringstream&, std::vector<std::string>&);
 void mainPostSetup(std::stringstream&);
 
+std::string Exec(const char* cmd);
+std::pair<std::string, std::string> parseErrorMsg(std::string msg);
 #endif

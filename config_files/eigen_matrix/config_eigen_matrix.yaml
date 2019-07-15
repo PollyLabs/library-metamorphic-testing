@@ -3,15 +3,17 @@ working_dir: "/data/pgharat/project3/library-metamorphic-testing/"
 api_fuzzer_file: "./config_files/eigen_matrix/api_fuzzer_eigen_matrix.yaml"
 meta_test_file: "./config_files/eigen_matrix/set_meta_tests_eigen_matrix.yaml"
 test_emitter_output_file: "./out/test.cpp"
+#test_compile_bin: "./compile_eigen.sh"
 meta_runner:
 # Path setup
     test_emitter_path: "./build/test_emitter"
     lib_path: "./libs"
-    lib_build_dir: ~
-    lib_coverage_dir: ~
+    include_path: "./include/eigen"
+    lib_build_dir: "" 
+    lib_coverage_dir: ""
     test_compile_dir: "./out"
 # Test runtime setup
-    test_compile_bin: "./compile_eigen_matrix.sh"
+    test_compile_bin: "./compile_eigen.sh"
     test_source_path: "./out/test.cpp"
     test_run_path: "./out/test"
     default_timeout: 60

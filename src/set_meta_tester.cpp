@@ -255,7 +255,11 @@ SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
         const MetaTest* new_test = this->genOneMetaTest(rel_chain, meta_variant);
         if (new_test)
         {
-            this->fuzzer->addInstrVector(this->testToApiInstrs(new_test));
+            instrs = this->testToApiInstrs(new_test);
+            this->fuzzer->addInstrVector(instrs);
+
+	    // Added by Pritam	
+            this->fuzzer->MetaVariant_Instr[meta_variant->getID()] = instrs;
         }
         else
         {

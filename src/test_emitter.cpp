@@ -1,5 +1,10 @@
 #include "test_emitter.hpp"
 
+#include <system_error>
+#include <pstream.h>
+
+#define REDUCE 1
+
 static unsigned int indent = 0;
 const std::string default_config_file =
     "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl.yaml";
@@ -15,6 +20,9 @@ std::map<std::string, Modes> string_to_mode {
     {"SET_META_API", SET_META_API},
     {"SET_META_NEW", SET_META_NEW},
 };
+
+std::stringstream new_ss_i, new_ss_mi, new_ss_p;
+const char *command, *exe_command;
 
 void
 parseArgs(Arguments& args, int argc, char **argv)
@@ -105,6 +113,54 @@ mainPostSetup(std::stringstream &ss)
     writeLine(ss, "}");
 }
 
+std::pair<std::string, std::string> parseErrorMsg(std::string msg)
+{
+	std::string m_var1, m_var2;
+	std::pair<std::string, std::string> result("","");
+
+	std::size_t pos1 = msg.find("Assertion `r");  // Assumption that the error caused due to Assertion failure caused by meta variants
+	std::size_t pos2, pos3, pos4;
+
+	if (pos1 != std::string::npos)
+	{
+		pos2 = msg.find(".operator");  
+		pos3 = msg.find("==(");  
+		pos4 = msg.find(")'");  
+
+		m_var1 = msg.substr(pos1+11,pos2-pos1-11); 
+
+		m_var2 = msg.substr(pos3+3,pos4-pos3-3); 
+
+//		std::cout << "Var1: " << m_var1 << std::endl;
+//		std::cout << "Var2: " << m_var2 << std::endl;
+	
+		result = std::make_pair(m_var1, m_var2);
+	} 
+
+	return result;
+}
+
+std::string Exec(const char* cmd)
+{
+	std::string err = "";
+
+	redi::ipstream proc(cmd, redi::pstreams::pstdout | redi::pstreams::pstderr);
+	std::string line;
+
+	// read child's stdout
+//	while (std::getline(proc.out(), line))
+//	std::cout << "stdout: " << line << '\n';
+
+	// read child's stderr
+	while (std::getline(proc.err(), line))
+	{
+//		std::cout << "stderr: " << line << '\n';
+		err += line;
+	}
+
+	return err;
+}
+
 int
 main(int argc, char** argv)
 {
@@ -130,7 +186,7 @@ main(int argc, char** argv)
     }
 
     std::mt19937* rng = new std::mt19937(args.seed);
-    std::stringstream test_ss;
+    std::stringstream new_ss_m;
 
     YAML::Node api_fuzzer_data = loadYAMLFileWithCheck(api_fuzzer_path);
     std::vector<std::string> include_list = {
@@ -146,7 +202,7 @@ main(int argc, char** argv)
         }
     }
 
-    prepareHeader(test_ss, include_list, args, api_fuzzer_path, meta_test_path);
+    prepareHeader(new_ss_i, include_list, args, api_fuzzer_path, meta_test_path);
     std::vector<std::string> pre_setup_instrs;
     if (api_fuzzer_data["pre_setup"].IsDefined())
     {
@@ -155,19 +211,156 @@ main(int argc, char** argv)
             pre_setup_instrs.push_back(pre_setup_yaml.as<std::string>());
         }
     }
-    mainPreSetup(test_ss, pre_setup_instrs);
+    mainPreSetup(new_ss_i, pre_setup_instrs);
 
     std::unique_ptr<ApiFuzzerNew> api_fuzzer (
         new ApiFuzzerNew(api_fuzzer_path, meta_test_path, args.seed, rng));
     for (std::string instr : api_fuzzer->getInstrStrs())
     {
-        writeLine(test_ss, instr);
+        writeLine(new_ss_m, instr);
     }
 
-    mainPostSetup(test_ss);
+    mainPostSetup(new_ss_p);
 
     std::ofstream ofs;
     ofs.open(args.output_file);
-    ofs << test_ss.rdbuf();
+    ofs << new_ss_i.str();
+    ofs << new_ss_m.str();
+    ofs << new_ss_p.str();
     ofs.close();
+
+    #if REDUCE 
+    // Code Added by Pritam
+
+    std::string compile_bin = working_dir + config_data["meta_runner"]["test_compile_bin"].as<std::string>();
+    std::string compile_dir = working_dir + config_data["meta_runner"]["test_compile_dir"].as<std::string>();
+
+   // Extracting the test object for execution using string manipulations
+ 
+    std::string delim = "/";
+
+    auto start = 0U;
+    auto end = args.output_file.find(delim);
+    while (end != std::string::npos)
+    {
+        start = end + delim.length();
+        end = args.output_file.find(delim, start);
+    }
+
+    std::string testcase = args.output_file.substr(start, end);	
+ 
+    delim = ".";
+
+    start = 0U;
+    end = testcase.find(delim);
+
+    std::string testobj = testcase.substr(start, end);	
+
+   // Compiling the Test Case
+
+    std::string compile_cmd = compile_bin + " " + args.output_file;
+
+    command = compile_cmd.c_str();
+
+   // Executing the Test Case
+
+    std::string execute_cmd = compile_dir + "/" + testobj;
+       	
+    exe_command = execute_cmd.c_str();
+
+    std::string compile_err, exe_err;	
+    std::string old_compile_err = "", old_exe_err = "";	
+
+    std::pair<std::string, std::string> res;	
+    std::set<std::string> var;	
+
+//    std::cout << "Exe: " << exe_command << std::endl;
+
+    compile_err = Exec(command);
+    exe_err = Exec(exe_command);
+
+    //compile_err = "i";
+
+    if(compile_err == "" && exe_err == "")
+    {
+        std::cout << "No Error\n";
+    }			
+    else	
+    {
+	if(compile_err != "")
+	{
+	        std::cout << "Compile Error: " << compile_err << std::endl;
+	}
+	else if(compile_err == "" && exe_err != "") //Compilation is successful and execution fails
+	{
+	        std::cout << "Execution Error: " << exe_err << std::endl;
+
+		std::vector<const ApiInstructionInterface*> list_inst, input_inst;
+
+		res = parseErrorMsg(exe_err);
+
+		if(res.first != ""){ // Execution failed but not because of the assertion failure
+
+		var.insert(res.first);
+		var.insert(res.second);
+
+		input_inst = api_fuzzer->InputInstrs;
+    
+		for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
+		{
+			writeLine(new_ss_mi, (*it)->toStr());
+		}
+
+		// Reducing number of meta variants
+
+		var = api_fuzzer->MVReduceInstr(compile_err, exe_err, var, args.output_file);
+
+		// Reducing number of meta relations 
+
+		api_fuzzer->MHReduceInstr(compile_err, exe_err, var, args.output_file);
+
+		#if 0
+		input_inst = api_fuzzer->InputInstrs;
+
+		for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
+		{
+			writeLine(new_ss_mi, (*it)->toStr());
+		}
+
+		do {
+			old_compile_err = compile_err;
+			old_exe_err = exe_err;
+
+			list_inst = api_fuzzer->MetaVariantReduce(var);
+			ip_inst = api_fuzzer->InputInstrs;
+
+			for(std::vector<const ApiInstructionInterface*>::iterator iit = ip_inst.begin(); iit != ip_inst.end(); iit++)
+			{
+				writeLine(new_ss_m, (*iit)->toStr());
+			}
+			for(std::vector<const ApiInstructionInterface*>::iterator iit = list_inst.begin(); iit != list_inst.end(); iit++)
+			{
+				writeLine(new_ss_m, (*iit)->toStr());
+			}
+
+			ofs.open(args.output_file);
+			std::stringstream test_ss1;
+
+//			test_ss1 << new_ss_i.rdbuf();
+//			test_ss1 << new_ss_m.rdbuf();
+//			test_ss1 << new_ss_p.rdbuf();
+			ofs << new_ss_i.rdbuf();
+			ofs << new_ss_m.rdbuf();
+			ofs << new_ss_p.rdbuf();
+			ofs.close();
+
+		    	compile_err = Exec(command);
+			exe_err = Exec(exe_command);
+
+		}while(old_compile_err != compile_err || old_exe_err != exe_err);	
+		#endif
+	}
+	}	
+      }	
+    #endif
 }

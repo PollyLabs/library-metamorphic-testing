@@ -16,6 +16,7 @@
 
 #include "api_elements.hpp"
 #include "set_meta_tester.hpp"
+#include "test_emitter.hpp"
 
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
@@ -153,6 +154,16 @@ class ApiFuzzerNew : public ApiFuzzer {
         const MetaRelation* concretizeRelation(const MetaRelation*,
             const ApiObject*, bool);
 
+        std::vector<const ApiInstructionInterface*> MetaVariantReduce(std::set<std::string> var);
+
+	std::map<size_t, std::vector<const ApiInstructionInterface*> > MetaVariant_Instr;
+        std::vector<const ApiInstructionInterface*> InputInstrs;
+	std::set<std::string> MVReduceInstr(std::string compile_err, std::string exe_err, std::set<std::string> var, std::string output_file);
+	void MHReduceInstr(std::string compile_err, std::string exe_err, std::set<std::string> var, std::string output_file);
+
+	std::set<std::string> DecreaseVarSize(std::string new_exe_err, std::string exe_err, std::set<std::string> var);		
+	std::set<std::string> IncreaseVarSize(std::string new_exe_err, std::set<std::string> var);		
+
     private:
         void initPrimitiveTypes();
         void initInputs(YAML::Node);
@@ -209,6 +220,7 @@ class ApiFuzzerNew : public ApiFuzzer {
         const FuncObject* concretizeFuncObject(const FuncObject*,
             std::map<const MetaVarObject*, const ApiObject*>);
         const ApiObject* concretizeMetaVarObject(const MetaVarObject*);
+
 };
 
 #endif
