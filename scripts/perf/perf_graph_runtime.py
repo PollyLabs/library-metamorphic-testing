@@ -1,10 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 import argparse
 import glob
 import subprocess
 import pdb
 import os
+import sys
 import time
+
+from threading import Timer
 
 import perf_graph_plot as pfgraph
 import perf_stats as pfstats
@@ -17,8 +20,6 @@ import matplotlib.rcsetup as rcs
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument("cmd", type=str, default="", nargs=argparse.REMAINDER,
-    help = "A custom command to run.")
 parser.add_argument("--cpu", type=int, default=1,
     help = "Which cpu core to pin the process to; core id passed to `taskset`.")
 parser.add_argument("--timeout", type=int, default=60,
@@ -57,11 +58,14 @@ def emit_handler(msg, output_file):
 
 bin_count = int(args.repeat_count * args.bin_ratio / 100)
 
-test_dir = "./perf/"
-if args.cmd:
-    file_run = [" ".join(args.cmd[1:])]
-else:
-    file_run = [x for x in glob.glob(test_dir + "*") if os.path.splitext(x)[1] == "" and "graph" not in x]
+#test_dir = "./perf/"
+test_dir = "./tests/"
+#file_run = [x for x in glob.glob(test_dir + "*") if os.path.splitext(x)[1] == "" and "graph" not in x]
+file_run = [x for x in glob.glob(test_dir + "**/*.smt2") if os.path.splitext(x)[1] == ".smt2" and not "rewrite" in x]
+file_run = [x for x in file_run if "1192684" in x]
+#for x in file_run:
+#    print(x)
+#sys.exit(1)
 file_run_times = {}
 file_warmup_times = {}
 
@@ -82,41 +86,62 @@ else:
     for test_file in file_run:
         file_run_times[test_file] = []
         file_warmup_times[test_file] = []
-        fig_name_out = out_folder + "/" + os.path.split(test_file)[-1]
-        cpu_pin_cmd = ["taskset", str(args.cpu), test_file]
+        fig_name_out = out_folder + "/" + test_file
+        try:
+            os.makedirs(os.path.split(fig_name_out)[0])
+        except FileExistsError:
+            pass
+        cpu_pin_cmd = ["taskset", str(args.cpu), "./z3", test_file]
         # Run training for hardware
         for i in range(0, int(args.repeat_count * args.warmup_ratio / 100)):
             print("Training " + test_file + " iteration " + str(i), end="\r")
             start_time = time.time()
+            test_proc = subprocess.Popen(cpu_pin_cmd)
+            timer = Timer(args.timeout, test_proc.kill)
             try:
-                test_proc = subprocess.run(cpu_pin_cmd, timeout=args.timeout)
+                timer.start()
+                test_proc.communicate()
+                file_warmup_times[test_file].append(-1)
+            finally:
                 end_time = time.time()
                 file_warmup_times[test_file].append(end_time - start_time)
-            except TimeoutException:
-                file_warmup_times[test_file].append(-1)
+                timer.cancel()
         print()
         with open(fig_name_out + ".warmup", 'w') as warmup_fd:
             warmup_fd.write("\n".join(map(str, file_warmup_times[test_file])))
         for i in range(0, args.repeat_count):
             print("Running " + test_file + " iteration " + str(i), end="\r")
             start_time = time.time()
-            test_proc = subprocess.run(cpu_pin_cmd)
-            end_time = time.time()
-            file_run_times[test_file].append(end_time - start_time)
-        print()
+            test_proc = subprocess.Popen(cpu_pin_cmd)
+            timer = Timer(args.timeout, test_proc.kill)
+            try:
+                timer.start()
+                test_proc.communicate()
+            finally:
+                end_time = time.time()
+                timer.cancel()
+                if test_proc.returncode != 0:
+                    file_run_times[test_file].append(-1)
+                else:
+                    file_run_times[test_file].append(end_time - start_time)
+            #end_time = time.time()
+            #file_run_times[test_file].append(end_time - start_time)
         with open(fig_name_out + ".data", 'w') as data_fd:
             data_fd.write("\n".join(map(str, file_run_times[test_file])))
+print()
 
 # filter timeouts from plotting data
-# pdb.set_trace()
-# file_run_times = {k:v for k,v in file_run_times.items() if v != -1}
-# file_warmup_times = {k:v for k,v in file_warmup_times.items() if v != -1}
+#pdb.set_trace()
+file_run_times = {k:[x for x in v if x != -1] for k,v in file_run_times.items()}
+file_warmup_times = {k:[x for x in v if x != -1] for k,v in file_warmup_times.items()}
 
 # file_run_times = map(lambda x : filter(lambda y : y != -1, x), file_run_times)
 # file_warmup_times = map(lambda x : filter(lambda y : y != -1, x), file_warmup_times)
 
 for test_name,runtime_data in file_run_times.items():
-    fig_name_out = out_folder + "/" + os.path.split(test_name)[-1]
+    if not runtime_data:
+        continue
+    fig_name_out = out_folder + "/" + test_name + ".graph"
     stats_name_out = f"{fig_name_out}.stats"
     debug_log(f"OUTPUT FOLDER: {fig_name_out}")
     # pdb.set_trace()
@@ -127,7 +152,10 @@ for test_name,runtime_data in file_run_times.items():
         pfgraph.plot_data_points(runtime_data, fig_name_out)
         debug_log("Start sorted data point plot...")
         pfgraph.plot_sorted(runtime_data, fig_name_out)
-    debug_log("Start median...")
-    emit_handler(pfstats.calc_median(runtime_data), stats_name_out)
-    debug_log("Start mean...")
-    emit_handler(pfstats.calc_mean(runtime_data), stats_name_out)
+    #emit_handler(pfstats.calc_median(runtime_data), stats_name_out)
+    #emit_handler(pfstats.calc_mean(runtime_data), stats_name_out)
+    with open(stats_name_out, 'w') as stats_fd:
+        debug_log("Start median...")
+        pfstats.calc_median(runtime_data, stats_fd)
+        debug_log("Start mean...")
+        pfstats.calc_mean(runtime_data, stats_fd)
