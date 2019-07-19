@@ -113,6 +113,11 @@ mainPostSetup(std::stringstream &ss)
     writeLine(ss, "}");
 }
 
+bool parseAssertInstruction(std::set<std::string> var, const ApiInstructionInterface *inst)
+{
+	return true;
+}
+
 std::pair<std::string, std::string> parseErrorMsg(std::string msg)
 {
 	std::string m_var1, m_var2;
@@ -319,46 +324,6 @@ main(int argc, char** argv)
 
 		api_fuzzer->MHReduceInstr(compile_err, exe_err, var, args.output_file);
 
-		#if 0
-		input_inst = api_fuzzer->InputInstrs;
-
-		for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
-		{
-			writeLine(new_ss_mi, (*it)->toStr());
-		}
-
-		do {
-			old_compile_err = compile_err;
-			old_exe_err = exe_err;
-
-			list_inst = api_fuzzer->MetaVariantReduce(var);
-			ip_inst = api_fuzzer->InputInstrs;
-
-			for(std::vector<const ApiInstructionInterface*>::iterator iit = ip_inst.begin(); iit != ip_inst.end(); iit++)
-			{
-				writeLine(new_ss_m, (*iit)->toStr());
-			}
-			for(std::vector<const ApiInstructionInterface*>::iterator iit = list_inst.begin(); iit != list_inst.end(); iit++)
-			{
-				writeLine(new_ss_m, (*iit)->toStr());
-			}
-
-			ofs.open(args.output_file);
-			std::stringstream test_ss1;
-
-//			test_ss1 << new_ss_i.rdbuf();
-//			test_ss1 << new_ss_m.rdbuf();
-//			test_ss1 << new_ss_p.rdbuf();
-			ofs << new_ss_i.rdbuf();
-			ofs << new_ss_m.rdbuf();
-			ofs << new_ss_p.rdbuf();
-			ofs.close();
-
-		    	compile_err = Exec(command);
-			exe_err = Exec(exe_command);
-
-		}while(old_compile_err != compile_err || old_exe_err != exe_err);	
-		#endif
 	}
 	}	
       }	

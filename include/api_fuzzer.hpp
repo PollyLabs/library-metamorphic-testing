@@ -21,7 +21,10 @@
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 
+#define RECUR_LIMIT 10
+
 extern char delim_front, delim_back, delim_mid;
+extern unsigned int RECUR_TIMES;
 
 void CHECK_YAML_FIELD(std::string);
 template<typename T> T getRandomVectorElem(const std::vector<T>&, std::mt19937*);

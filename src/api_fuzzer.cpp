@@ -4,6 +4,9 @@ char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
 
+
+unsigned int RECUR_TIMES = 0;
+
 /*******************************************************************************
  * Helper functions
  ******************************************************************************/
@@ -2801,6 +2804,8 @@ void ApiFuzzerNew::MHReduceInstr(std::string compile_err, std::string exe_err, s
 	std::string new_compile_err = "";
 	std::string new_exe_err = "";
 
+	const ApiObject *mvar;
+
 	for(std::vector<const MetaTest*>::iterator it = meta_tests.begin(); it != meta_tests.end(); it++)
 	{
 		if(var.find((*it)->getVariantVar()->toStr()) != var.end())
@@ -2809,24 +2814,24 @@ void ApiFuzzerNew::MHReduceInstr(std::string compile_err, std::string exe_err, s
 		}	
 	}
 
-	for(int i = 1; i <= meta_test_count; i++)
+	for(int i = 0; i < meta_test_count; i++)
 	{
 		std::stringstream new_ss_m;
 
 		for(std::vector<const MetaTest*>::iterator it = red_meta_tests.begin(); it != red_meta_tests.end(); it++)
 		{
-			temp =  MetaVariant_Instr[(*it)->getVariantVar()->getID()];
+			mvar = (*it)->getVariantVar();
+
+			temp =  MetaVariant_Instr[mvar->getID()];
+
+			rel =  (*it)->getRelations();
+
+			mvar->declared = false;
 
 //			std::cout << "I: " << i << std::endl << temp.at(i)->toStr() << std::endl;
 
 			writeLine(new_ss_m, temp.at(0)->toStr());
-			writeLine(new_ss_m, temp.at(1)->toStr());
-
-			if(i != 1)
-			{
-				writeLine(new_ss_m, temp.at(i)->toStr());
-			}
-
+			writeLine(new_ss_m, rel.at(i)->toApiInstruction()->toStr());
 			writeLine(new_ss_m, temp.at(meta_test_count+1)->toStr());
 		}
 
@@ -2851,19 +2856,15 @@ void ApiFuzzerNew::MHReduceInstr(std::string compile_err, std::string exe_err, s
 
 std::set<std::string> ApiFuzzerNew::MVReduceInstr(std::string compile_err, std::string exe_err, std::set<std::string> var, std::string output_file)
 {
+	if(RECUR_LIMIT == RECUR_TIMES)
+	{
+		return var;
+	}
+
 	std::vector<const ApiInstructionInterface*> result, list_inst, input_inst;
 	std::stringstream new_ss_m;
 
 	list_inst = MetaVariantReduce(var);
-
-	#if 0
-	input_inst = InputInstrs;
-
-	for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
-	{
-		writeLine(new_ss_m, (*it)->toStr());
-	}
-	#endif
 
 	for(std::vector<const ApiInstructionInterface*>::iterator it = list_inst.begin(); it != list_inst.end(); it++)
 	{
@@ -2885,22 +2886,42 @@ std::set<std::string> ApiFuzzerNew::MVReduceInstr(std::string compile_err, std::
     	new_compile_err = Exec(command);
     	new_exe_err = Exec(exe_command);
 
-	if(new_compile_err == compile_err && new_exe_err == exe_err)
+	if(new_compile_err == compile_err && new_exe_err == exe_err) // Error replicated
 	{
-		if(var.size() > 2) // Reduce var
+		if(var.size() > 2) // Reduce var and check if error can be reproduced
 		{
-			std::set<std::string> new_var = DecreaseVarSize(new_exe_err, exe_err, var);		
+			std::set<std::string> new_var;
 
-			if(new_var.size() != var.size())
+			do{
+				new_var = DecreaseVarSize(new_exe_err, exe_err, var);		
+			}while(new_var.size() != var.size());
+
+//			if(new_var.size() != var.size())
+			{
+				RECUR_TIMES++;
 				return MVReduceInstr(compile_err, exe_err, new_var, output_file);
+			}
 		}
 	}
-	else // Either compilation or execution fails. Increase the size of var
+	else if(new_compile_err == "" && new_exe_err == "") // Error disappeared, so backtrack
 	{
-		std::set<std::string> new_var = IncreaseVarSize(new_exe_err, var);		
+		RECUR_TIMES++;
+		return MVReduceInstr(compile_err, exe_err, var, output_file);
+	}
+	else // Error (compilation or execution) changes. Increase the size of var
+	{
+		std::set<std::string> new_var;
 
-		if(new_var.size() != var.size())
+		do{
+			new_var = IncreaseVarSize(new_exe_err, var);		
+		}while(new_var.size() != var.size());
+
+
+//		if(new_var.size() != var.size())
+		{
+			RECUR_TIMES++;
 			return MVReduceInstr(compile_err, exe_err, var, output_file);
+		}
 	}
 
 	return var;	
