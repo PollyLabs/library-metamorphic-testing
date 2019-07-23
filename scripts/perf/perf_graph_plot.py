@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 
 def plot_data_points(data, fig_name):
     plt.figure(num = 1, figsize = (30, 5))
+    plt.suptitle(fig_name)
     plt.plot(data, "kx")
     plt.xlabel("Test run #")
     plt.ylabel("Test runtime")
@@ -11,6 +12,7 @@ def plot_data_points(data, fig_name):
 
 def plot_histogram(data, bin_count, fig_name):
     plt.figure(num = 1, figsize = (10, 10))
+    plt.suptitle(fig_name)
     plt.hist(data, bins=bin_count)
     plt.xlabel("Runtime")
     plt.ylabel("Total test count")
