@@ -89,7 +89,8 @@ os.makedirs(out_folder)
 matplotlib.use("Agg")
 
 if args.input_file:
-    file_run_times["input"] = [float(line.rstrip()) for line in args.input_file.readlines()]
+    file_run_times[os.path.basename(args.input_file.name)] =\
+        [float(line.rstrip()) for line in args.input_file.readlines()]
 else:
     for test_file in file_run:
         file_run_times[test_file] = []
@@ -181,12 +182,8 @@ for test_name,runtime_data in file_run_times.items():
     else:
         stats_name_out = f"{fig_name_out}.stats"
         stats_fd = open(stats_name_out, 'w')
-    if args.input_file:
-        file_name = args.input_file.name
-    else:
-        file_name = test_name
-    stats_fd.write(f"File name: {file_name}\n");
-    stats_fd.write(f"Data point count: {len(file_run_times['input'])}\n");
+    stats_fd.write(f"File name: {test_name}\n");
+    stats_fd.write(f"Data point count: {len(runtime_data)}\n");
     debug_log("Start median...")
     pfstats.calc_median(runtime_data, stats_fd)
     debug_log("Start mean...")
