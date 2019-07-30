@@ -273,18 +273,17 @@ main(int argc, char** argv)
        	
     exe_command = execute_cmd.c_str();
 
-    std::string compile_err, exe_err;	
-    std::string old_compile_err = "", old_exe_err = "";	
+    std::string compile_err, exe_err;
 
     std::pair<std::string, std::string> res;	
-    std::set<std::string> var;	
 
 //    std::cout << "Exe: " << exe_command << std::endl;
 
     compile_err = Exec(command);
     exe_err = Exec(exe_command);
 
-    //compile_err = "i";
+//    std::cout << "Compile Error: " << compile_err << std::endl;
+//    std::cout << "Execution Error: " << exe_err << std::endl;
 
     if(compile_err == "" && exe_err == "")
     {
@@ -304,28 +303,74 @@ main(int argc, char** argv)
 
 		res = parseErrorMsg(exe_err);
 
-		if(res.first != ""){ // Execution failed but not because of the assertion failure
-
-		var.insert(res.first);
-		var.insert(res.second);
-
-		input_inst = api_fuzzer->InputInstrs;
-    
-		for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
+		if(res.first != "") // Execution failed but not because of the assertion failure
 		{
-			writeLine(new_ss_mi, (*it)->toStr());
+			input_inst = api_fuzzer->InputInstrs;
+    
+			for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
+			{
+				writeLine(new_ss_mi, (*it)->toStr());
+			}
+
+			// Reducing number of meta variants
+
+			std::vector<const ApiObject*> var;
+
+			var = api_fuzzer->verticalReduction(compile_err, exe_err, api_fuzzer->meta_variants, args.output_file);
+
+			// Reducing number of meta relations 
+
+			std::vector<const ApiInstructionInterface*> red = api_fuzzer->MHReduceInstr(compile_err, res, var, args.output_file);
+
+			#if 0
+			for(std::vector<const ApiInstructionInterface*>::iterator it = red.begin(); it != red.end(); it++)
+			{
+				std::cout << (*it)->toStr() << std::endl;
+			}
+			#endif
+
+			api_fuzzer->inputVarReduction(compile_err, exe_err, api_func_objects, args.output_file, red);
+
 		}
-
-		// Reducing number of meta variants
-
-		var = api_fuzzer->MVReduceInstr(compile_err, exe_err, var, args.output_file);
-
-		// Reducing number of meta relations 
-
-		api_fuzzer->MHReduceInstr(compile_err, exe_err, var, args.output_file);
-
-	}
-	}	
+	  }	
       }	
     #endif
+}
+
+void printVectorApiObjects(std::vector<const ApiObject*> var)
+{
+//	std::cout << "Printing Vector of ApiObjects: " << var.size() << std::endl;
+	logDebug(fmt::format("Printing Vector of ApiObjects: {}", var.size()));
+
+	for(std::vector<const ApiObject*>::iterator it = var.begin(); it != var.end(); it++)
+	{
+//		std::cout << (*it)->toStr() << std::endl;
+	        logDebug(fmt::format("{}", (*it)->toStr()));
+	}
+}
+
+void printVectorApiFuncObjects(std::vector<const ApiFuncObject*> var)
+{
+//	std::cout << "Printing Vector of ApiFuncObjects: " << var.size() << std::endl;
+	logDebug(fmt::format("Printing Vector of ApiFuncObjects: {}", var.size()));
+
+	for(std::vector<const ApiFuncObject*>::iterator it = var.begin(); it != var.end(); it++)
+	{
+//		std::cout << (*it)->toStr() << std::endl;
+	        logDebug(fmt::format("{}", (*it)->toStr()));
+	}
+
+//	std::cout << "End of Vector of ApiFuncObjects" << std::endl;
+}
+
+void printVectorApiInstructions(std::vector<const ApiInstructionInterface*> instr)
+{
+//	std::cout << "Printing Vector of ApiInstructions: " << instr.size() << std::endl;
+	logDebug(fmt::format("Printing Vector of ApiInstructions: {}", instr.size()));
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = instr.begin(); it != instr.end(); it++)
+	{
+//		std::cout << (*it)->toStr() << std::endl;
+	        logDebug(fmt::format("{}", (*it)->toStr()));
+	}
 }

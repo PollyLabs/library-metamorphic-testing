@@ -38,6 +38,8 @@ std::set<const ApiFunc*> filterFuncList(
 template<typename T> std::set<const ApiFunc*> filterFuncList(
     std::set<const ApiFunc*>, bool (ApiFunc::*)(T) const, T);
 
+
+
 class ApiFuzzer {
     protected:
         /* Fuzzing members */
@@ -143,6 +145,8 @@ class ApiFuzzer {
 
 };
 
+
+
 class ApiFuzzerNew : public ApiFuzzer {
     std::map<std::string, const ApiObject*> fuzzer_input;
     std::vector<YAML::Node> set_gen_instrs;
@@ -157,15 +161,28 @@ class ApiFuzzerNew : public ApiFuzzer {
         const MetaRelation* concretizeRelation(const MetaRelation*,
             const ApiObject*, bool);
 
-        std::vector<const ApiInstructionInterface*> MetaVariantReduce(std::set<std::string> var);
-
 	std::map<size_t, std::vector<const ApiInstructionInterface*> > MetaVariant_Instr;
-        std::vector<const ApiInstructionInterface*> InputInstrs;
-	std::set<std::string> MVReduceInstr(std::string compile_err, std::string exe_err, std::set<std::string> var, std::string output_file);
-	void MHReduceInstr(std::string compile_err, std::string exe_err, std::set<std::string> var, std::string output_file);
+	std::map<size_t, std::vector<const ApiInstructionInterface*> > InputVar_Instr;
 
-	std::set<std::string> DecreaseVarSize(std::string new_exe_err, std::string exe_err, std::set<std::string> var);		
-	std::set<std::string> IncreaseVarSize(std::string new_exe_err, std::set<std::string> var);		
+
+        std::vector<const ApiInstructionInterface*> InputInstrs;
+	std::vector<const ApiObject*> getApiObjects(std::vector<std::string> var);
+
+	std::vector<const ApiInstructionInterface*> MHReduceInstr(std::string compile_err, std::pair<std::string, std::string> exe_err, std::vector<const ApiObject*> var, std::string output_file);
+	bool assertReduction(std::string compile_err, std::pair<std::string,std::string> exe_err, const ApiInstruction *assert, std::vector<const ApiObject*> var);
+        std::vector<const ApiInstructionInterface*> MetaVariantReduce(std::vector<const ApiObject*> var);
+
+	std::vector<const ApiObject*> verticalReduction(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> mvar, std::string output_file);	
+	std::vector<const ApiObject*> verticalReductionMerge(std::vector<const ApiObject*> mvar1, std::vector<const ApiObject*> mvar2);
+
+	std::vector<const ApiFuncObject*> inputVarReduction(std::string compile_err, std::string exe_err, std::vector<const ApiFuncObject*> mvar, std::string output_file, std::vector<const ApiInstructionInterface*> red);	
+	std::vector<const ApiFuncObject*> inputVarMerge(std::vector<const ApiFuncObject*> mvar1, std::vector<const ApiFuncObject*> mvar2);
+
+	std::pair<std::string, std::string> createTestCase(std::vector<const ApiObject*> var, std::string output_file);
+	bool checkTestCase(std::string c_err, std::string n_c_err, std::string e_err, std::string n_e_err);
+	std::pair<std::string, std::string> createTestCaseForInputVar(std::vector<const ApiInstructionInterface*> instr, std::vector<const ApiInstructionInterface*> red, std::string output_file);
+	std::pair<std::string, std::string> createTestCaseInput(std::vector<const ApiFuncObject*> var, std::string output_file, std::vector<const ApiInstructionInterface*> red);
+	
 
     private:
         void initPrimitiveTypes();

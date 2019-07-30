@@ -41,4 +41,8 @@ void mainPostSetup(std::stringstream&);
 std::string Exec(const char* cmd);
 std::pair<std::string, std::string> parseErrorMsg(std::string msg);
 bool parseAssertInstruction(std::set<std::string> var, const ApiInstructionInterface *inst);
+
+void printVectorApiObjects(std::vector<const ApiObject*> var);
+void printVectorApiFuncObjects(std::vector<const ApiFuncObject*> var);
+void printVectorApiInstructions(std::vector<const ApiInstructionInterface*> instr);
 #endif

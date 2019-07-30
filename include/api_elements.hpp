@@ -192,6 +192,11 @@ class ApiObject {
             return fmt::format("{} {}", this->getType()->toStr(),
                 this->toStr());
         };
+
+	bool operator< (const ApiObject & obj) const
+	{
+		return (this->id < obj.id);
+	}
 };
 
 template<typename T>
@@ -465,5 +470,47 @@ class MetaVarObject : public ApiObject {
 };
 
 #include "api_elements.tpp"
+
+class ApiFuncObject{
+
+	protected:
+
+        const size_t id;
+	const ApiFunc* func;
+	std::vector<const ApiInstructionInterface*> instructions;
+	const ApiObject* target_obj;
+	const ApiObject* return_obj;
+	std::vector<const ApiObject*> params;
+
+	public:
+
+	ApiFuncObject(const size_t _id, const ApiFunc* _func, const ApiObject* _target, const ApiObject* _return,
+            std::vector<const ApiObject*> _params, std::vector<const ApiInstructionInterface*> _instrs) :
+            id(_id), func(_func), target_obj(_target), return_obj(_return), params(_params), instructions(_instrs) {};
+
+        virtual ~ApiFuncObject() = default;
+
+	const size_t getID() { return this->id; };
+	const ApiFunc* getFunc() const { return this->func; };
+	const ApiObject* getTargetObject() const { return this->target_obj; };
+	const ApiObject* getReturnObject() const { return this->return_obj; };
+	std::vector<const ApiObject*> getParams() const { return this->params; };
+	std::vector<const ApiInstructionInterface*> getInstructions() const { return this->instructions; };
+
+	inline virtual std::string toStr() const {
+            return fmt::format("{} {} {} {}", this->func->getName(), std::to_string(this->id), this->target_obj->toStr(), this->return_obj->toStr());
+        };
+
+	bool operator< (const ApiFuncObject & obj) const
+	{
+		return (this->id < obj.id);
+	}
+};
+
+extern unsigned int global_count;
+
+extern std::vector<const ApiFuncObject*> api_func_objects, special_api_func_objects;
+
+
 
 #endif
