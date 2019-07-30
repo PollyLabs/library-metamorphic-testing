@@ -3,18 +3,25 @@ import numpy as np
 import scipy.stats as sp_stats
 import scipy.special as sp_special
 
-def calc_median(data, out_file):
+def calc_median(data, out_file, csv_file = None):
     assert(out_file.writable())
-    out_file.write(f"MEDIAN: {str(np.median(data))}\n")
+    median = np.median(data)
+    out_file.write(f"MEDIAN: {str(median)}\n")
+    return median
 
 def calc_mean(data, out_file):
     assert(out_file.writable())
-    out_file.write(f"MEAN: {str(np.mean(data))}\n")
+    mean = np.mean(data)
+    out_file.write(f"MEAN: {str(mean)}\n")
+    return mean
 
 def calc_limits(data, out_file):
     assert(out_file.writable())
-    out_file.write(f"MIN: {str(np.amin(data))}\n")
-    out_file.write(f"MAX: {str(np.amax(data))}\n")
+    min = np.amin(data)
+    max = np.amax(data)
+    out_file.write(f"MIN: {str(min)}\n")
+    out_file.write(f"MAX: {str(max)}\n")
+    return (min, max)
 
 def calc_samples_sum_rank(datas, out_file):
     datas = [[1, 5, 20], [0, 7, 10]]

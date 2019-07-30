@@ -37,9 +37,13 @@ parser.add_argument("--bin-ratio", type=float, default=5.0,
 parser.add_argument("--input-file", type=argparse.FileType('r'), default=None,
     help = "A file with runtime data to be used to generate statistics instead\
     of generating them from scratch.")
+parser.add_argument("--output-folder", type=str, default="./perf_out",
+    help = "Folder to store all output graphs and files.")
 parser.add_argument("--debug", action='store_true', help = "Emit debug messages.")
 parser.add_argument("--plots", action='store_true',
     help = "Whether to generate plots or not.")
+parser.add_argument("--csv", type=str, default=None,
+    help = "If given, saves statistics in CSV-format at the given file path.")
 parser.add_argument("--terminal", action='store_true',
     help = "Wether to emit statistics to terminal (if unset, will emit\
     statistics to default output file.")
@@ -48,13 +52,6 @@ args = parser.parse_args()
 def debug_log(msg):
     if args.debug:
         print("DEBUG:" + msg)
-
-def emit_handler(msg, output_file):
-    if args.terminal:
-        print(msg)
-    else:
-        with open(output_file, 'w') as emit_file:
-            emit_file.write(msg)
 
 ################################################################################
 # Setup
@@ -77,7 +74,7 @@ bin_count = int(args.repeat_count * args.bin_ratio / 100)
 if bin_count == 0:
     bin_count = int(max(1, args.repeat_count / 2))
 
-out_folder = "./perf_smt/graphs"
+out_folder = args.output_folder
 out_count = 0
 while os.path.exists(f"{out_folder}_{out_count:03d}"):
     out_count += 1
@@ -155,40 +152,53 @@ else:
 
 # filter timeouts from plotting data
 #pdb.set_trace()
-file_run_times = {k:[x for x in v if x != -1] for k,v in file_run_times.items()}
-file_warmup_times = {k:[x for x in v if x != -1] for k,v in file_warmup_times.items()}
+file_run_times_no_to = {k:[x for x in v if x != -1] for k,v in file_run_times.items()}
+file_warmup_times_no_to = {k:[x for x in v if x != -1] for k,v in file_warmup_times.items()}
 
 # file_run_times = map(lambda x : filter(lambda y : y != -1, x), file_run_times)
 # file_warmup_times = map(lambda x : filter(lambda y : y != -1, x), file_warmup_times)
 
-for test_name,runtime_data in file_run_times.items():
-    if not runtime_data:
-        continue
+if args.csv:
+    csv_fd = open(args.csv, 'a')
+
+for test_name,runtime_data in file_run_times_no_to.items():
+    # if not runtime_data:
+        # continue
     fig_name_out = out_folder + "/" + test_name + ".graph"
     fig_name_out = fig_name_out.replace("..", ".")
     debug_log(f"OUTPUT FOLDER: {fig_name_out}")
     # pdb.set_trace()
-    if (args.plots):
+    if (args.plots and runtime_data):
         debug_log("Start histogram...")
         pfgraph.plot_histogram(runtime_data, bin_count, fig_name_out)
         debug_log("Start data point plot...")
         pfgraph.plot_data_points(runtime_data, fig_name_out)
         debug_log("Start sorted data point plot...")
         pfgraph.plot_sorted(runtime_data, fig_name_out)
-    #emit_handler(pfstats.calc_median(runtime_data), stats_name_out)
-    #emit_handler(pfstats.calc_mean(runtime_data), stats_name_out)
     if args.terminal:
         stats_fd = sys.stdout
     else:
         stats_name_out = f"{fig_name_out}.stats"
         stats_fd = open(stats_name_out, 'w')
     stats_fd.write(f"File name: {test_name}\n");
-    stats_fd.write(f"Data point count: {len(runtime_data)}\n");
-    debug_log("Start median...")
-    pfstats.calc_median(runtime_data, stats_fd)
-    debug_log("Start mean...")
-    pfstats.calc_mean(runtime_data, stats_fd)
-    debug_log("Start limits...")
-    pfstats.calc_limits(runtime_data, stats_fd)
+    stats_fd.write(f"Data point count: {len(file_run_times[test_name])}\n");
+    if not runtime_data:
+        stats_fd.write(f"ALL TIMEOUT\n")
+        if args.csv:
+            csv_fd.write(f"{test_name}\t")
+            csv_fd.write(f"t/o\t" * 4)
+            csv_fd.write("\n")
+    else:
+        debug_log("Start median...")
+        median = pfstats.calc_median(runtime_data, stats_fd)
+        debug_log("Start mean...")
+        mean = pfstats.calc_mean(runtime_data, stats_fd)
+        debug_log("Start limits...")
+        min, max = pfstats.calc_limits(runtime_data, stats_fd)
+        if args.csv:
+            csv_fd.write(f"{test_name}\t{median}\t{mean}\t{min}\t{max}\n")
     if not args.terminal:
         stats_fd.close()
+
+if args.csv:
+    csv_fd.close()
