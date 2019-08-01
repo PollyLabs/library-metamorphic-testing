@@ -4,6 +4,7 @@ import glob
 import subprocess
 import pdb
 import os
+import shlex
 import sys
 import time
 
@@ -22,6 +23,8 @@ import matplotlib.rcsetup as rcs
 parser = argparse.ArgumentParser()
 parser.add_argument("--target-dir", type=str, default='./tests',
     help = "Folder containing files to execute and record.")
+parser.add_argument("--exec-cmd", type=str, default="",
+    help = "Additional execution command to call over each given test case.")
 parser.add_argument("--target-regex", type=str, default='**/*',
     help = "glob regex to identify target files from target directory.")
 parser.add_argument("--cpu", type=int, default=1,
@@ -98,13 +101,13 @@ else:
             os.makedirs(os.path.split(fig_name_out)[0])
         except FileExistsError:
             pass
-        cpu_pin_cmd = ["taskset", str(args.cpu), test_file]
+        cpu_pin_cmd = ["taskset", str(args.cpu)] + shlex.split(args.exec_cmd) + [test_file]
         # Run training for hardware
         for i in range(0, warmup_count):
             print("Training " + test_file + " iteration " + str(i), end="\r")
             start_time = time.time()
             test_proc = subprocess.Popen(cpu_pin_cmd, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                stderr=subprocess.PIPE, encoding="UTF-8")
             timer = Timer(args.timeout, test_proc.kill)
             try:
                 timer.start()
@@ -116,19 +119,19 @@ else:
                     file_warmup_times[test_file].append(-1)
                 else:
                     file_warmup_times[test_file].append(end_time - start_time)
+                with open(fig_name_out + ".warmup.log", 'w') as log_fd:
+                    log_fd.write(f"Warmup {fig_name_out} iteration {str(i + 1)} of {warmup_count}")
+                    log_fd.write(f"STDOUT:\n{outs}")
+                    log_fd.write(f"STDERR:\n{errs}")
+                    log_fd.write(80 * '=')
         print()
-        with open(fig_name_out + ".warmup.data", 'w') as warmup_fd:
+        with open(fig_name_out + ".warmup.data", 'a') as warmup_fd:
             warmup_fd.write("\n".join(map(str, file_warmup_times[test_file])))
-        with open(fig_name_out + ".warmup.log", 'w') as log_fd:
-            log_fd.write(f"Warmup {fig_name_out} iteration {str(i + 1)} of {warmup_count}")
-            log_fd.write(f"STDOUT:\n{outs}")
-            log_fd.write(f"STDERR:\n{errs}")
-            log_fd.write(80 * '=')
         for i in range(0, args.repeat_count):
             print("Running " + test_file + " iteration " + str(i), end="\r")
             start_time = time.time()
             test_proc = subprocess.Popen(cpu_pin_cmd, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                stderr=subprocess.PIPE, encoding="UTF-8")
             timer = Timer(args.timeout, test_proc.kill)
             try:
                 timer.start()
@@ -140,14 +143,12 @@ else:
                     file_run_times[test_file].append(-1)
                 else:
                     file_run_times[test_file].append(end_time - start_time)
-            #end_time = time.time()
-            #file_run_times[test_file].append(end_time - start_time)
+                with open(fig_name_out + ".log", 'a') as log_fd:
+                    log_fd.write(f"Test {fig_name_out} iteration {str(i + 1)} of {repeat_count}.")
+                    log_fd.write(f"STDOUT:\n{outs}")
+                    log_fd.write(f"STDERR:\n{errs}")
         with open(fig_name_out + ".data", 'w') as data_fd:
             data_fd.write("\n".join(map(str, file_run_times[test_file])))
-        with open(fig_name_out + ".log", 'w') as log_fd:
-            log_fd.write(f"Test {fig_name_out} iteration {str(i + 1)} of {repeat_count}.")
-            log_fd.write(f"STDOUT:\n{outs}")
-            log_fd.write(f"STDERR:\n{errs}")
     print()
 
 # filter timeouts from plotting data
