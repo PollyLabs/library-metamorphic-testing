@@ -144,9 +144,10 @@ else:
                 else:
                     file_run_times[test_file].append(end_time - start_time)
                 with open(fig_name_out + ".log", 'a') as log_fd:
-                    log_fd.write(f"Test {fig_name_out} iteration {str(i + 1)} of {repeat_count}.")
+                    log_fd.write(f"Test {fig_name_out} iteration {str(i + 1)} of {args.repeat_count}.")
                     log_fd.write(f"STDOUT:\n{outs}")
                     log_fd.write(f"STDERR:\n{errs}")
+        print()
         with open(fig_name_out + ".data", 'w') as data_fd:
             data_fd.write("\n".join(map(str, file_run_times[test_file])))
     print()
