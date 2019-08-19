@@ -97,6 +97,11 @@ class SetMetaTesterNew {
 		return meta_tests;
 	};
 
+	const std::vector<const MetaRelation*> getRelations()
+	{
+		return relations;
+	}
+
     private:
         void initMetaRels(std::map<std::string, std::set<std::string>>&, YAML::Node);
         std::queue<std::string> makeAbstractMetaRelChain(unsigned int);

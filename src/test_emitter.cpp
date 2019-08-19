@@ -234,6 +234,8 @@ main(int argc, char** argv)
     ofs << new_ss_p.str();
     ofs.close();
 
+//    api_fuzzer->tree.traverse();
+
     #if REDUCE 
     // Code Added by Pritam
 
@@ -320,57 +322,23 @@ main(int argc, char** argv)
 
 			// Reducing number of meta relations 
 
-			std::vector<const ApiInstructionInterface*> red = api_fuzzer->MHReduceInstr(compile_err, res, var, args.output_file);
+			std::vector<const ApiInstructionInterface*> red = api_fuzzer->MHReduceInstrPrep(compile_err, exe_err, var, args.output_file);
 
-			#if 0
-			for(std::vector<const ApiInstructionInterface*>::iterator it = red.begin(); it != red.end(); it++)
-			{
-				std::cout << (*it)->toStr() << std::endl;
-			}
-			#endif
+//			std::cout << "Instructions red: " << red.size() << std::endl;
+//			printVectorApiInstructions(red);
 
-			api_fuzzer->inputVarReduction(compile_err, exe_err, api_func_objects, args.output_file, red);
+			std::vector<const ApiInstructionInterface*> input_insts;
 
+			input_insts = api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file, red);
+
+			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
+
+//			std::cout << "Instructions after Fuzzing: " << input_insts.size() << std::endl;
+//			printVectorApiInstructions(input_insts);
+
+			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, input_insts, red);
 		}
 	  }	
       }	
     #endif
-}
-
-void printVectorApiObjects(std::vector<const ApiObject*> var)
-{
-//	std::cout << "Printing Vector of ApiObjects: " << var.size() << std::endl;
-	logDebug(fmt::format("Printing Vector of ApiObjects: {}", var.size()));
-
-	for(std::vector<const ApiObject*>::iterator it = var.begin(); it != var.end(); it++)
-	{
-//		std::cout << (*it)->toStr() << std::endl;
-	        logDebug(fmt::format("{}", (*it)->toStr()));
-	}
-}
-
-void printVectorApiFuncObjects(std::vector<const ApiFuncObject*> var)
-{
-//	std::cout << "Printing Vector of ApiFuncObjects: " << var.size() << std::endl;
-	logDebug(fmt::format("Printing Vector of ApiFuncObjects: {}", var.size()));
-
-	for(std::vector<const ApiFuncObject*>::iterator it = var.begin(); it != var.end(); it++)
-	{
-//		std::cout << (*it)->toStr() << std::endl;
-	        logDebug(fmt::format("{}", (*it)->toStr()));
-	}
-
-//	std::cout << "End of Vector of ApiFuncObjects" << std::endl;
-}
-
-void printVectorApiInstructions(std::vector<const ApiInstructionInterface*> instr)
-{
-//	std::cout << "Printing Vector of ApiInstructions: " << instr.size() << std::endl;
-	logDebug(fmt::format("Printing Vector of ApiInstructions: {}", instr.size()));
-
-	for(std::vector<const ApiInstructionInterface*>::iterator it = instr.begin(); it != instr.end(); it++)
-	{
-//		std::cout << (*it)->toStr() << std::endl;
-	        logDebug(fmt::format("{}", (*it)->toStr()));
-	}
 }

@@ -1,6 +1,7 @@
 #ifndef API_ELEMENTS_HPP
 #define API_ELEMENTS_HPP
 
+#include <algorithm> 
 #include <string>
 #include <cassert>
 #include <iostream>
@@ -8,6 +9,7 @@
 #include <random>
 #include <sstream>
 #include <vector>
+#include <set>
 
 #include "fmt/format.h"
 
@@ -170,6 +172,7 @@ class ApiObject {
             { return std::vector<const ApiObject*>({this}); };
 
         virtual void setDeclared() const { this->declared = true; };
+        virtual void resetDeclared() const { this->declared = false; };
 
         virtual bool isPrimitive() const { return this->getType()->isPrimitive(); };
         virtual bool notIsPrimitive() const { return !this->getType()->isPrimitive(); };
@@ -438,6 +441,19 @@ class MetaRelation {
         const ApiObject* getStoreVar() const { return this->store_var; }
 
         std::string toStr() const;
+
+	bool operator< (const MetaRelation & rel) const
+	{
+		if(this->abstract_relation < rel.abstract_relation)
+		{
+			if(this->toStr() < rel.toStr())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 };
 
 class MetaVarObject : public ApiObject {
@@ -507,10 +523,83 @@ class ApiFuncObject{
 	}
 };
 
+struct NodeT
+{
+	int id;
+	const ApiObject* var;
+
+	bool operator<(const NodeT node)
+	{
+        	if (id < node.id)
+			return true;
+		else
+			return false;
+	}
+};
+
+struct EdgeT
+{
+	NodeT* src;
+	std::vector<NodeT*> dests;
+	const ApiInstructionInterface* instr;
+
+	bool operator<(const EdgeT edge)
+	{
+        	if (instr->toStr() < edge.instr->toStr())
+				return true;
+		return false;
+	}
+
+};
+
+class DependenceTree
+{
+	protected:
+
+		std::vector<NodeT*> roots;
+	
+	public:
+		DependenceTree() {};
+		DependenceTree(std::vector<NodeT*> _roots, std::vector<EdgeT*> _edges) : roots(_roots), edges(_edges) {};
+		~DependenceTree() {};	
+
+		std::vector<EdgeT*> edges;
+		std::map<const ApiObject*, NodeT*> nodes;
+
+		std::vector<NodeT*> getRoots() { return this->roots; };
+	
+		std::vector<const ApiInstructionInterface*> traverse();
+		std::vector<const ApiInstructionInterface*> traverseSubTree(NodeT* node);
+		std::vector<const ApiInstructionInterface*> traverseChildren(NodeT* node);
+		std::vector<const ApiInstructionInterface*> traverseEdgeInSubTree(EdgeT* edge);
+		
+		void addRoot(NodeT *node) { this->roots.push_back(node); };
+
+		void addEdge(NodeT* parent, std::vector<NodeT*> child, const ApiInstructionInterface* instr);
+
+		NodeT* insertNode(const ApiObject* n);
+		
+		std::vector<EdgeT*> getImmDescendants(NodeT* node);
+		std::vector<EdgeT*> getImmAncestors(NodeT* node);
+
+		void removeChildren(std::vector<EdgeT*> new_child);
+};
+
+
+
 extern unsigned int global_count;
 
 extern std::vector<const ApiFuncObject*> api_func_objects, special_api_func_objects;
 
+extern std::map<EdgeT*, bool> visited;
 
+extern unsigned int edgeCount;
 
+extern std::vector<const ApiInstructionInterface*> declared_instrs;
+
+void printVectorNodes(std::vector<NodeT*> var);
+void printVectorApiObjects(std::vector<const ApiObject*> var);
+void printVectorApiInstructions(std::vector<const ApiInstructionInterface*> instr);
+void printVectorEdges(std::vector<EdgeT*> edges);
+void printEdge(EdgeT* edge);
 #endif

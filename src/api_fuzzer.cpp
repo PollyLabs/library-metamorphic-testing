@@ -4,8 +4,15 @@ char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
 
-
 unsigned int RECUR_TIMES = 0;
+
+unsigned int global_count = 0;
+
+NodeT *null_node;
+std::map<const ApiObject*, original_simplified_mapping> mvar_relations;
+int try_outs = 0;
+std::pair<const ApiObject*, const ApiInstructionInterface*> special_obj;
+
 
 /*******************************************************************************
  * Helper functions
@@ -422,6 +429,7 @@ ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
     std::vector<const ApiObject*> init_func_args)
 {
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
+
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
         target_obj, init_func_args);
     this->addObj(new_obj);
@@ -562,6 +570,10 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     unsigned int _seed, std::mt19937* _rng) :
     ApiFuzzer(_seed, _rng)
 {
+	
+    null_node = new NodeT();
+    null_node->id = -1;
+
     /* Fuzzer initialization */
     YAML::Node api_fuzzer_data = YAML::LoadFile(api_fuzzer_path);
     this->initPrimitiveTypes();
@@ -628,60 +640,6 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         this->meta_vars.end());
     this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(this));
     smt->genMetaTests(this->meta_test_count);
-}
-
-std::vector<const ApiInstructionInterface*> ApiFuzzerNew::MetaVariantReduce(std::set<std::string>  var)
-//std::vector<const ApiInstructionInterface*> ApiFuzzerNew::MetaVariantReduce(std::string var1, std::string var2)
-{
-	int id;
-	std::string name;
-	const ApiObject* obj;
-	std::vector<const ApiInstructionInterface*> result, temp, list_inst;
-
-	#if 0
-	for(std::vector<const MetaTest*>::iterator it = this->smt->getMetaTests().begin(); it != this->smt->getMetaTests().end(); it++)
-	{
-		obj = (*it)->getVariantVar();	
-		id = obj->getID();
-		name = obj->toStr();
-
-		if((strcmp(name.c_str(), var1.c_str()) == 0) || (strcmp(name.c_str(), var2.c_str()) == 0))
-		{
-			temp = (*it)->getApiInstructions();
-
-			for(std::vector<const ApiInstructionInterface*>::iterator iit = temp.begin(); iit != temp.end(); iit++)
-			{
-				result.push_back(*iit);
-			}
-		}
-	}
-	#endif
-
-//	std::set<std::string, std::string>::iterator s_it;
-
-	#if 1
-	for(std::vector<const ApiObject*>::iterator it = this->meta_variants.begin(); it != this->meta_variants.end(); it++)
-	{
-		name = (*it)->toStr();
-
-//		s_it = find(var.begin(), var.end(), name);
-
-		if(var.find(name) != var.end())
-//		if(name == var1 || name == var2)
-		{
-			id = (*it)->getID();
-
-			list_inst = MetaVariant_Instr[id];
-
-			for(std::vector<const ApiInstructionInterface*>::iterator iit = list_inst.begin(); iit != list_inst.end(); iit++)
-			{
-				result.push_back(*iit);
-			}
-		}
-	}		
-	#endif
-
-	return result;
 }
 
 /**
@@ -1148,6 +1106,7 @@ ApiFuzzerNew::initMetaGenerators(YAML::Node meta_gen_yaml)
     for (; meta_gen_it != meta_gen_yaml.end(); meta_gen_it++)
     {
         std::string gen_type = meta_gen_it->second["identifier"].as<std::string>();
+
         // TODO need to further customise this
         YAML::const_iterator gen_it = meta_gen_it->second["relations"].begin();
         std::vector<const MetaRelation*> gen_rels;
@@ -1406,23 +1365,28 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     CHECK_CONDITION(obj_type != nullptr,
         fmt::format("Given null type to generate object for."));
     logDebug("Generating object of type " + obj_type->toStr());
+
+    const ApiObject* res;	
+
     if (obj_type->checkFlag("singleton"))
     {
-        return this->getSingletonObject(obj_type);
+        res = this->getSingletonObject(obj_type);
     }
     else if (obj_type->isPrimitive())
     {
-        return this->generatePrimitiveObject((PrimitiveType*) obj_type);
+        res = this->generatePrimitiveObject((PrimitiveType*) obj_type);
     }
     else if (obj_type->isExplicit())
     {
-        return this->retrieveExplicitObject(
+        res = this->retrieveExplicitObject(
             dynamic_cast<const ExplicitType*>(obj_type));
     }
     else
     {
-        return this->generateNewObject(obj_type);
+        res = this->generateNewObject(obj_type);
     }
+
+    return res;
 }
 
 /* @brief Evaluate given comprehension into corresponding object
@@ -1623,13 +1587,18 @@ ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
 const ApiObject*
 ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result_obj)
 {
+	//unsigned int start = this->instrs.size();
     //logDebug("DEPTH " + std::to_string(this->depth));
     if (obj_type->isPrimitive())
     {
         CHECK_CONDITION(result_obj == nullptr,
             fmt::format("Not implemented new primitive object generation for "
                         "targeted result obj"));
-        return generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
+        const ApiObject* res = generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
+
+	NodeT* node = tree.insertNode(res);
+
+	return res;
     }
     //else if (result_obj && result_obj->toInitialize() && !result_obj->isDeclared())
     //{
@@ -1713,8 +1682,54 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
             fmt::format("Invalid types given for result object `{}` and "
                         "expected type `{}`.", result_obj->getType()->toStr(),
                         obj_type->toStr()));
+
         this->applyFunc(gen_func, target_obj, result_obj, ctor_args);
+
         --this->depth;
+
+	// Added by Pritam	
+	const ApiInstructionInterface* instrNode;
+	instrNode = this->instrs.at(this->instrs.size()-1);	
+
+	NodeT* node = tree.insertNode(result_obj);	
+
+	std::vector<NodeT*> d_child;
+
+	tree.addRoot(node);
+
+	NodeT* target_node = null_node;	
+
+	if(target_obj != NULL)
+	{	
+		target_node = tree.insertNode(target_obj);
+
+		d_child.push_back(target_node);
+	}
+
+//	tree.addEdge(node, target_node);
+
+	const ApiObject* param_obj;
+
+	for(std::vector<const ApiObject*>::iterator it = ctor_args.begin(); it != ctor_args.end(); it++)
+	{
+		NodeT* temp_node = null_node;
+
+		param_obj = *it;
+
+		if(param_obj != NULL)
+		{
+			temp_node = tree.insertNode(param_obj);
+		
+			d_child.push_back(temp_node);
+		}
+
+//		tree.addEdge(node, temp_node);
+	}	
+
+	tree.addEdge(node, d_child, instrNode);
+		
+	// End of Added Code
+
         return result_obj;
     }
 
@@ -1725,7 +1740,69 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
         var_name = var_name.replace(var_name.find('*'), 1, "");
     }
     --this->depth;
-    return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
+
+    const ApiObject* res = generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
+
+    // Added by Pritam	
+    bool no_target = false;
+    bool no_param = false;	
+    const ApiInstructionInterface* instrNode;
+    instrNode = this->instrs.at(this->instrs.size()-1);	
+
+    NodeT* node = tree.insertNode(res);	
+
+    std::vector<NodeT*> d_child;
+
+    NodeT* target_node = null_node;	
+
+    if(target_obj != NULL)
+    {	
+    	target_node = tree.insertNode(target_obj);
+
+	d_child.push_back(target_node);
+    }
+    else
+    {
+	no_target = true;
+    }	
+
+//    tree.addEdge(node, target_node);
+
+    const ApiObject* param_obj;
+
+    for(std::vector<const ApiObject*>::iterator it = ctor_args.begin(); it != ctor_args.end(); it++)
+    {
+       	 NodeT* temp_node = null_node;
+
+	param_obj = *it;
+
+        if(param_obj != NULL)
+	{
+		temp_node = tree.insertNode(param_obj);
+
+		d_child.push_back(temp_node);
+	}
+
+//	tree.addEdge(node, temp_node);
+    }	
+
+    if(d_child.size() == 0)
+    {
+        no_param = true;
+    }	
+
+    tree.addEdge(node, d_child, instrNode);
+
+    if(no_target && no_param)
+    {
+    	if(try_outs == 0)
+	{
+           special_obj = std::make_pair(res, instrNode);
+	   try_outs = 1;
+	}	
+    }
+		
+    return res;
 }
 
 /* @brief Return a reference to the input object with given name
@@ -2276,6 +2353,8 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
 void
 ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
 {
+    unsigned int start = this->instrs.size();
+
     CHECK_CONDITION(instr_config["func"].IsDefined(),
         "Fuzzer generation instruction must have `func` field defined.");
     std::string func_name = instr_config["func"].as<std::string>();
@@ -2295,6 +2374,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         func = this->getAnyFuncByName(func_name);
     }
+
     // Set target object, if any declared
     const ApiObject* target_obj = nullptr;
     if (instr_config["target"].IsDefined())
@@ -2324,6 +2404,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         target_obj = this->generateObject(func->getClassType());
     }
+
     // Set return object, if any declared
     const ApiObject* return_obj = nullptr;
     // TODO should we automatically create a return object if not defined?
@@ -2356,6 +2437,9 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         return_obj = this->generateObject(func->getReturnType());
     }
+
+    bool special = false;
+
     // Set function parameters
     std::vector<const ApiObject*> func_params;
     if (instr_config["func_params"].IsDefined())
@@ -2390,11 +2474,52 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         func_params = this->getFuncArgs(func);
     }
+
     this->applyFunc(func, target_obj, return_obj,
         func_params);
+
+    // Added by Pritam	
+	const ApiInstructionInterface* instrNode;
+	instrNode = this->instrs.at(this->instrs.size()-1);	
+
+	NodeT* node = tree.insertNode(return_obj);	
+
+	std::vector<NodeT*> d_child;
+
+	NodeT* target_node = null_node;	
+
+	if(target_obj != NULL)
+	{	
+		target_node = tree.insertNode(target_obj);
+
+		d_child.push_back(target_node);
+	}
+
+//	tree.addEdge(node, target_node);
+
+	const ApiObject* param_obj;
+
+	for(std::vector<const ApiObject*>::iterator it = func_params.begin(); it != func_params.end(); it++)
+	{
+		NodeT* temp_node = null_node;
+
+		param_obj = *it;
+
+		if(param_obj != NULL)
+		{
+			temp_node = tree.insertNode(param_obj);
+
+			d_child.push_back(temp_node);
+		}
+
+//		tree.addEdge(node, temp_node);
+	}	
+
+	tree.addEdge(node, d_child, instrNode);
+		
+	// End of Added Code
 }
 
-[[deprecated]]
 std::string
 ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
 {
@@ -2440,13 +2565,20 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
 * the given `mv_obj`
 */
 const FuncObject*
-ApiFuzzerNew::concretizeGenerators(const MetaVarObject* mv_obj)
+ApiFuzzerNew::concretizeGenerators(const MetaVarObject* mv_obj, bool simplify)
 {
     CHECK_CONDITION(mv_obj->isGenerator(),
         fmt::format("Asked to concretize non-generator metamorphic "\
                     " comprehension {}.", mv_obj->identifier));
-    return this->concretizeGenerators(
-        getRandomVectorElem(mv_obj->meta_relations, this->getRNG())->getBaseFunc());
+
+    if(!simplify)
+    {		
+    	return this->concretizeGenerators(getRandomVectorElem(mv_obj->meta_relations, this->getRNG())->getBaseFunc(), simplify);
+    }
+    else	
+    {		
+    	return this->concretizeGenerators(mv_obj->meta_relations.at(0)->getBaseFunc(), simplify);
+    }
 }
 
 /**
@@ -2463,22 +2595,24 @@ ApiFuzzerNew::concretizeGenerators(const MetaVarObject* mv_obj)
 * concrete ApiObject references
 */
 const FuncObject*
-ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj)
+ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj, bool simplify)
 {
     const ApiObject* target_obj = func_obj->getTarget();
+
     if (func_obj->getTarget())
     {
         const FuncObject* func_obj_param = dynamic_cast<const FuncObject*>(target_obj);
         const MetaVarObject* mv_target_obj = dynamic_cast<const MetaVarObject*>(target_obj);
         if (func_obj_param)
         {
-            target_obj = this->concretizeGenerators(func_obj_param);
+            target_obj = this->concretizeGenerators(func_obj_param, simplify);
         }
         else if (mv_target_obj && mv_target_obj->isGenerator())
         {
-            target_obj = this->concretizeGenerators(mv_target_obj);
+            target_obj = this->concretizeGenerators(mv_target_obj, simplify);
         }
     }
+
     std::vector<const ApiObject*> gen_concrete_params;
     for (const ApiObject* param : func_obj->getParams())
     {
@@ -2486,18 +2620,23 @@ ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj)
         const MetaVarObject* mv_obj_param = dynamic_cast<const MetaVarObject*>(param);
         if (func_obj_param)
         {
-            gen_concrete_params.push_back(this->concretizeGenerators(func_obj_param));
+            gen_concrete_params.push_back(this->concretizeGenerators(func_obj_param, simplify));
         }
         else if (mv_obj_param && mv_obj_param->isGenerator())
         {
-            gen_concrete_params.push_back(this->concretizeGenerators(mv_obj_param));
+            gen_concrete_params.push_back(this->concretizeGenerators(mv_obj_param, simplify));
         }
         else
         {
             gen_concrete_params.push_back(param);
         }
     }
-    return new FuncObject(func_obj->getFunc(), target_obj, gen_concrete_params);
+
+    FuncObject* res;
+    res = new FuncObject(func_obj->getFunc(), target_obj, gen_concrete_params);
+
+
+    return res;
 }
 
 /**
@@ -2553,6 +2692,7 @@ ApiFuzzerNew::makeConcretizationMap(std::vector<const ApiObject*> obj_list)
                 mv_obj->getIdentifier()));
         concrete_map.emplace(std::make_pair(mv_obj, value));
     }
+
     return concrete_map;
 }
 
@@ -2574,10 +2714,11 @@ ApiFuzzerNew::makeConcretizationMap(std::vector<const ApiObject*> obj_list)
 
 const MetaRelation*
 ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
-    const ApiObject* curr_meta_variant, bool first)
+    const ApiObject* curr_meta_variant, bool first, bool simplify)
 {
     const MetaVarObject* abstract_result_var =
         dynamic_cast<const MetaVarObject*>(abstract_rel->getStoreVar());
+
     const ApiObject* concrete_result_var = nullptr;
     if (abstract_result_var)
     {
@@ -2586,7 +2727,7 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
                 curr_meta_variant, this->meta_variants, this->meta_in_vars);
     }
     const FuncObject* unrolled_func_obj =
-        this->concretizeGenerators(abstract_rel->getBaseFunc());
+        this->concretizeGenerators(abstract_rel->getBaseFunc(), simplify);
     std::map<const MetaVarObject*, const ApiObject*> concretize_map
         = this->makeConcretizationMap(unrolled_func_obj->getAllObjs());
     // HACK should perform the initialization check better
@@ -2615,6 +2756,7 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
     }
     const FuncObject* concrete_func_obj =
         this->concretizeFuncObject(unrolled_func_obj, concretize_map);
+
     return new MetaRelation(abstract_rel->getAbstractRelation(),
         concrete_func_obj, concrete_result_var);
 }
@@ -2734,134 +2876,316 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj,
 #if 1
 // Code Added by Pritam
 
-std::set<std::string> ApiFuzzerNew::DecreaseVarSize(std::string new_exe_err, std::string exe_err, std::set<std::string> var)		
+bool ApiFuzzerNew::assertReduction(const ApiInstructionInterface* assert, std::vector<const ApiObject*> var)
 {
-	std::pair<std::string, std::string> result;
+	std::vector<const ApiObject*> params;
+	const ApiInstruction* instr;
 
-	result = parseErrorMsg(new_exe_err);
+	instr = dynamic_cast<const ApiInstruction*>(assert);
+	
+        if (!strcmp(instr->getFunc()->getName().c_str(), "assert"))
+	{
+		params = (*(instr->getFuncParams().begin()))->getAllObjs();
 
-	if(result.first != "")
-	{
-		var.insert(result.first);
-		var.insert(result.second);
-	}
-	else
-	{
-		for(std::set<std::string>::iterator it = var.begin(); it != var.end(); it++)
+		std::vector<const ApiObject*>::iterator it;	
+
+		const ApiObject *first, *second;
+
+		it = params.begin();
+
+		first = *(it);
+
+		it++;
+
+		second = (*it);
+
+		if(first == second)
 		{
-			if(rand()%2 == 1)
+			return false;
+		}
+
+		for(it = params.begin(); it != params.end(); it++)
+		{
+			if(std::find(var.begin(), var.end(), *it) == var.end())
 			{
-				var.erase(*it);
+				return false;
 			}
 		}
 
-		result = parseErrorMsg(exe_err);
-		
-		if(result.first != "")
-		{
-			var.insert(result.first);
-			var.insert(result.second);
-		}
+		return true;
 	}
 	
-	return var;
+	return false;
 }
 
-std::set<std::string> ApiFuzzerNew::IncreaseVarSize(std::string new_exe_err, std::set<std::string> var)		
+std::vector<int> ApiFuzzerNew::MHReduceInstr(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> var, std::vector<int> rel_indices, std::string output_file)
 {
-	std::pair<std::string, std::string> result;
+	std::pair<std::string, std::string> p1;
 
-	result = parseErrorMsg(new_exe_err);
+	std::string nc_err, n_exe_err;
 
-	if(result.first != "")
-	{
-		var.insert(result.first);
-		var.insert(result.second);
-	}
+	std::vector<int> new_indices, ip1, ip2, new_indices1, new_indices2;
+
+	int size = rel_indices.size();
+	int msize;
+
+	if(size%2 == 0)
+		msize = size/2;
 	else
+		msize = size/2 + 1;
+
+	// Create two vectors each containing ip1 and ip2 half of the original input vector 
+
+	for(int i = 0; i < msize; i++)
 	{
-		for(std::vector<const ApiObject*>::iterator it = meta_variants.begin(); it != meta_variants.end(); it++)
+		ip1.push_back(rel_indices.at(i));
+	}
+
+	ip2.push_back(rel_indices.at(0));
+
+	for(int i = msize; i < size; i++)
+	{
+		ip2.push_back(rel_indices.at(i));
+	}
+
+	// Perform reduction on the first half
+
+	p1 = createTestCaseMHReduce(exe_err, var, ip1, output_file);
+
+	nc_err = p1.first;
+	n_exe_err = p1.second;
+
+	if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+	{
+		if(ip1.size() > 1)
 		{
-			if(rand()%2 == 1)
+			new_indices1 = MHReduceInstr(compile_err, exe_err, var, ip1, output_file);
+		}
+		else
+		{
+			new_indices1 = ip1;
+		}
+
+		new_indices = new_indices1;
+	}
+	else //Back Track
+	{
+		if(ip2 == rel_indices)
+		{
+			createTestCaseMHReduce(exe_err, var, ip2, output_file); //New Test case Generated with mvar meta variants
+			return ip2;
+		}
+
+		new_indices1 = ip1;
+	
+		p1 = createTestCaseMHReduce(exe_err, var, ip2, output_file); //New Test case Generated with mvar meta variants
+	
+		nc_err = p1.first;
+		n_exe_err = p1.second;
+
+		if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+		{
+			if(ip2.size() > 1)
 			{
-				var.insert((*it)->toStr());
+				new_indices2 = MHReduceInstr(compile_err, exe_err, var, ip2, output_file);
+			}
+			else
+			{
+				new_indices2 = ip2;
+			}
+
+			new_indices = new_indices2;
+		}
+		else
+		{
+			new_indices2 = ip2;
+
+			new_indices = indexMerge(new_indices1, new_indices2);
+
+			if(new_indices != rel_indices)
+			{
+				new_indices = MHReduceInstr(compile_err, exe_err, var, new_indices, output_file);
 			}
 		}
 	}
-	
-	return var;
+
+	return new_indices;
 }
 
-void ApiFuzzerNew::MHReduceInstr(std::string compile_err, std::string exe_err, std::set<std::string> var, std::string output_file)
+std::vector<int> ApiFuzzerNew::indexMerge(std::vector<int> v1, std::vector<int> v2)
 {
-        std::vector<const MetaTest*> meta_tests = smt->getMetaTests();
-        std::vector<const MetaTest*> red_meta_tests;
-
-	std::vector<const MetaRelation*> rel;
-
-        std::vector<const ApiInstructionInterface*> inst, temp;
-
-	std::string new_compile_err = "";
-	std::string new_exe_err = "";
-
-	const ApiObject *mvar;
-
-	for(std::vector<const MetaTest*>::iterator it = meta_tests.begin(); it != meta_tests.end(); it++)
+	for(std::vector<int>::iterator it = v2.begin(); it != v2.end(); it++)
 	{
-		if(var.find((*it)->getVariantVar()->toStr()) != var.end())
+		if(find(v1.begin(), v1.end(), *it) == v1.end())
 		{
-			red_meta_tests.push_back(*it);
-		}	
+			v1.push_back(*it);
+		}
 	}
 
-	for(int i = 0; i < meta_test_count; i++)
+	return v1;
+}
+
+std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseMHReduce(std::string exe_err, std::vector<const ApiObject*> var, std::vector<int> rel_indices, std::string output_file)
+{
+	std::vector<const ApiInstructionInterface*> temp;
+	std::stringstream new_ss_m;
+	const ApiObject* mvar;
+	std::pair<std::string,std::string> res;	
+
+	std::vector<const ApiObject*> assert_vars;
+	std::vector<std::string> assert_vars_names;
+
+    	res = parseErrorMsg(exe_err);
+
+	assert_vars_names.push_back(res.first);
+	assert_vars_names.push_back(res.second);
+
+	assert_vars = getApiObjects(assert_vars_names);
+
+	for(std::vector<const ApiObject*>::iterator it = var.begin(); it != var.end(); it++)
 	{
-		std::stringstream new_ss_m;
+		mvar = *it;
 
-		for(std::vector<const MetaTest*>::iterator it = red_meta_tests.begin(); it != red_meta_tests.end(); it++)
+		temp =  MetaVariant_Instr[mvar->getID()];
+
+		writeLine(new_ss_m, temp.at(0)->toStr());
+//		writeLine(new_ss_m, temp.at(1)->toStr());
+
+		for(int i = 0; i < rel_indices.size(); i++)
 		{
-			mvar = (*it)->getVariantVar();
+			writeLine(new_ss_m, temp.at(rel_indices.at(i))->toStr());
+		}
 
-			temp =  MetaVariant_Instr[mvar->getID()];
-
-			rel =  (*it)->getRelations();
-
-			mvar->declared = false;
-
-//			std::cout << "I: " << i << std::endl << temp.at(i)->toStr() << std::endl;
-
-			writeLine(new_ss_m, temp.at(0)->toStr());
-			writeLine(new_ss_m, rel.at(i)->toApiInstruction()->toStr());
+		if(assertReduction(temp.at(meta_test_count+1), assert_vars))
+		{
 			writeLine(new_ss_m, temp.at(meta_test_count+1)->toStr());
 		}
-
-		std::ofstream ofs;
-		ofs.open(output_file);
-
-		ofs << new_ss_i.str();
-		ofs << new_ss_mi.str();
-		ofs << new_ss_m.str();
-		ofs << new_ss_p.str();
-		ofs.close();
-
-    		new_compile_err = Exec(command);
-    		new_exe_err = Exec(exe_command);
-
-		if(new_compile_err == compile_err && new_exe_err == exe_err)
-		{
-			break;
-		}	
 	}
+
+	std::ofstream ofs;
+	ofs.open(output_file);
+
+	ofs << new_ss_i.str();
+	ofs << new_ss_mi.str();
+	ofs << new_ss_m.str();
+	ofs << new_ss_p.str();
+	ofs.close();
+
+	std::string new_compile_err = "";	
+	std::string new_exe_err = "";	
+
+    	new_compile_err = Exec(command);
+    	new_exe_err = Exec(exe_command);
+
+	res = std::make_pair(new_compile_err, new_exe_err);
+
+	return res;
 }
 
-std::set<std::string> ApiFuzzerNew::MVReduceInstr(std::string compile_err, std::string exe_err, std::set<std::string> var, std::string output_file)
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::MHReduceInstrPrep(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> var, std::string output_file)
 {
-	if(RECUR_LIMIT == RECUR_TIMES)
+	const ApiObject* mvar;
+        std::vector<const ApiInstructionInterface*> res, temp;
+	std::vector<int> indices;
+
+	for(int i = 1; i <= meta_test_count; i++)
 	{
-		return var;
+		indices.push_back(i);
 	}
 
-	std::vector<const ApiInstructionInterface*> result, list_inst, input_inst;
+	indices = MHReduceInstr(compile_err, exe_err, var, indices, output_file);
+
+	std::pair<std::string,std::string> parsed_msg;	
+
+	std::vector<const ApiObject*> assert_vars;
+	std::vector<std::string> assert_vars_names;
+
+    	parsed_msg = parseErrorMsg(exe_err);
+
+	assert_vars_names.push_back(parsed_msg.first);
+	assert_vars_names.push_back(parsed_msg.second);
+
+	assert_vars = getApiObjects(assert_vars_names);
+
+	
+	for(std::vector<const ApiObject*>::iterator it = var.begin(); it != var.end(); it++)
+	{
+		mvar = *it;
+		temp =  MetaVariant_Instr[mvar->getID()];
+
+		res.push_back(temp.at(0));	
+
+		for(int i = 0; i < indices.size(); i++)
+		{
+			res.push_back(temp.at(indices.at(i)));
+		}
+		
+		if(assertReduction(temp.at(meta_test_count+1), assert_vars))
+		{
+			res.push_back(temp.at(meta_test_count+1));
+		}
+	}
+
+	return res;
+}
+
+
+std::vector<const ApiObject*> ApiFuzzerNew::getApiObjects(std::vector<std::string> var)
+{
+        std::vector<const ApiObject*> all = meta_variants;
+
+	std::vector<const ApiObject*> res;
+
+	for(std::vector<const ApiObject*>::iterator it = all.begin(); it != all.end(); it++)
+	{
+		if(find(var.begin(), var.end(), (*it)->toStr()) != var.end())
+		{
+			res.push_back(*it);
+		}
+	}		
+
+	return res;
+}
+
+bool ApiFuzzerNew::checkTestCase(std::string c_err, std::string n_c_err, std::string e_err, std::string n_e_err)
+{
+	std::pair<std::string,std::string> res1, res2;	
+	
+	if(c_err == n_c_err)
+	{
+		res1 = parseErrorMsg(e_err);
+		res2 = parseErrorMsg(n_e_err);
+
+		if(res1.first == res2.first && res1.second == res2.second)
+		{
+			#if 0 
+			std::cout << "Error Did Not Change" << std::endl;
+			std::cout << "Old Compile error: " << c_err << std::endl;
+			std::cout << "New Compile error: " << n_c_err << std::endl;
+
+			std::cout << "Old Execute error: " << e_err << std::endl;
+			std::cout << "New Execute error: " << n_e_err << std::endl;
+			#endif
+
+			return true;
+		}
+	}
+
+	#if 0 
+	std::cout << "Error Changed" << std::endl;
+	std::cout << "Old Compile error: " << c_err << std::endl;
+	std::cout << "New Compile error: " << n_c_err << std::endl;
+
+	std::cout << "Old Execute error: " << e_err << std::endl;
+	std::cout << "New Execute error: " << n_e_err << std::endl;
+	#endif
+
+	return false;
+}
+
+std::pair<std::string, std::string> ApiFuzzerNew::createTestCase(std::vector<const ApiObject*> var, std::string output_file)
+{
+	std::vector<const ApiInstructionInterface*> list_inst;
 	std::stringstream new_ss_m;
 
 	list_inst = MetaVariantReduce(var);
@@ -2882,48 +3206,1099 @@ std::set<std::string> ApiFuzzerNew::MVReduceInstr(std::string compile_err, std::
 
 	std::string new_compile_err = "";	
 	std::string new_exe_err = "";	
+	std::pair<std::string,std::string> res;	
 
-    	new_compile_err = Exec(command);
-    	new_exe_err = Exec(exe_command);
+ 	new_compile_err = Exec(command);
+	new_exe_err = Exec(exe_command);
 
-	if(new_compile_err == compile_err && new_exe_err == exe_err) // Error replicated
+	res = std::make_pair(new_compile_err, new_exe_err);
+
+	return res;
+}
+
+std::vector<const ApiObject*> ApiFuzzerNew::verticalReductionMerge(std::vector<const ApiObject*> mvar1, std::vector<const ApiObject*> mvar2)
+{
+	for(std::vector<const ApiObject*>::iterator it = mvar2.begin(); it != mvar2.end(); it++)
 	{
-		if(var.size() > 2) // Reduce var and check if error can be reproduced
+		if(find(mvar1.begin(), mvar1.end(), *it) == mvar1.end())
 		{
-			std::set<std::string> new_var;
+			mvar1.push_back(*it);
+		}
+	}
 
-			do{
-				new_var = DecreaseVarSize(new_exe_err, exe_err, var);		
-			}while(new_var.size() != var.size());
+	return mvar1;
+}
 
-//			if(new_var.size() != var.size())
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::instructionMerge(std::vector<const ApiInstructionInterface*> mvar1, std::vector<const ApiInstructionInterface*> mvar2)
+{
+	for(std::vector<const ApiInstructionInterface*>::iterator it = mvar2.begin(); it != mvar2.end(); it++)
+	{
+		if(find(mvar1.begin(), mvar1.end(), *it) == mvar1.end())
+		{
+			mvar1.push_back(*it);
+		}
+	}
+
+	return mvar1;
+}
+
+std::vector<const ApiObject*> ApiFuzzerNew::verticalReduction(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> mvar, std::string output_file)
+{
+	std::vector<const ApiObject*> new_mvar1, new_mvar2, ip1, ip2, new_mvar;
+
+    	logDebug(fmt::format("Inside verticalReduction"));
+	printVectorApiObjects(mvar);
+
+	//Find the mid of the input vector mvar
+
+	int size = mvar.size();
+	int msize;
+
+	if(size%2 == 0)
+		msize = size/2;
+	else
+		msize = size/2 + 1;
+
+	// Create two vectors each containing ip1 and ip2 half of the original input vector 
+
+	std::pair<std::string, std::string> p1;
+
+	std::string nc_err, n_exe_err;
+
+	for(int i = 0; i < msize; i++)
+	{
+		ip1.push_back(mvar.at(i));
+	}
+
+	ip2.push_back(mvar.at(0)); // Since the comparison often happens with the first meta variant and the vector is sorted
+
+	for(int i = msize; i < size; i++)
+	{
+		ip2.push_back(mvar.at(i));
+	}
+
+	// Perform reduction on the first half
+
+	p1 = createTestCase(ip1, output_file);	//New Test case Generated with mvar meta variants
+	nc_err = p1.first;
+	n_exe_err = p1.second;
+
+	if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+	{
+		if(ip1.size() > 2)
+		{
+			new_mvar1 = verticalReduction(compile_err, exe_err, ip1, output_file);
+		}
+		else
+		{
+			new_mvar1 = ip1;
+		}
+
+		new_mvar = new_mvar1;
+	}
+	else //Back Track
+	{
+		new_mvar1 = ip1;
+
+		p1 = createTestCase(ip2, output_file);	//New Test case Generated with mvar meta variants
+		nc_err = p1.first;
+		n_exe_err = p1.second;
+
+		if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+		{
+			if(ip2.size() > 2)
 			{
-				RECUR_TIMES++;
-				return MVReduceInstr(compile_err, exe_err, new_var, output_file);
+				new_mvar2 = verticalReduction(compile_err, exe_err, ip2, output_file);
+			}
+			else
+			{
+				new_mvar2 = ip2;
+			}
+
+			new_mvar = new_mvar2;
+		}
+		else
+		{
+			new_mvar2 = ip2;
+
+			new_mvar = verticalReductionMerge(new_mvar1, new_mvar2);
+
+			if(new_mvar != mvar)
+			{
+				logDebug(fmt::format("Merged output is not same as original"));
+				printVectorApiObjects(new_mvar);
+
+				new_mvar = verticalReduction(compile_err, exe_err, new_mvar, output_file);
 			}
 		}
 	}
-	else if(new_compile_err == "" && new_exe_err == "") // Error disappeared, so backtrack
+
+	logDebug(fmt::format("Inside verticalReduction-- Final Output"));
+	printVectorApiObjects(new_mvar);
+
+	return new_mvar;
+}	
+
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::MetaVariantReduce(std::vector<const ApiObject*>  var)
+{
+	int id;
+	std::vector<const ApiInstructionInterface*> result, list_inst;
+
+	for(std::vector<const ApiObject*>::iterator it = var.begin(); it != var.end(); it++)
 	{
-		RECUR_TIMES++;
-		return MVReduceInstr(compile_err, exe_err, var, output_file);
-	}
-	else // Error (compilation or execution) changes. Increase the size of var
-	{
-		std::set<std::string> new_var;
+		id = (*it)->getID();
 
-		do{
-			new_var = IncreaseVarSize(new_exe_err, var);		
-		}while(new_var.size() != var.size());
+		list_inst = MetaVariant_Instr[id];
 
-
-//		if(new_var.size() != var.size())
+		for(std::vector<const ApiInstructionInterface*>::iterator iit = list_inst.begin(); iit != list_inst.end(); iit++)
 		{
-			RECUR_TIMES++;
-			return MVReduceInstr(compile_err, exe_err, var, output_file);
+			result.push_back(*iit);
+		}
+	}		
+
+	return result;
+}
+
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::fuzzerReduction(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> red)
+{
+	std::vector<NodeT*> root = this->tree.getRoots();
+
+
+	std::vector<const ApiInstructionInterface*> input, input_temp;
+
+	for(std::vector<NodeT*>::iterator it = root.begin(); it != root.end(); it++)
+	{
+		nodeReduction(compile_err, exe_err, *it, output_file, red);
+	}	
+
+	return this->tree.traverse();
+}
+
+void ApiFuzzerNew::nodeReduction(std::string compile_err, std::string exe_err, NodeT* node, std::string output_file, std::vector<const ApiInstructionInterface*> red)
+{
+	std::vector<EdgeT*> child;
+	EdgeT* edge;
+
+	for(std::vector<EdgeT*>::iterator it = this->tree.edges.begin(); it != this->tree.edges.end(); it++)
+	{
+		edge = *it;
+
+		if(edge->src == node)
+		{
+			child.push_back(edge);
 		}
 	}
 
-	return var;	
+	std::vector<ApiInstructionInterface*> inst;
+
+	std::vector<EdgeT*> new_child = childReduction(compile_err, exe_err, node, child, output_file, red);
+
+	std::vector<EdgeT*> rem_child;
+
+	std::set_difference(child.begin(), child.end(), new_child.begin(), new_child.end(), std::inserter(rem_child, rem_child.begin()));
+
+	this->tree.removeChildren(rem_child);
+
+//	return this->tree.traverseSubTree(node);
+//	printVectorApiInstructions(this->tree.traverse());
 }
+
+std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseEdge(NodeT* node, std::vector<EdgeT*> new_child, std::string output_file, std::vector<const ApiInstructionInterface*> red)
+{
+//	std::cout << "CreateTestCase for Edges: " << new_child.size() << std::endl;
+
+	DependenceTree new_tree = this->tree;
+	
+	EdgeT* edge;
+
+	std::vector<EdgeT*> child;
+
+	for(std::vector<EdgeT*>::iterator it = new_tree.edges.begin(); it != new_tree.edges.end(); it++)
+	{
+		edge = *it;
+
+		if(edge->src == node)
+		{
+			child.push_back(edge);
+		}
+	}
+
+	std::vector<EdgeT*> rem_child;
+
+	std::set_difference(child.begin(), child.end(), new_child.begin(), new_child.end(), std::inserter(rem_child, rem_child.begin()));
+
+	new_tree.removeChildren(rem_child);
+
+	std::vector<const ApiInstructionInterface*> inst = new_tree.traverse();
+
+	std::stringstream new_ss_m;
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = inst.begin(); it != inst.end(); it++)
+	{
+		writeLine(new_ss_m, (*it)->toStr());
+	}
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = red.begin(); it != red.end(); it++)
+	{
+		writeLine(new_ss_m, (*it)->toStr());
+	}
+
+	std::ofstream ofs;
+	ofs.open(output_file);
+
+	ofs << new_ss_i.str();
+	ofs << new_ss_m.str();
+	ofs << new_ss_p.str();
+	ofs.close();
+
+	std::string new_compile_err = "";	
+	std::string new_exe_err = "";	
+	std::pair<std::string,std::string> res;	
+
+ 	new_compile_err = Exec(command);
+	new_exe_err = Exec(exe_command);
+
+	res = std::make_pair(new_compile_err, new_exe_err);
+
+	return res;
+}
+
+std::vector<EdgeT*> ApiFuzzerNew::edgeMerge(std::vector<EdgeT*> mvar1, std::vector<EdgeT*> mvar2)
+{
+	for(std::vector<EdgeT*>::iterator it = mvar2.begin(); it != mvar2.end(); it++)
+	{
+		if(find(mvar1.begin(), mvar1.end(), *it) == mvar1.end())
+		{
+			mvar1.push_back(*it);
+		}
+	}
+
+	return mvar1;
+}
+
+std::vector<EdgeT*> ApiFuzzerNew::childReduction(std::string compile_err, std::string exe_err, NodeT* node, std::vector<EdgeT*> child, std::string output_file, std::vector<const ApiInstructionInterface*> red)
+{
+	logDebug(fmt::format("Inside childReduction"));
+//	std::cout << "Inside childReduction: " << node->var->toStr() << std::endl;
+	printVectorEdges(child);
+
+	std::vector<EdgeT*> new_child1, new_child2, ip1, ip2, new_child;
+
+	//Find the mid of the input vector child
+
+	int size = child.size();
+	int msize;
+
+	if(size%2 == 0)
+		msize = ceil(size/2);
+	else
+		msize = ceil(size/2) + 1;
+
+	// Create two vectors each containing ip1 and ip2 half of the original input vector 
+
+	std::pair<std::string, std::string> p1;
+
+	std::string nc_err, n_exe_err;
+
+	for(int i = 0; i < msize; i++)
+	{
+		ip1.push_back(child.at(i));
+	}
+
+	ip2.push_back(child.at(0));
+
+	for(int i = msize; i < size; i++)
+	{
+		ip2.push_back(child.at(i));
+	}
+
+	// Perform reduction on the first half
+
+	p1 = createTestCaseEdge(node, ip1, output_file, red);	//New Test case Generated with mvar meta variants
+
+//	std::cout << "Created test case with the first half" <<std::endl;
+
+	nc_err = p1.first;
+	n_exe_err = p1.second;
+
+	if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+	{
+//		std::cout << "Reduce test case with the first half" <<std::endl;
+
+		if(ip1.size() > 1)
+		{
+			new_child1 = childReduction(compile_err, exe_err, node, ip1, output_file, red);
+		}
+		else
+		{
+			new_child1 = ip1;
+		}
+
+		new_child = new_child1;
+	}
+	else //Back Track
+	{
+//		std::cout << "Test case failed with the first half" <<std::endl;
+
+		new_child1 = ip1;
+	
+		if(ip2 == child)
+		{
+			createTestCaseEdge(node, ip2, output_file, red);
+			return child;
+		}
+
+		p1 = createTestCaseEdge(node, ip2, output_file, red);	//New Test case Generated with mvar meta variants
+	
+//		std::cout << "Created test case with the second half" <<std::endl;
+
+		nc_err = p1.first;
+		n_exe_err = p1.second;
+
+		if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+		{
+//			std::cout << "Reduce test case with the second half" <<std::endl;
+
+			if(ip2.size() > 1)
+			{
+				new_child2 = childReduction(compile_err, exe_err, node, ip2, output_file, red);
+			}
+			else
+			{
+				new_child2 = ip2;
+			}
+
+			new_child = new_child2;
+		}
+		else
+		{
+			new_child2 = ip2;
+
+//			std::cout << "Test case failed with the second half" <<std::endl;
+
+			new_child = edgeMerge(new_child1, new_child2);
+
+//			std::cout << "Merged Output" << std::endl;
+			logDebug(fmt::format("Merged Output"));
+			printVectorEdges(new_child);
+
+			if(new_child != child)
+			{
+				new_child = childReduction(compile_err, exe_err, node, new_child, output_file, red);
+			}
+		}
+	}
+
+//	std::cout << "Final Output" << std::endl;
+	logDebug(fmt::format("Final Output"));
+	printVectorEdges(new_child);
+
+	return new_child;
+}
+
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> red)
+{
+
+//	std::cout << "Special Object: " << special_obj.first->toStr() << " : " << special_obj.second->toStr() << std::endl;
+
+	std::vector<NodeT*> root = this->tree.getRoots();
+
+	std::vector<NodeT*> nodes, temp;
+	std::vector<EdgeT*> vec_edges, vec_edges_temp;
+
+//	std::cout << "Inside reduceSubTree" << std::endl;
+
+	for(std::vector<NodeT*>::iterator it = root.begin(); it != root.end(); it++)
+	{
+//		std::cout << "Root: " << (*it)->var->toStr() << std::endl;
+
+		vec_edges = this->tree.getImmDescendants(*it);
+
+		int max = 0;
+		NodeT* node = NULL;
+
+		for(std::vector<EdgeT*>::iterator vit = vec_edges.begin(); vit != vec_edges.end(); vit++)
+		{
+			temp = (*vit)->dests;	
+
+			for(std::vector<NodeT*>::iterator nit = temp.begin(); nit != temp.end(); nit++)
+			{
+				if(find(nodes.begin(), nodes.end(), *nit) == nodes.end())
+				{
+					if(*nit != *it)
+					{
+						if((*nit)->var->getType()->isPrimitive())
+						{
+							continue;
+						}
+
+						subTreeReduction(compile_err, exe_err, *nit, output_file, red);
+
+						#if 0
+						vec_edges_temp = this->tree.getImmDescendants(*nit);
+
+						if(vec_edges_temp.size() > max)
+						{
+							max = vec_edges.size();
+							node = *nit;
+						}
+
+						nodes.push_back(*nit);
+						#endif
+					}
+				}
+			}
+		}
+
+		#if 0
+		if(node != NULL)
+		{
+//			std::cout << "1 Node selected for reduction: " << node->var->toStr() << std::endl;
+			subTreeReduction(compile_err, exe_err, node, output_file, red);
+		}
+		else if(!nodes.empty())
+		{
+//			std::cout << "2 Node selected for reduction: " << node->var->toStr() << std::endl;
+			node = nodes.at(rand()%nodes.size());
+			subTreeReduction(compile_err, exe_err, node, output_file, red);
+		}
+		#endif
+	}
+
+	return this->tree.traverse();
+}
+
+void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err, NodeT* node, std::string output_file, std::vector<const ApiInstructionInterface*> red)
+{
+	std::vector<NodeT*> temp;
+	std::vector<EdgeT*> vec_edges, vec_edges_temp;
+	NodeT* new_node;
+
+        const ApiObject* obj;
+
+	DependenceTree new_tree = this->tree;
+
+	#if 0
+	std::vector<const ApiObject*> candidate_params = this->filterObjs(&ApiObject::hasType, node->var->getType());
+
+	if(!candidate_params.empty())
+	{
+                obj = getRandomVectorElem(candidate_params, this->getRNG());
+	}
+	else
+	{
+		obj = generateNewObject(node->var->getType());
+	}
+	#endif
+
+//	obj = generateApiObjectDecl("new_matrix", node->var->getType(), true);
+//	obj = getSingletonObject(node->var->getType());
+
+	obj = special_obj.first;
+
+	NodeT* new_node1 = new_tree.insertNode(obj);
+
+	#if 0
+	std::vector<NodeT*> dests;
+	const ApiInstructionInterface* api_new_instr;
+//	api_new_instr = this->instrs.at(this->instrs.size()-1);	
+	api_new_instr = special_obj.second;
+
+	new_tree.addEdge(new_node1, dests, api_new_instr);
+	#endif
+
+//	std::cout << "Inside subTreeReduction" << std::endl;
+
+	new_tree = replaceSubTree(new_tree, node, new_node1); 
+
+//	std::cout << "Inside subTreeReduction -- after replaceSubTree" << std::endl;
+
+//	printVectorEdges(new_edges);
+
+//	new_tree.traverse();
+//	std::cout << "Traverse End" << std::endl;
+
+	std::pair<std::string, std::string> res;
+
+	res = createTestCaseTree(new_tree, output_file, red);
+
+	std::string nc_err = res.first;
+	std::string n_exe_err = res.second;
+
+	NodeT* new_node2;
+
+	if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+	{
+//		std::cout << "Test Case Reduced retains the error" << std::endl;
+
+		this->tree = new_tree;
+	}
+	else
+	{
+//		std::cout << "Choose some other node at the next level" << std::endl;
+
+		vec_edges = this->tree.getImmDescendants(node);
+
+		int max = 0;
+		NodeT* enode = NULL;
+		std::vector<NodeT*> nodes;
+
+		for(std::vector<EdgeT*>::iterator it = vec_edges.begin(); it != vec_edges.end(); it++)
+		{
+			temp = (*it)->dests;	
+
+			for(std::vector<NodeT*>::iterator nit = temp.begin(); nit != temp.end(); nit++)
+			{
+				if(find(nodes.begin(), nodes.end(), *nit) == nodes.end())
+				{
+					if(*nit != node)
+					{
+						if((*nit)->var->getType()->isPrimitive())
+						{
+							continue;
+						}
+
+						vec_edges_temp = this->tree.getImmDescendants(*nit);
+
+						if(vec_edges_temp.size() > max)
+						{
+							max = vec_edges.size();
+							enode = *nit;
+						}
+
+						nodes.push_back(*nit);
+					}
+				}
+			}
+
+		}
+
+		if(enode != NULL)
+		{
+//			std::cout << "21 Node selected for reduction: " << node->var->toStr() << std::endl;
+			subTreeReduction(compile_err, exe_err, enode, output_file, red);
+		}
+		else if(!nodes.empty())
+		{
+//			std::cout << "22 Node selected for reduction: " << node->var->toStr() << std::endl;
+			enode = nodes.at(rand()%nodes.size());
+			subTreeReduction(compile_err, exe_err, enode, output_file, red);
+		}
+	}
+}
+
+std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseTree(DependenceTree tree, std::string output_file, std::vector<const ApiInstructionInterface*> red)
+{
+	std::vector<const ApiInstructionInterface*> inst;
+
+	std::stringstream new_ss_m;
+
+	inst = tree.traverse();
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = inst.begin(); it != inst.end(); it++)
+	{
+		writeLine(new_ss_m, (*it)->toStr());
+	}
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = red.begin(); it != red.end(); it++)
+	{
+		writeLine(new_ss_m, (*it)->toStr());
+	}
+
+	std::ofstream ofs;
+	ofs.open(output_file);
+
+	ofs << new_ss_i.str();
+	ofs << new_ss_m.str();
+	ofs << new_ss_p.str();
+	ofs.close();
+
+	std::string new_compile_err = "";	
+	std::string new_exe_err = "";	
+	std::pair<std::string,std::string> res;	
+
+ 	new_compile_err = Exec(command);
+	new_exe_err = Exec(exe_command);
+
+	res = std::make_pair(new_compile_err, new_exe_err);
+
+	return res;
+
+}
+
+const ApiInstructionInterface* isPresent(std::vector<const ApiInstructionInterface*> red, const ApiInstructionInterface* instr)
+{
+	const ApiInstructionInterface* r = NULL;
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = red.begin(); it != red.end(); it++)
+	{
+		if((*it)->toStr() == instr->toStr())
+		{
+			return *it;
+		}
+	}
+
+	return r;
+}
+
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsPrep(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> var, std::string output_file, std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red)
+{
+//	std::cout << "Inside simplifyMetaRelations: " << mvar_relations.size() << std::endl;
+
+	const ApiInstructionInterface* instr1;
+	const ApiInstructionInterface* instr2;
+	const ApiInstructionInterface* instr;
+	const ApiInstructionInterface* new_instr;
+
+	std::vector<const MetaRelation*> rel1, rel2;
+	const ApiObject* mvar;
+
+	std::map<const ApiInstructionInterface*, const ApiInstructionInterface*> map_relations;
+	
+	for(std::map<const ApiObject*, original_simplified_mapping>::reverse_iterator it = mvar_relations.rbegin(); it != mvar_relations.rend(); it++)
+	{
+		mvar = it->first;
+
+		if(find(var.begin(), var.end(), mvar) == var.end())
+		{
+			continue;
+		}
+
+//		std::cout << "Mvar: " << mvar->toStr() << std::endl;
+	
+		rel1 = it->second.first;
+		rel2 = it->second.second;
+
+//		std::cout << "Rel1 Size: " << rel1.size() << std::endl;
+//		std::cout << "Rel2 Size: " << rel2.size() << std::endl;
+
+		for(int i = rel1.size()-1; i >= 0; i--)
+		{
+//			std::cout << "i: " << i << std::endl;
+
+//			std::cout << "Rel1: " << rel1.at(i)->toStr() << std::endl;
+	
+			if(rel1.at(i)->getAbstractRelation() == "check")
+			{
+				map_relations[instr] = instr;
+
+				continue;
+			}	
+
+			mvar->setDeclared();
+			instr1 = rel1.at(i)->toApiInstruction(); // Without declaration
+
+//			std::cout << "Instr1: " << instr1->toStr() << std::endl;
+			mvar->resetDeclared();
+			instr2 = rel1.at(i)->toApiInstruction();
+//			std::cout << "Instr2: " << instr2->toStr() << std::endl;
+
+			instr = isPresent(red, instr1);
+
+			if(instr != NULL)
+			{
+//				std::cout << "Declared Instr: " << instr->toStr() << std::endl;
+
+				mvar->setDeclared();
+				new_instr = rel2.at(i)->toApiInstruction();
+
+//				std::cout << "New Declared Instr: " << new_instr->toStr() << std::endl;
+
+				map_relations[instr] = new_instr;
+			}
+			else
+			{
+				instr = isPresent(red, instr2);
+				
+				if(instr != NULL)
+				{
+//					std::cout << "Non-Declared Instr: " << instr->toStr() << std::endl;
+
+					mvar->resetDeclared();
+					new_instr = rel2.at(i)->toApiInstruction();
+
+//					std::cout << "New Non-Declared Instr: " << new_instr->toStr() << std::endl;
+
+					map_relations[instr] = new_instr;
+				}
+			}
+		}
+
+//		std::cout << "Outside Inner for loop" << std::endl;
+	}
+
+//	std::cout << "Outside Outer for loop" << std::endl;
+
+	std::vector<const ApiInstructionInterface*> res;
+
+//	printVectorApiInstructions(red);
+
+	try_outs = 0;
+
+	std::vector<const ApiInstructionInterface*> simp_red;
+
+	for(int i = 0; i < red.size(); i++)
+	{
+		if(i%2 == 0)
+		{
+			simp_red.push_back(red.at(i));
+		}
+	}
+
+	res = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, simp_red, map_relations);
+	
+ 	std::string new_compile_err = Exec(command);
+	std::string new_exe_err = Exec(exe_command);
+
+	if(checkTestCase(compile_err, new_compile_err, exe_err, new_exe_err))
+	{
+		return res;
+	}
+	else
+	{
+		createTestCaseSimplify(input_insts, red, red, map_relations, output_file);
+		return res;
+	}
+}
+
+std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseSimplify(std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red, std::vector<const ApiInstructionInterface*> var, std::map<const ApiInstructionInterface*, const ApiInstructionInterface*> map_relations, std::string output_file)
+{
+	std::vector<const ApiInstructionInterface*> inst;
+
+	std::stringstream new_ss_m;
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = input_insts.begin(); it != input_insts.end(); it++)
+	{
+		writeLine(new_ss_m, (*it)->toStr());
+	}
+
+//	std::cout << "Create test case" << std::endl;
+//	printVectorApiInstructions(var);
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = red.begin(); it != red.end(); it++)
+	{
+//		inst.push_back(map_relations[*it]);
+
+//		std::cout << "Instr in red: " << (*it)->toStr() << std::endl;
+
+		if(isPresent(var, *it) != NULL)	
+		{
+			if(map_relations.find(*it) != map_relations.end())	
+			{
+//				std::cout << "Instr Found: " << std::endl;
+//				std::cout << "New Instr: " << map_relations[*it]->toStr() << std::endl;
+				writeLine(new_ss_m, map_relations[*it]->toStr());
+			}
+			else
+			{
+				writeLine(new_ss_m, (*it)->toStr());
+			}
+		}
+		else
+		{
+//			std::cout << "Instr Not Found: " << std::endl;
+			writeLine(new_ss_m, (*it)->toStr());
+		}
+	}	
+
+	std::ofstream ofs;
+	ofs.open(output_file);
+
+	ofs << new_ss_i.str();
+	ofs << new_ss_m.str();
+	ofs << new_ss_p.str();
+	ofs.close();
+
+	std::string new_compile_err = "";	
+	std::string new_exe_err = "";	
+	std::pair<std::string,std::string> res;	
+
+ 	new_compile_err = Exec(command);
+	new_exe_err = Exec(exe_command);
+
+	res = std::make_pair(new_compile_err, new_exe_err);
+
+	return res;
+}
+
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelations(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red, std::vector<const ApiInstructionInterface*> var, std::map<const ApiInstructionInterface*, const ApiInstructionInterface*> map_relations)
+{
+	if(try_outs > 10)
+	{
+		map_relations.clear();
+		createTestCaseSimplify(input_insts, red, red, map_relations, output_file);
+		return red;
+	}
+
+	try_outs++;
+
+	std::pair<std::string, std::string> p1;
+
+	std::string nc_err, n_exe_err;
+
+	p1 = createTestCaseSimplify(input_insts, red, var, map_relations, output_file);
+
+	nc_err = p1.first;
+	n_exe_err = p1.second;
+
+	if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+	{
+		return red;
+	}
+
+	std::vector<const ApiInstructionInterface*> new_red, ip1, ip2, new_red1, new_red2;
+
+	int size = red.size();
+	int msize;
+
+	if(size%2 == 0)
+		msize = ceil(size/2);
+	else
+		msize = ceil(size/2) + 1;
+
+	// Create two vectors each containing ip1 and ip2 half of the original input vector 
+
+	for(int i = 0; i < msize; i++)
+	{
+		ip1.push_back(red.at(i));
+	}
+
+//	ip2.push_back(child.at(0));
+
+	for(int i = msize; i < size; i++)
+	{
+		ip2.push_back(red.at(i));
+	}
+
+	// Perform reduction on the first half
+
+	p1 = createTestCaseSimplify(input_insts, red, ip1, map_relations, output_file);
+
+//	std::cout << "Created test case with the first half" <<std::endl;
+
+	nc_err = p1.first;
+	n_exe_err = p1.second;
+
+	if(!checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+	{
+//		std::cout << "Reduce test case with the first half" <<std::endl;
+
+		if(ip1.size() > 1)
+		{
+			new_red1 = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, ip1, map_relations);
+		}
+		else
+		{
+			new_red1 = ip1;
+		}
+
+		new_red = new_red1;
+	}
+	else //Back Track
+	{
+//		std::cout << "Test case failed with the first half" <<std::endl;
+
+		new_red1 = ip1;
+	
+		p1 = createTestCaseSimplify(input_insts, red, ip2, map_relations, output_file);	//New Test case Generated with mvar meta variants
+	
+//		std::cout << "Created test case with the second half" <<std::endl;
+
+		nc_err = p1.first;
+		n_exe_err = p1.second;
+
+		if(!checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
+		{
+//			std::cout << "Reduce test case with the second half" <<std::endl;
+
+			if(ip2.size() > 1)
+			{
+				new_red2 = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, ip2, map_relations);
+			}
+			else
+			{
+				new_red2 = ip2;
+			}
+
+			new_red = new_red2;
+		}
+		else
+		{
+			new_red2 = ip2;
+
+//			std::cout << "Test case failed with the second half" <<std::endl;
+
+			new_red = instructionMerge(new_red1, new_red2);
+
+			if(new_red != red)
+			{
+				new_red = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, new_red, map_relations);
+			}
+		}
+	}
+
+	return new_red;
+}
+
+const ApiInstructionInterface* ApiFuzzerNew::getNewInstruction(const ApiInstruction* old_instr, NodeT* node, NodeT* new_node)
+{
+	const ApiObject* target;
+	const ApiObject* obj;
+	const ApiInstruction* new_instr;
+	std::vector<const ApiObject*> params, new_params;
+
+//	std::cout << "Hey Der" << std::endl;
+
+	target = old_instr->getTargetObj();
+
+	params = old_instr->getFuncParams();
+
+//	printVectorApiObjects(params);
+
+	if(target != NULL && target == node->var)
+	{
+//		std::cout << "Node is Target" << target->toStr() << std::endl;		
+		target  = new_node->var;
+		new_params = params;
+	}
+	else
+	{
+//		std::cout << "Node is Param: " << params.size() << std::endl;		
+		for(std::vector<const ApiObject*>::iterator it = params.begin(); it != params.end(); it++)
+		{
+//			std::cout << "Par: " << (*it)->toStr() << std::endl;
+
+			if(*it == node->var)
+			{
+//				std::cout << "Match" << std::endl;
+//				std::cout << "New Node: "  << new_node->var->toStr() << std::endl;
+				new_params.push_back(new_node->var);
+			}
+			else
+			{
+				new_params.push_back(*it);
+			}
+		}
+	}
+
+//	printVectorApiObjects(new_params);
+
+	obj = old_instr->getResultObj();
+
+//	std::cout << "Result: " << obj->toStr() << std::endl;
+
+	if(isPresent(declared_instrs, old_instr) != NULL)
+	{
+		obj->resetDeclared();
+	}
+
+	new_instr = new ApiInstruction(old_instr->getFunc(), obj, target, new_params);
+
+	return ((const ApiInstructionInterface*)(new_instr));
+}
+
+EdgeT* ApiFuzzerNew::getNewEdge(EdgeT* old_edge, NodeT* node, NodeT* new_node)
+{
+	const ApiInstruction* old_instr;
+	const ApiInstructionInterface* new_instr;
+
+	#if 0
+	std::cout << "Inside New Edge" << std::endl;
+	std::cout << "Node: " << node->var->toStr() << std::endl;
+	std::cout << "New Node: " << new_node->var->toStr() << std::endl;
+	#endif
+
+	std::vector<NodeT*> new_dests, old_dests;
+	NodeT* target_node;
+
+	EdgeT* res = new EdgeT();
+
+	res->src = old_edge->src;
+
+	old_dests = old_edge->dests;
+
+	for(std::vector<NodeT*>::iterator it = old_dests.begin(); it != old_dests.end(); it++)
+	{
+		if(*it == node)
+		{
+//			std::cout << "Match Found" << std::endl;
+			new_dests.push_back(new_node);			
+		}
+		else
+		{
+			new_dests.push_back(*it);
+		}
+	}
+
+	printVectorNodes(new_dests);
+
+	res->dests = new_dests;
+
+	old_instr = dynamic_cast<const ApiInstruction*>(old_edge->instr);
+
+	new_instr = getNewInstruction(old_instr, node, new_node);
+	
+	res->instr = (const ApiInstructionInterface*)(new_instr);
+
+	return res;
+}
+
+DependenceTree ApiFuzzerNew::replaceSubTree(DependenceTree tree, NodeT* node, NodeT* new_node)
+{
+//	std::cout << "Inside replaceSubTree" << std::endl;
+//	std::cout <<  "New Node: " << new_node->var->toStr() << std::endl; 
+
+	DependenceTree new_tree = tree;
+
+	std::vector<EdgeT*> ancestors, descendants;
+	std::vector<EdgeT*> res;
+
+	ancestors = new_tree.getImmAncestors(node);
+	descendants = new_tree.getImmDescendants(node);
+
+	EdgeT* old_edge;
+	EdgeT* new_edge;
+
+	std::vector<EdgeT*> edges = new_tree.edges;
+
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+		if(find(ancestors.begin(), ancestors.end(), *it) != ancestors.end())
+		{
+			old_edge = *it;
+
+//			std::cout << "Ancestor Edge" << std::endl;
+
+			new_edge = getNewEdge(old_edge, node, new_node);
+
+			#if 0
+			std::cout << "Old Edge" << std::endl;
+			printEdge(old_edge);
+			std::cout << "New Edge" << std::endl;
+			printEdge(new_edge);
+			#endif
+
+			res.push_back(new_edge);
+		}	
+		else if(find(descendants.begin(), descendants.end(), *it) != descendants.end())
+		{
+//			std::cout << "Descendant Edge" << std::endl;
+//			printEdge(*it);
+		}
+		else
+		{
+//			std::cout << "No Edge" << std::endl;
+
+			res.push_back(*it);
+		}
+	}
+
+//	std::cout << "Modified Edges" << std::endl;
+//	printVectorEdges(res);
+
+	new_tree.edges = res;
+
+	return new_tree;
+}
+
 #endif

@@ -1,7 +1,7 @@
 #ifndef API_FUZZER_HPP
 #define API_FUZZER_HPP
 
-#include <algorithm>
+#include "api_elements.hpp"
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -14,7 +14,6 @@
 #include <tuple>
 #include <vector>
 
-#include "api_elements.hpp"
 #include "set_meta_tester.hpp"
 #include "test_emitter.hpp"
 
@@ -159,31 +158,48 @@ class ApiFuzzerNew : public ApiFuzzer {
         ~ApiFuzzerNew();
 
         const MetaRelation* concretizeRelation(const MetaRelation*,
-            const ApiObject*, bool);
+            const ApiObject*, bool, bool);
 
 	std::map<size_t, std::vector<const ApiInstructionInterface*> > MetaVariant_Instr;
 	std::map<size_t, std::vector<const ApiInstructionInterface*> > InputVar_Instr;
 
+	DependenceTree replaceSubTree(DependenceTree tree, NodeT* node, NodeT* new_node);
+	EdgeT* getNewEdge(EdgeT* old_edge, NodeT* node, NodeT* new_node);
+	const ApiInstructionInterface* getNewInstruction(const ApiInstruction* old_instr, NodeT* node, NodeT* new_node);
 
         std::vector<const ApiInstructionInterface*> InputInstrs;
 	std::vector<const ApiObject*> getApiObjects(std::vector<std::string> var);
 
-	std::vector<const ApiInstructionInterface*> MHReduceInstr(std::string compile_err, std::pair<std::string, std::string> exe_err, std::vector<const ApiObject*> var, std::string output_file);
-	bool assertReduction(std::string compile_err, std::pair<std::string,std::string> exe_err, const ApiInstruction *assert, std::vector<const ApiObject*> var);
+	std::vector<int> MHReduceInstr(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> var, std::vector<int> rel_indices, std::string output_file);
+	std::vector<const ApiInstructionInterface*> MHReduceInstrPrep(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> var, std::string output_file);
+	std::pair<std::string, std::string> createTestCaseMHReduce(std::string exe_err, std::vector<const ApiObject*> var, std::vector<int> rel_indices, std::string output_file);
+	std::vector<int> indexMerge(std::vector<int> v1, std::vector<int> v2);
+	bool assertReduction(const ApiInstructionInterface* assert, std::vector<const ApiObject*> var);
         std::vector<const ApiInstructionInterface*> MetaVariantReduce(std::vector<const ApiObject*> var);
 
 	std::vector<const ApiObject*> verticalReduction(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> mvar, std::string output_file);	
 	std::vector<const ApiObject*> verticalReductionMerge(std::vector<const ApiObject*> mvar1, std::vector<const ApiObject*> mvar2);
 
-	std::vector<const ApiFuncObject*> inputVarReduction(std::string compile_err, std::string exe_err, std::vector<const ApiFuncObject*> mvar, std::string output_file, std::vector<const ApiInstructionInterface*> red);	
-	std::vector<const ApiFuncObject*> inputVarMerge(std::vector<const ApiFuncObject*> mvar1, std::vector<const ApiFuncObject*> mvar2);
-
 	std::pair<std::string, std::string> createTestCase(std::vector<const ApiObject*> var, std::string output_file);
+	std::pair<std::string, std::string> createTestCaseTree(DependenceTree tree, std::string output_file, std::vector<const ApiInstructionInterface*> red);
 	bool checkTestCase(std::string c_err, std::string n_c_err, std::string e_err, std::string n_e_err);
-	std::pair<std::string, std::string> createTestCaseForInputVar(std::vector<const ApiInstructionInterface*> instr, std::vector<const ApiInstructionInterface*> red, std::string output_file);
-	std::pair<std::string, std::string> createTestCaseInput(std::vector<const ApiFuncObject*> var, std::string output_file, std::vector<const ApiInstructionInterface*> red);
 	
+	DependenceTree tree;
+	
+	std::pair<std::string, std::string> createTestCaseEdge(NodeT* node, std::vector<EdgeT*> new_child, std::string output_file, std::vector<const ApiInstructionInterface*> red);
+	std::vector<EdgeT*> childReduction(std::string compile_err, std::string exe_err, NodeT* node, std::vector<EdgeT*> child, std::string output_file, std::vector<const ApiInstructionInterface*> red);
+	void nodeReduction(std::string compile_err, std::string exe_err, NodeT* node, std::string output_file, std::vector<const ApiInstructionInterface*> red);
+	std::vector<const ApiInstructionInterface*> fuzzerReduction(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> red);
+	std::vector<EdgeT*> edgeMerge(std::vector<EdgeT*> mvar1, std::vector<EdgeT*> mvar2);
 
+	std::vector<const ApiInstructionInterface*> reduceSubTree(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> red);
+	void subTreeReduction(std::string compile_err, std::string exe_err, NodeT* node, std::string output_file, std::vector<const ApiInstructionInterface*> red);
+
+	std::vector<const ApiInstructionInterface*> simplifyMetaRelationsPrep(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> var, std::string output_file, std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red);
+	std::vector<const ApiInstructionInterface*> simplifyMetaRelations(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red, std::vector<const ApiInstructionInterface*> var, std::map<const ApiInstructionInterface*, const ApiInstructionInterface*> map_relations);
+	std::pair<std::string, std::string> createTestCaseSimplify(std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red, std::vector<const ApiInstructionInterface*> var, std::map<const ApiInstructionInterface*, const ApiInstructionInterface*> map_relations, std::string output_file);
+	std::vector<const ApiInstructionInterface*> instructionMerge(std::vector<const ApiInstructionInterface*> mvar1, std::vector<const ApiInstructionInterface*> mvar2);
+	
     private:
         void initPrimitiveTypes();
         void initInputs(YAML::Node);
@@ -233,8 +249,8 @@ class ApiFuzzerNew : public ApiFuzzer {
         std::string getGeneratorData(std::string) const;
         std::string makeLinearExpr(std::vector<const ApiObject*>);
 
-        const FuncObject* concretizeGenerators(const MetaVarObject*);
-        const FuncObject* concretizeGenerators(const FuncObject*);
+        const FuncObject* concretizeGenerators(const MetaVarObject*, bool simplify);
+        const FuncObject* concretizeGenerators(const FuncObject*, bool simplify);
         std::map<const MetaVarObject*, const ApiObject*>
             makeConcretizationMap(std::vector<const ApiObject*>);
         const FuncObject* concretizeFuncObject(const FuncObject*,
@@ -242,5 +258,15 @@ class ApiFuzzerNew : public ApiFuzzer {
         const ApiObject* concretizeMetaVarObject(const MetaVarObject*);
 
 };
+
+extern NodeT *null_node;
+
+typedef std::pair<std::vector<const MetaRelation*>, std::vector<const MetaRelation*> > original_simplified_mapping;
+
+extern std::map<const ApiObject*, original_simplified_mapping> mvar_relations;
+
+const ApiInstructionInterface* isPresent(std::vector<const ApiInstructionInterface*> red, const ApiInstructionInterface* instr);
+extern int try_outs;
+extern std::pair<const ApiObject*, const ApiInstructionInterface*> special_obj;
 
 #endif

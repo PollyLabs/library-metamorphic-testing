@@ -72,6 +72,7 @@ SetMetaTesterNew::makeAbstractMetaRelChain(unsigned int rel_count)
     std::set<std::string> abstract_relations;
     for (const MetaRelation* rel : this->relations)
     {
+//	std::cout << "AR: " << rel->getAbstractRelation() << std::endl;
         abstract_relations.insert(rel->getAbstractRelation());
     }
     while (rel_count > 0)
@@ -121,12 +122,16 @@ SetMetaTesterNew::addMetaTest(MetaTest* test)
  * relation
  */
 
+
 const MetaRelation*
 SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
     const ApiObject* meta_variant_var, std::vector<const ApiObject*> input_vars,
     bool first)
     const
 {
+//    std::cout << "Rel Type: " << rel_type << std::endl;
+//    std::cout << "Meta Variant: " << meta_variant_var->toStr() << std::endl;
+
     std::vector<const MetaRelation*> concrete_relation_candidates;
     for (std::vector<const MetaRelation*>::const_iterator it =
             this->relations.begin(); it != this->relations.end(); ++it)
@@ -140,7 +145,38 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
         fmt::format("No concrete candidates for relation `{}` found", rel_type));
     const MetaRelation* concrete_relation = concrete_relation_candidates.at(
         getRandInt(this->rng, 0, concrete_relation_candidates.size() - 1));
-    return this->fuzzer->concretizeRelation(concrete_relation, meta_variant_var, first);
+
+    const MetaRelation* res;
+    const MetaRelation* simp_res;
+
+    res = this->fuzzer->concretizeRelation(concrete_relation, meta_variant_var, first, false);
+    simp_res = this->fuzzer->concretizeRelation(concrete_relation_candidates.at(0), meta_variant_var, first, true);
+
+    original_simplified_mapping vecs = mvar_relations[meta_variant_var];
+
+    std::vector<const MetaRelation*> rel_temp1, rel_temp2;
+    rel_temp1 = vecs.first;
+    rel_temp2 = vecs.second;
+
+//    if(find(rel_temp1.begin(), rel_temp1.end(), res) == rel_temp1.end())
+    {
+	rel_temp1.push_back(res);
+	rel_temp2.push_back(simp_res);
+
+	vecs = std::make_pair(rel_temp1, rel_temp2);
+	mvar_relations[meta_variant_var] = vecs;
+    }	
+		
+    #if 0	
+//    std::cout << "Concrete Rel: " << concrete_relation->toStr() << std::endl;
+    std::cout << "Concrete Res: " << res->toStr() << std::endl;
+   std::cout << "Simplified Res: " << simp_res->toStr() << std::endl;
+    std::cout << "Abstract Rel: " << res->getAbstractRelation() << std::endl; 
+    std::cout << "Base Func: " << res->getBaseFunc()->getFunc()->getName() << std::endl; 
+    std::cout << "Store Var: " << res->getStoreVar()->toStr() << std::endl; 
+    #endif	
+
+    return res;
     //const MetaRelation* concretized_relation =
         //concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
             //input_vars);

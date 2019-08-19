@@ -33,6 +33,10 @@ std::map<std::string, std::string> api_ops_map = {
     { "ApiOp_GreaterThanEquals", ">=" },
 };
 
+
+std::map<EdgeT*, bool> visited;
+std::vector<const ApiInstructionInterface*> declared_instrs;
+
 /*******************************************************************************
  * Helper functions
  ******************************************************************************/
@@ -303,10 +307,12 @@ MetaVarObject::getConcreteVar(const ApiObject* curr_meta_variant,
     {
         if (!this->getIdentifier().compare("<m_curr>"))
         {
+//		std::cout << "m_curr: " << this->identifier << std::endl;
             return curr_meta_variant;
         }
         else if (this->getIdentifier().front() == 'm')
         {
+//		std::cout << "m: " << this->identifier << std::endl;
             assert(std::isdigit(this->getIdentifier()[1]));
             size_t meta_variant_id = stoi(this->getIdentifier().substr(1));
             for (const ApiObject* mv : meta_variants)
@@ -320,12 +326,14 @@ MetaVarObject::getConcreteVar(const ApiObject* curr_meta_variant,
         }
         else if (std::isdigit(this->getIdentifier().front()))
         {
+//		std::cout << "digit: " << this->identifier << std::endl;
             size_t input_id = stoi(this->getIdentifier()) - 1;
             assert (input_id < input_vars.size());
             return input_vars.at(input_id);
         }
         assert(false);
     }
+ 
     return this->meta_relations.at(
         (*this->rng)() % this->meta_relations.size())
             ->getBaseFunc()->concretizeVars(curr_meta_variant, meta_variants,
@@ -516,6 +524,8 @@ ApiInstruction::ApiInstruction(const ApiFunc* _func, const ApiObject* _result,
     {
         decl_instr = !func_elems.result->isDeclared();
         func_elems.result->setDeclared();
+	if(decl_instr)
+		declared_instrs.push_back(this);
     }
 }
 
@@ -633,4 +643,324 @@ ObjectConstructionInstruction::toStr() const
     obj_ctor_instr_ss << this->ctor->getName() << "(";
     obj_ctor_instr_ss << makeArgString(this->params) << ");";
     return obj_ctor_instr_ss.str();
+}
+
+NodeT* DependenceTree::insertNode(const ApiObject* n)
+{
+	if(n == NULL)
+	{
+		NodeT* null_node = new NodeT();
+		null_node->id = -1;
+		return null_node;
+	}
+
+//	std::cout << "Inserting ApiObject as Node: " << n->toStr() << std::endl;
+
+	NodeT* node = NULL;
+
+	if(nodes.find(n) == nodes.end())
+	{
+//		std::cout << "Adding Node" << std::endl;
+
+		node = new NodeT();
+		node->id = ++global_count;
+		node->var = n;
+
+		nodes[n] = node;
+	}
+	else
+	{
+//		std::cout << "Node already exists" << std::endl;
+
+		node = nodes[n];	
+	}
+
+	return node;
+}
+
+unsigned int edgeCount = 0;
+
+void printVectorNodes(std::vector<NodeT*> var)
+{
+	logDebug(fmt::format("Printing Vector of Nodes: {}", var.size()));
+//	std::cout << "Printing Vector of Nodes: " << var.size() << std::endl;
+
+	for(std::vector<NodeT*>::iterator it = var.begin(); it != var.end(); it++)
+	{
+	        logDebug(fmt::format("{}", (*it)->var->toStr()));
+//		std::cout << (*it)->var->toStr() << std::endl;
+	}
+}
+
+void printVectorEdges(std::vector<EdgeT*> edges)
+{
+	logDebug(fmt::format("Printing Vector of Edges: {}", edges.size()));
+//	std::cout << "Printing Vector of Edges: " << edges.size() << std::endl;
+
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+//	        logDebug(fmt::format("{}", (*it)->src->var->toStr()));
+//		std::cout << (*it)->src->var->toStr() << std::endl;
+//	        logDebug(fmt::format("Instr {}", (*it)->instr->toStr()));
+//		std::cout << "Instr: " << (*it)->instr->toStr() << std::endl;
+//		std::cout << "Edge" << std::endl;
+//		printEdge(*it);
+	}
+}
+
+void printVectorApiObjects(std::vector<const ApiObject*> var)
+{
+//	std::cout << "Printing Vector of ApiObjects: " << var.size() << std::endl;
+	logDebug(fmt::format("Printing Vector of ApiObjects: {}", var.size()));
+
+	for(std::vector<const ApiObject*>::iterator it = var.begin(); it != var.end(); it++)
+	{
+//		std::cout << (*it)->toStr() << std::endl;
+	        logDebug(fmt::format("{}", (*it)->toStr()));
+	}
+}
+
+void printVectorApiInstructions(std::vector<const ApiInstructionInterface*> instr)
+{
+//	std::cout << "Printing Vector of ApiInstructions: " << instr.size() << std::endl;
+	logDebug(fmt::format("Printing Vector of ApiInstructions: {}", instr.size()));
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = instr.begin(); it != instr.end(); it++)
+	{
+//		std::cout << (*it)->toStr() << std::endl;
+	        logDebug(fmt::format("{}", (*it)->toStr()));
+	}
+}
+
+void DependenceTree::addEdge(NodeT* parent, std::vector<NodeT*> child, const ApiInstructionInterface* instr)
+{
+//	if(parent->id == -1 || child->id == -1)
+//		return;
+
+//	if(parent->id == child->id)
+//		return;
+
+	EdgeT* edge = new EdgeT();
+
+//	std::cout << "Adding Edge from source: " << parent->var->toStr() << std::endl;
+//	std::cout << "Targets:" << std::endl;
+//	printVectorNodes(child);
+//	std::cout << "Instr: " << instr->toStr() << std::endl;
+
+	edge->src = parent;
+	edge->dests = child;
+	edge->instr = instr;
+
+	if(find(edges.begin(), edges.end(), edge) == edges.end())
+	{
+		edges.push_back(edge);
+	}
+}
+
+unsigned int count = 0;
+
+std::vector<const ApiInstructionInterface*> DependenceTree::traverse()
+{
+	std::vector<NodeT*> roots = getRoots();
+
+	std::vector<const ApiInstructionInterface*> temp, inst;
+
+	for(std::vector<NodeT*>::iterator it = roots.begin(); it != roots.end(); it++)
+	{
+		temp = traverseSubTree(*it);
+
+		for(std::vector<const ApiInstructionInterface*>::iterator vit = temp.begin(); vit != temp.end(); vit++)
+		{
+			if(find(inst.begin(), inst.end(), *vit) == inst.end())
+			{
+				inst.push_back(*vit);
+			}
+		}
+	}
+
+	#if 0
+	for(std::vector<const ApiInstructionInterface*>::iterator it = inst.begin(); it != inst.end(); it++)
+	{
+		std::cout << (*it)->toStr() << std::endl;
+	}
+	#endif
+
+	return inst;
+}
+
+std::vector<const ApiInstructionInterface*> DependenceTree::traverseChildren(NodeT* node)
+{
+	std::vector<const ApiInstructionInterface*> temp, res;
+
+	if(node->id == -1)
+	{
+		return res;
+	}
+
+	std::vector<NodeT*> child;
+
+	EdgeT* edge;
+
+	std::vector<EdgeT*> children;
+
+//	std::cout << "Traversing Children of: " << node->var->toStr() << std::endl;
+
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+		edge = *it;
+
+		if(edge->src == node)
+		{
+			temp = traverseEdgeInSubTree(edge);
+
+			for(std::vector<const ApiInstructionInterface*>::iterator ait = temp.begin(); ait != temp.end(); ait++)
+			{
+				if(find(res.begin(), res.end(), *ait) == res.end())
+				{
+					res.push_back(*ait);
+				}
+			}
+		}
+	}
+
+//	std::cout << "In Traverse Children" << std::endl;
+//	printVectorApiInstructions(res);
+
+	return res;
+}
+
+std::vector<const ApiInstructionInterface*> DependenceTree::traverseEdgeInSubTree(EdgeT* edge)
+{
+	std::vector<NodeT*> nodes;
+
+	nodes = edge->dests;
+
+	std::vector<const ApiInstructionInterface*> inst, temp;
+
+	for(std::vector<NodeT*>::iterator it = nodes.begin(); it != nodes.end(); it++)
+	{	
+		if((*it)->id == -1)
+		{
+			continue;
+		}
+
+		if(edge->src->id == (*it)->id)
+		{
+			continue;
+		}
+
+		temp = traverseChildren(*it);
+		
+		for(std::vector<const ApiInstructionInterface*>::iterator ait = temp.begin(); ait != temp.end(); ait++)
+		{
+			if(find(inst.begin(), inst.end(), *ait) == inst.end())
+			{
+				inst.push_back(*ait);
+			}
+		}
+	}
+	
+	inst.push_back(edge->instr);
+
+	return inst;
+}
+
+std::vector<const ApiInstructionInterface*> DependenceTree::traverseSubTree(NodeT* node)
+{
+	std::vector<const ApiInstructionInterface*> inst;
+
+	if(node->id == -1)
+	{
+		return inst;
+	}
+
+//	std::cout << "Traversing SubTree: " << node->var->toStr() << std::endl;
+
+	#if 0
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+		visited[*it] = false;
+	}
+	#endif	
+
+	return traverseChildren(node);
+}
+
+void printEdge(EdgeT* edge)
+{
+	if(edge->src->id != -1)
+	{
+		std::cout << "Edge Src: " << edge->src->var->toStr() << std::endl;
+	}
+
+	std::vector<NodeT*> nodes = edge->dests;
+
+	for(std::vector<NodeT*>::iterator it = nodes.begin(); it != nodes.end(); it++)
+	{
+		if((*it)->id != -1)
+		{
+			std::cout << "Edge Dest: " << (*it)->var->toStr() << std::endl;
+		}
+	}
+
+	std::cout << "Edge Instr: " << edge->instr->toStr() << std::endl;
+}
+
+std::vector<EdgeT*> DependenceTree::getImmDescendants(NodeT* node)
+{
+	EdgeT* edge;
+
+	std::vector<EdgeT*> res;
+
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+		edge = *it;
+	
+		if(edge->src == node)
+		{
+			res.push_back(edge);
+		}
+	}
+
+	return res;
+}
+
+
+std::vector<EdgeT*> DependenceTree::getImmAncestors(NodeT* node)
+{
+	EdgeT* edge;
+
+	std::vector<EdgeT*> res;
+	std::vector<NodeT*> temp;
+
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+		edge = *it;
+
+		temp = edge->dests;
+
+		if(find(temp.begin(), temp.end(), node) != temp.end())
+		{
+			res.push_back(edge);
+		}
+	}
+
+	return res;
+}
+
+void DependenceTree::removeChildren(std::vector<EdgeT*> new_child)
+{
+	std::vector<EdgeT*>::iterator eit;
+
+	for(std::vector<EdgeT*>::iterator it = new_child.begin(); it != new_child.end(); it++)
+	{
+		eit = find(edges.begin(), edges.end(), *it);
+
+		if(eit != edges.end())
+		{
+			edges.erase(eit);
+		}
+	}
+
+	traverse();
 }
