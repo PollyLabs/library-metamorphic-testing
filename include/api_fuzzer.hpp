@@ -186,6 +186,8 @@ class ApiFuzzerNew : public ApiFuzzer {
 	
 	DependenceTree tree;
 	
+	void insertInstructionInTheTree(const ApiInstructionInterface* int_instr);
+
 	std::pair<std::string, std::string> createTestCaseEdge(NodeT* node, std::vector<EdgeT*> new_child, std::string output_file, std::vector<const ApiInstructionInterface*> red);
 	std::vector<EdgeT*> childReduction(std::string compile_err, std::string exe_err, NodeT* node, std::vector<EdgeT*> child, std::string output_file, std::vector<const ApiInstructionInterface*> red);
 	void nodeReduction(std::string compile_err, std::string exe_err, NodeT* node, std::string output_file, std::vector<const ApiInstructionInterface*> red);

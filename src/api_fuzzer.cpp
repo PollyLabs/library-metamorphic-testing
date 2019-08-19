@@ -2128,6 +2128,66 @@ ApiFuzzerNew::generateSet()
 *
 * @param seq_count The number of **base** random instructions to generate
 */
+
+void ApiFuzzerNew::insertInstructionInTheTree(const ApiInstructionInterface* int_instr)
+{
+	const ApiInstruction* instr;
+	
+	instr = dynamic_cast<const ApiInstruction*>(int_instr);
+
+        const ApiObject* t_obj = NULL;
+        const ApiObject* r_obj = NULL;
+        const ApiObject* p_obj = NULL;
+	std::vector<const ApiObject*> param_list;
+
+	t_obj = instr->getTargetObj();
+	r_obj = instr->getResultObj();
+	param_list = instr->getFuncParams();
+
+	NodeT* t_node = NULL;	
+	NodeT* r_node = NULL;	
+	NodeT* p_node = NULL;	
+	std::vector<NodeT*> param_nodes;
+	const ApiInstruction* new_instr;
+
+	if(t_obj)
+	{
+		t_node = this->tree.insertNode(t_obj);
+	}
+
+	if(r_obj)
+	{
+		r_node = this->tree.insertNode(r_obj);
+	}
+
+	if(t_node != NULL)
+	{
+		param_nodes.push_back(t_node);
+	}
+
+	for(std::vector<const ApiObject*>::iterator it = param_list.begin(); it != param_list.end(); it++)
+	{
+		p_obj = *it;
+
+		if(p_obj)
+		{
+			p_node = this->tree.insertNode(p_obj);
+
+			if(p_node)
+			{
+				param_nodes.push_back(p_node);
+			}
+		}
+	}
+
+	if(instr->isDeclInstr())
+	{
+		r_obj->resetDeclared();
+	}
+
+	this->tree.addEdge(r_node, param_nodes, int_instr);
+}
+
 void
 ApiFuzzerNew::generateSeq(size_t seq_count)
 {
@@ -2137,6 +2197,11 @@ ApiFuzzerNew::generateSeq(size_t seq_count)
     {
         const ApiFunc* seq_func = getRandomSetElem(func_list, this->getRNG());
         this->applyFunc(seq_func);
+
+	const ApiInstructionInterface* api_new_instr;
+	api_new_instr = this->instrs.at(this->instrs.size()-1);	
+	insertInstructionInTheTree(api_new_instr);
+
         seq_count--;
     }
 }
@@ -2172,7 +2237,15 @@ ApiFuzzerNew::generateDecl(YAML::Node instr_config)
     }
     else
     {
-        this->generateApiObjectDecl(var_name, var_type, true);
+        const ApiObject* obj = this->generateApiObjectDecl(var_name, var_type, true);
+
+	NodeT* new_node = this->tree.insertNode(obj);
+
+	std::vector<NodeT*> dests;
+	const ApiInstructionInterface* api_new_instr;
+	api_new_instr = this->instrs.at(this->instrs.size()-1);	
+
+	this->tree.addEdge(new_node, dests, api_new_instr);
     }
 }
 
@@ -3601,6 +3674,11 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::str
 
 //	std::cout << "Special Object: " << special_obj.first->toStr() << " : " << special_obj.second->toStr() << std::endl;
 
+	if(!special_obj.first)
+	{
+		return this->tree.traverse();
+	}
+
 	std::vector<NodeT*> root = this->tree.getRoots();
 
 	std::vector<NodeT*> nodes, temp;
@@ -3845,10 +3923,9 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsP
 {
 //	std::cout << "Inside simplifyMetaRelations: " << mvar_relations.size() << std::endl;
 
+	const ApiInstructionInterface* new_instr;
 	const ApiInstructionInterface* instr1;
 	const ApiInstructionInterface* instr2;
-	const ApiInstructionInterface* instr;
-	const ApiInstructionInterface* new_instr;
 
 	std::vector<const MetaRelation*> rel1, rel2;
 	const ApiObject* mvar;
@@ -3880,48 +3957,32 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsP
 	
 			if(rel1.at(i)->getAbstractRelation() == "check")
 			{
-				map_relations[instr] = instr;
+				instr1 = rel1.at(i)->toApiInstruction();
+
+				map_relations[instr1] = instr1;
 
 				continue;
 			}	
 
 			mvar->setDeclared();
-			instr1 = rel1.at(i)->toApiInstruction(); // Without declaration
-
-//			std::cout << "Instr1: " << instr1->toStr() << std::endl;
+			instr1 = rel1.at(i)->toApiInstruction(); // Without Declaration
 			mvar->resetDeclared();
 			instr2 = rel1.at(i)->toApiInstruction();
-//			std::cout << "Instr2: " << instr2->toStr() << std::endl;
-
-			instr = isPresent(red, instr1);
-
-			if(instr != NULL)
+		
+			if(isPresent(red, instr1) != NULL)
 			{
-//				std::cout << "Declared Instr: " << instr->toStr() << std::endl;
-
 				mvar->setDeclared();
+
 				new_instr = rel2.at(i)->toApiInstruction();
-
-//				std::cout << "New Declared Instr: " << new_instr->toStr() << std::endl;
-
-				map_relations[instr] = new_instr;
-			}
-			else
+				map_relations[instr1] = new_instr;
+			}	
+			else if(isPresent(red, instr2) != NULL)
 			{
-				instr = isPresent(red, instr2);
-				
-				if(instr != NULL)
-				{
-//					std::cout << "Non-Declared Instr: " << instr->toStr() << std::endl;
+				mvar->resetDeclared();
 
-					mvar->resetDeclared();
-					new_instr = rel2.at(i)->toApiInstruction();
-
-//					std::cout << "New Non-Declared Instr: " << new_instr->toStr() << std::endl;
-
-					map_relations[instr] = new_instr;
-				}
-			}
+				new_instr = rel2.at(i)->toApiInstruction();
+				map_relations[instr2] = new_instr;
+			}	
 		}
 
 //		std::cout << "Outside Inner for loop" << std::endl;
@@ -4187,7 +4248,10 @@ const ApiInstructionInterface* ApiFuzzerNew::getNewInstruction(const ApiInstruct
 
 //	std::cout << "Result: " << obj->toStr() << std::endl;
 
-	if(isPresent(declared_instrs, old_instr) != NULL)
+	const ApiInstruction* e_instr;
+	e_instr = dynamic_cast<const ApiInstruction*>(old_instr);
+
+        if(e_instr->isDeclInstr())
 	{
 		obj->resetDeclared();
 	}
