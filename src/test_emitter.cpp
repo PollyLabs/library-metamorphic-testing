@@ -226,7 +226,7 @@ std::string exeExec(const char* cmd)
                 new_err = res.first + "," + res.second;
         }
 
-        std::cout << "New Err: " << new_err << std::endl;
+//        std::cout << "New Err: " << new_err << std::endl;
         return new_err;
 }
 
@@ -393,14 +393,14 @@ main(int argc, char** argv)
 
 			std::vector<const ApiInstructionInterface*> input_insts;
 
-//			input_insts = api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file, red);
+			input_insts = api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file, red);
 
 //			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
 
 //			std::cout << "Instructions after Fuzzing: " << input_insts.size() << std::endl;
 //			printVectorApiInstructions(input_insts);
 
-//			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, input_insts, red);
+			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, input_insts, red);
 		}
 		else
                 {

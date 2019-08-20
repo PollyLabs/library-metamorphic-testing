@@ -1695,15 +1695,14 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
 
 	std::vector<NodeT*> d_child;
 
-	tree.addRoot(node);
-
 	NodeT* target_node = null_node;	
 
 	if(target_obj != NULL)
 	{	
 		target_node = tree.insertNode(target_obj);
 
-		d_child.push_back(target_node);
+		if(target_node != node)
+			d_child.push_back(target_node);
 	}
 
 //	tree.addEdge(node, target_node);
@@ -1720,7 +1719,9 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
 		{
 			temp_node = tree.insertNode(param_obj);
 		
-			d_child.push_back(temp_node);
+			if(temp_node != node)
+			if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+				d_child.push_back(temp_node);
 		}
 
 //		tree.addEdge(node, temp_node);
@@ -1749,22 +1750,29 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
     const ApiInstructionInterface* instrNode;
     instrNode = this->instrs.at(this->instrs.size()-1);	
 
-    NodeT* node = tree.insertNode(res);	
-
+    NodeT* node = NULL;	
     std::vector<NodeT*> d_child;
-
     NodeT* target_node = null_node;	
 
-    if(target_obj != NULL)
+    if(res != NULL)
     {	
-    	target_node = tree.insertNode(target_obj);
+    	node = tree.insertNode(res);	
 
-	d_child.push_back(target_node);
-    }
+	if(target_obj != NULL)
+        {	
+    		target_node = tree.insertNode(target_obj);
+
+		if(target_node != node)
+			d_child.push_back(target_node);
+    	}
+    }	
     else
     {
-	no_target = true;
-    }	
+	if(target_obj != NULL)
+        {	
+    		node = tree.insertNode(target_obj);
+    	}
+    }
 
 //    tree.addEdge(node, target_node);
 
@@ -1780,28 +1788,18 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
 	{
 		temp_node = tree.insertNode(param_obj);
 
-		d_child.push_back(temp_node);
+		if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+			d_child.push_back(temp_node);
 	}
 
 //	tree.addEdge(node, temp_node);
     }	
 
-    if(d_child.size() == 0)
-    {
-        no_param = true;
-    }	
-
-    tree.addEdge(node, d_child, instrNode);
-
-    if(no_target && no_param)
-    {
-    	if(try_outs == 0)
-	{
-           special_obj = std::make_pair(res, instrNode);
-	   try_outs = 1;
-	}	
+    if(node != NULL)	
+    {	
+	    tree.addEdge(node, d_child, instrNode);
     }
-		
+
     return res;
 }
 
@@ -2160,29 +2158,53 @@ void ApiFuzzerNew::insertInstructionInTheTree(const ApiInstructionInterface* int
 		r_node = this->tree.insertNode(r_obj);
 	}
 
-	if(t_node != NULL)
+	if(r_node != NULL)
 	{
-		param_nodes.push_back(t_node);
+		if(t_node != NULL && t_node != r_node)
+		{
+			param_nodes.push_back(t_node);
+		}
+	}
+	else
+	{
+		if(t_node != NULL)
+		{
+			r_node = t_node;	
+		}
 	}
 
 	for(std::vector<const ApiObject*>::iterator it = param_list.begin(); it != param_list.end(); it++)
 	{
 		p_obj = *it;
 
-		if(p_obj)
+		if(p_obj != NULL)
 		{
 			p_node = this->tree.insertNode(p_obj);
 
-			if(p_node)
+			if(p_node != NULL)
 			{
-				param_nodes.push_back(p_node);
+				if(find(param_nodes.begin(), param_nodes.end(), p_node) == param_nodes.end())
+					param_nodes.push_back(p_node);
 			}
 		}
 	}
 
-	if(instr->isDeclInstr())
+	if(r_obj != NULL)
 	{
-		r_obj->resetDeclared();
+		if(instr->isDeclInstr())
+		{
+			r_obj->resetDeclared();
+		}
+	}
+	else
+	{
+		if(t_obj != NULL)
+		{
+			if(instr->isDeclInstr())
+			{
+				t_obj->resetDeclared();
+			}
+		}
 	}
 
 	this->tree.addEdge(r_node, param_nodes, int_instr);
@@ -2555,20 +2577,31 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
 	const ApiInstructionInterface* instrNode;
 	instrNode = this->instrs.at(this->instrs.size()-1);	
 
-	NodeT* node = tree.insertNode(return_obj);	
-
+	NodeT* node;
 	std::vector<NodeT*> d_child;
 
 	NodeT* target_node = null_node;	
 
-	if(target_obj != NULL)
-	{	
-		target_node = tree.insertNode(target_obj);
+	if(return_obj != NULL)
+	{
+		node = tree.insertNode(return_obj);	
 
-		d_child.push_back(target_node);
+		if(target_obj != NULL && target_obj->getID() != return_obj->getID())
+		{	
+			target_node = tree.insertNode(target_obj);
+
+			d_child.push_back(target_node);
+		}
+	}
+	else
+	{
+		if(target_obj != NULL)
+		{	
+			node = tree.insertNode(target_obj);
+		}
 	}
 
-//	tree.addEdge(node, target_node);
+	tree.addRoot(node);
 
 	const ApiObject* param_obj;
 
@@ -2582,10 +2615,9 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
 		{
 			temp_node = tree.insertNode(param_obj);
 
-			d_child.push_back(temp_node);
+			if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+				d_child.push_back(temp_node);
 		}
-
-//		tree.addEdge(node, temp_node);
 	}	
 
 	tree.addEdge(node, d_child, instrNode);
@@ -3728,6 +3760,10 @@ std::vector<EdgeT*> ApiFuzzerNew::childReduction(std::string compile_err, std::s
 			{
 				new_child = childReduction(compile_err, exe_err, node, new_child, output_file, red);
 			}
+			else
+			{
+				createTestCaseEdge(node, child, output_file, red);
+			}
 		}
 	}
 
@@ -3931,6 +3967,9 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 			enode = nodes.at(rand()%nodes.size());
 			subTreeReduction(compile_err, exe_err, enode, output_file, red);
 		}
+
+		// CHECK
+		createTestCaseTree(this->tree, output_file, red); // Reverting back to original test case
 	}
 }
 
@@ -4076,7 +4115,10 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsP
 	}
 
 	res = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, simp_red, map_relations);
+
+	return res;
 	
+	#if 0
  	std::string new_compile_err = Exec(command);
 	std::string new_exe_err = exeExec(exe_command);
 
@@ -4089,6 +4131,7 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsP
 		createTestCaseSimplify(input_insts, red, red, map_relations, output_file);
 		return res;
 	}
+	#endif
 }
 
 std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseSimplify(std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red, std::vector<const ApiInstructionInterface*> var, std::map<const ApiInstructionInterface*, const ApiInstructionInterface*> map_relations, std::string output_file)
@@ -4263,6 +4306,10 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelations(
 			if(new_red != red)
 			{
 				new_red = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, new_red, map_relations);
+			}
+			else
+			{
+				createTestCaseSimplify(input_insts, red, red, map_relations, output_file);
 			}
 		}
 	}

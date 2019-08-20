@@ -645,6 +645,14 @@ ObjectConstructionInstruction::toStr() const
     return obj_ctor_instr_ss.str();
 }
 
+void DependenceTree::addRoot(NodeT* r)
+{
+	if(find(roots.begin(), roots.end(), r) == roots.end())
+	{
+		roots.push_back(r);
+	}
+}
+
 NodeT* DependenceTree::insertNode(const ApiObject* n)
 {
 	if(n == NULL)
