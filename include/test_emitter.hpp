@@ -39,7 +39,7 @@ void mainPreSetup(std::stringstream&, std::vector<std::string>&);
 void mainPostSetup(std::stringstream&);
 
 std::string Exec(const char* cmd);
+std::string exeExec(const char* cmd);
 std::pair<std::string, std::string> parseErrorMsg(std::string msg);
-bool parseAssertInstruction(std::set<std::string> var, const ApiInstructionInterface *inst);
 
 #endif

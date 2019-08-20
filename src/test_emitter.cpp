@@ -2,6 +2,7 @@
 
 #include <system_error>
 #include <pstream.h>
+#include <regex>
 
 #define REDUCE 1
 
@@ -113,35 +114,59 @@ mainPostSetup(std::stringstream &ss)
     writeLine(ss, "}");
 }
 
-bool parseAssertInstruction(std::set<std::string> var, const ApiInstructionInterface *inst)
-{
-	return true;
-}
-
 std::pair<std::string, std::string> parseErrorMsg(std::string msg)
 {
-	std::string m_var1, m_var2;
-	std::pair<std::string, std::string> result("","");
+        std::string m_var1 = "", m_var2 = "", vars = "";
+        std::pair<std::string, std::string> result("","");
 
-	std::size_t pos1 = msg.find("Assertion `r");  // Assumption that the error caused due to Assertion failure caused by meta variants
-	std::size_t pos2, pos3, pos4;
+        std::regex r1("Assertion `r_[0-9]+.[a-zA-Z0-9_=.]+\\(r_[0-9]+\\)' failed");
+        std::regex r2("r_[0-9]+");
 
-	if (pos1 != std::string::npos)
-	{
-		pos2 = msg.find(".operator");  
-		pos3 = msg.find("==(");  
-		pos4 = msg.find(")'");  
+        std::smatch m1, m2;
 
-		m_var1 = msg.substr(pos1+11,pos2-pos1-11); 
+        std::regex_search(msg, m1, r1);
 
-		m_var2 = msg.substr(pos3+3,pos4-pos3-3); 
+//      std::cout << "Message: " << msg << " : " << m1.size() << " : " << m1.str(0) << std::endl;
 
-//		std::cout << "Var1: " << m_var1 << std::endl;
-//		std::cout << "Var2: " << m_var2 << std::endl;
+        int count = 1;
+
+        #if 1
+        if (m1.size() == 1)
+        {
+                vars = m1.str(0);
+
+                try
+                {
+                        std::sregex_iterator next(vars.begin(), vars.end(), r2);
+                        std::sregex_iterator end;
+
+                        while (next != end)
+                        {
+                                std::smatch match = *next;
+
+                                if(count == 1)
+                                {
+                                        m_var1 = match.str();
+                                }
+                                else if(count == 2)
+                                {
+                                        m_var2 = match.str();
+                                }
+
+                                count++;
+                                next++;
+                        } 
+                } catch (std::regex_error& e) {
+                        // Syntax error in the regular expression
+                }
+                
+//              std::cout << "Var1: " << m_var1 << std::endl;
+//              std::cout << "Var2: " << m_var2 << std::endl;
+        } 
+        #endif
+
+        result = std::make_pair(m_var1, m_var2);
 	
-		result = std::make_pair(m_var1, m_var2);
-	} 
-
 	return result;
 }
 
@@ -149,6 +174,7 @@ std::string Exec(const char* cmd)
 {
 	std::string err = "";
 
+//	redi::ipstream proc(cmd, redi::pstreams::pstderr);
 	redi::ipstream proc(cmd, redi::pstreams::pstdout | redi::pstreams::pstderr);
 	std::string line;
 
@@ -164,6 +190,44 @@ std::string Exec(const char* cmd)
 	}
 
 	return err;
+}
+
+std::string exeExec(const char* cmd)
+{
+        std::string err = "";
+
+        redi::ipstream proc(cmd, redi::pstreams::pstdout | redi::pstreams::pstderr);
+        std::string line;
+
+        // read child's stdout
+//      while (std::getline(proc.out(), line))
+//      std::cout << "stdout: " << line << '\n';
+
+        std::size_t pos1;
+
+        // read child's stderr
+        while (std::getline(proc.err(), line))
+        {
+//              std::cout << "stderr: " << line << '\n';
+
+                pos1 = line.find("Assertion `r");  // Assumption that the error caused due to Assertion failure caused by meta variants
+
+                if (pos1 != std::string::npos)
+                        err += line;
+        }
+
+//      std::cout << "Err: " << err << std::endl;
+
+        std::pair<std::string, std::string> res = parseErrorMsg(err);
+        std::string new_err = "";
+
+        if(res.first != "")
+        {
+                new_err = res.first + "," + res.second;
+        }
+
+        std::cout << "New Err: " << new_err << std::endl;
+        return new_err;
 }
 
 int
@@ -282,7 +346,7 @@ main(int argc, char** argv)
 //    std::cout << "Exe: " << exe_command << std::endl;
 
     compile_err = Exec(command);
-    exe_err = Exec(exe_command);
+    exe_err = exeExec(exe_command);
 
 //    std::cout << "Compile Error: " << compile_err << std::endl;
 //    std::cout << "Execution Error: " << exe_err << std::endl;
@@ -303,9 +367,9 @@ main(int argc, char** argv)
 
 		std::vector<const ApiInstructionInterface*> list_inst, input_inst;
 
-		res = parseErrorMsg(exe_err);
+//		res = parseErrorMsg(exe_err);
 
-		if(res.first != "") // Execution failed but not because of the assertion failure
+		if(exe_err != "") // Execution failed but not because of the assertion failure
 		{
 			input_inst = api_fuzzer->InputInstrs;
     
@@ -329,15 +393,19 @@ main(int argc, char** argv)
 
 			std::vector<const ApiInstructionInterface*> input_insts;
 
-			input_insts = api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file, red);
+//			input_insts = api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file, red);
 
-			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
+//			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
 
 //			std::cout << "Instructions after Fuzzing: " << input_insts.size() << std::endl;
 //			printVectorApiInstructions(input_insts);
 
-			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, input_insts, red);
+//			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, input_insts, red);
 		}
+		else
+                {
+                        std::cout << "Not an assertion failure" << std::endl;
+                }
 	  }	
       }	
     #endif

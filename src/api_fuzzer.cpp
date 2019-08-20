@@ -3079,6 +3079,10 @@ std::vector<int> ApiFuzzerNew::MHReduceInstr(std::string compile_err, std::strin
 			{
 				new_indices = MHReduceInstr(compile_err, exe_err, var, new_indices, output_file);
 			}
+			else
+                        {
+                                createTestCaseMHReduce(exe_err, var, rel_indices, output_file);
+                        }
 		}
 	}
 
@@ -3108,10 +3112,40 @@ std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseMHReduce(std::st
 	std::vector<const ApiObject*> assert_vars;
 	std::vector<std::string> assert_vars_names;
 
-    	res = parseErrorMsg(exe_err);
+//    	res = parseErrorMsg(exe_err);
 
-	assert_vars_names.push_back(res.first);
-	assert_vars_names.push_back(res.second);
+	std::string var1 = "", var2 = "";
+
+        std::string delim = ",";
+        auto start = 0U;
+        auto end = exe_err.find(delim);
+
+        int count = 1;
+
+        while (end != std::string::npos)
+        {
+                if(count == 1)
+                {
+                        var1 = exe_err.substr(start, end - start);
+                }
+                else if(count == 2)
+                {
+                        var2 = exe_err.substr(start, end - start);
+                }
+
+                count++;
+
+                start = end + delim.length();
+                end = exe_err.find(delim, start);
+        }
+
+        var2 = exe_err.substr(start, end);
+
+        assert_vars_names.push_back(var1);
+        assert_vars_names.push_back(var2);
+
+//	assert_vars_names.push_back(res.first);
+//	assert_vars_names.push_back(res.second);
 
 	assert_vars = getApiObjects(assert_vars_names);
 
@@ -3148,7 +3182,7 @@ std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseMHReduce(std::st
 	std::string new_exe_err = "";	
 
     	new_compile_err = Exec(command);
-    	new_exe_err = Exec(exe_command);
+    	new_exe_err = exeExec(exe_command);
 
 	res = std::make_pair(new_compile_err, new_exe_err);
 
@@ -3173,10 +3207,40 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::MHReduceInstrPrep(std:
 	std::vector<const ApiObject*> assert_vars;
 	std::vector<std::string> assert_vars_names;
 
-    	parsed_msg = parseErrorMsg(exe_err);
+//    	parsed_msg = parseErrorMsg(exe_err);
 
-	assert_vars_names.push_back(parsed_msg.first);
-	assert_vars_names.push_back(parsed_msg.second);
+	std::string var1 = "", var2 = "";
+
+        std::string delim = ",";
+        auto start = 0U;
+        auto end = exe_err.find(delim);
+
+        int count = 1;
+
+        while (end != std::string::npos)
+        {
+                if(count == 1)
+                {
+                        var1 = exe_err.substr(start, end - start);
+                }
+                else if(count == 2)
+                {
+                        var2 = exe_err.substr(start, end - start);
+                }
+
+                count++;
+
+                start = end + delim.length();
+                end = exe_err.find(delim, start);
+        }
+
+        var2 = exe_err.substr(start, end);
+
+        assert_vars_names.push_back(var1);
+        assert_vars_names.push_back(var2);
+
+//	assert_vars_names.push_back(parsed_msg.first);
+//	assert_vars_names.push_back(parsed_msg.second);
 
 	assert_vars = getApiObjects(assert_vars_names);
 
@@ -3226,10 +3290,11 @@ bool ApiFuzzerNew::checkTestCase(std::string c_err, std::string n_c_err, std::st
 	
 	if(c_err == n_c_err)
 	{
-		res1 = parseErrorMsg(e_err);
-		res2 = parseErrorMsg(n_e_err);
+//		res1 = parseErrorMsg(e_err);
+//		res2 = parseErrorMsg(n_e_err);
 
-		if(res1.first == res2.first && res1.second == res2.second)
+//		if(res1.first == res2.first && res1.second == res2.second)
+		if(e_err == n_e_err)
 		{
 			#if 0 
 			std::cout << "Error Did Not Change" << std::endl;
@@ -3282,7 +3347,7 @@ std::pair<std::string, std::string> ApiFuzzerNew::createTestCase(std::vector<con
 	std::pair<std::string,std::string> res;	
 
  	new_compile_err = Exec(command);
-	new_exe_err = Exec(exe_command);
+	new_exe_err = exeExec(exe_command);
 
 	res = std::make_pair(new_compile_err, new_exe_err);
 
@@ -3402,6 +3467,10 @@ std::vector<const ApiObject*> ApiFuzzerNew::verticalReduction(std::string compil
 				printVectorApiObjects(new_mvar);
 
 				new_mvar = verticalReduction(compile_err, exe_err, new_mvar, output_file);
+			}
+			else // Restore the old testcase back
+			{
+				createTestCase(mvar, output_file);
 			}
 		}
 	}
@@ -3529,7 +3598,7 @@ std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseEdge(NodeT* node
 	std::pair<std::string,std::string> res;	
 
  	new_compile_err = Exec(command);
-	new_exe_err = Exec(exe_command);
+	new_exe_err = exeExec(exe_command);
 
 	res = std::make_pair(new_compile_err, new_exe_err);
 
@@ -3896,7 +3965,7 @@ std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseTree(DependenceT
 	std::pair<std::string,std::string> res;	
 
  	new_compile_err = Exec(command);
-	new_exe_err = Exec(exe_command);
+	new_exe_err = exeExec(exe_command);
 
 	res = std::make_pair(new_compile_err, new_exe_err);
 
@@ -4009,7 +4078,7 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsP
 	res = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, simp_red, map_relations);
 	
  	std::string new_compile_err = Exec(command);
-	std::string new_exe_err = Exec(exe_command);
+	std::string new_exe_err = exeExec(exe_command);
 
 	if(checkTestCase(compile_err, new_compile_err, exe_err, new_exe_err))
 	{
@@ -4075,7 +4144,7 @@ std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseSimplify(std::ve
 	std::pair<std::string,std::string> res;	
 
  	new_compile_err = Exec(command);
-	new_exe_err = Exec(exe_command);
+	new_exe_err = exeExec(exe_command);
 
 	res = std::make_pair(new_compile_err, new_exe_err);
 

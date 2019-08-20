@@ -962,5 +962,5 @@ void DependenceTree::removeChildren(std::vector<EdgeT*> new_child)
 		}
 	}
 
-	traverse();
+//	traverse();
 }
