@@ -972,3 +972,123 @@ void DependenceTree::removeChildren(std::vector<EdgeT*> new_child)
 
 //	traverse();
 }
+
+std::vector<const ApiObject*> DependenceTree::getLeafNodes()
+{
+	std::vector<const ApiObject*> res;
+	EdgeT* edge;
+
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+		edge = *it;
+
+		if(edge->dests.empty())
+		{
+			if(find(res.begin(), res.end(), edge->src->var) == res.end())
+			{
+				res.push_back(edge->src->var);
+			}
+		}
+	}
+
+	return res;
+}
+
+std::vector<NodeT*> DependenceTree::getDescendants(NodeT* node)
+{
+	std::vector<NodeT*> res, nodes_temp;
+	EdgeT* edge;
+
+	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	{
+		edge = *it;
+
+		if(edge->src == node)
+		{
+			nodes_temp = edge->dests;
+
+			for(std::vector<NodeT*>::iterator nit = nodes_temp.begin(); nit != nodes_temp.end(); nit++)
+			{
+				if(find(res.begin(), res.end(), *nit) == res.end())
+				{
+					res.push_back(*nit);
+				}
+			}
+		}
+	}
+
+	return res;
+}
+
+std::vector<const ApiInstructionInterface*> DependenceTree::traverseBetweenTwoNodes(const ApiObject* obj1, const ApiObject* obj2)
+{
+	std::vector<const ApiInstructionInterface*> res, empty_set;
+	std::map<NodeT*, bool> visited;
+
+	NodeT* node1;
+	NodeT* node2;
+
+	node1 = insertNode(obj1);
+	node2 = insertNode(obj2);
+
+	for(std::map<const ApiObject*, NodeT*>::iterator it = nodes.begin(); it != nodes.end(); it++)
+	{
+		visited[it->second] = false;
+	}
+
+	std::stack<NodeT*> st;
+	NodeT* curr_node;
+	EdgeT* edge;
+
+	st.push(node1);
+	visited[node1] = true;
+
+	std::vector<NodeT*> nodes_temp;
+	std::vector<EdgeT*> edges_temp;
+
+	bool found = false;
+
+	while(!st.empty())
+	{
+		curr_node = st.top();
+
+		st.pop();
+
+		visited[curr_node] = true;
+
+		edges_temp = getImmDescendants(curr_node);
+
+		for(std::vector<EdgeT*>::iterator it = edges_temp.begin(); it != edges_temp.end(); it++)
+		{
+			edge = *it;
+
+			nodes_temp = edge->dests;
+
+			for(std::vector<NodeT*>::iterator nit = nodes_temp.begin(); nit != nodes_temp.end(); nit++)
+			{
+				if(*nit == NULL)
+					continue;
+
+				if(*nit == node2)
+				{
+					res.push_back(edge->instr);
+
+					found = true;
+					break;
+				}
+
+				if(!visited[*nit])
+				{
+					res.push_back(edge->instr);
+
+					st.push(*nit);
+				}
+			}
+		}
+	}
+
+	if(found)
+		return res;
+	else
+		return empty_set;
+}

@@ -11,7 +11,6 @@ unsigned int global_count = 0;
 NodeT *null_node;
 std::map<const ApiObject*, original_simplified_mapping> mvar_relations;
 int try_outs = 0;
-std::pair<const ApiObject*, const ApiInstructionInterface*> special_obj;
 
 
 /*******************************************************************************
@@ -3774,15 +3773,44 @@ std::vector<EdgeT*> ApiFuzzerNew::childReduction(std::string compile_err, std::s
 	return new_child;
 }
 
+const ApiObject* ApiFuzzerNew::getReplacementObject(const ApiType* type)
+{
+	std::vector<const ApiObject*> leaf_objs, f_leaf_objs;	
+
+	leaf_objs = this->tree.getLeafNodes();
+
+	f_leaf_objs = filterObjList(leaf_objs, &ApiObject::hasType, type);
+
+	const ApiObject* res;
+	res = f_leaf_objs.at(0);
+
+	#if 0
+	std::vector<NodeT*> roots;
+	roots = this->tree.getRoots();
+
+	int min = 0;
+	std::vector<const ApiInstructionInterface*> instrs;
+
+	for(std::vector<NodeT*>::iterator rit = roots.begin(); rit != roots.end(); rit++)
+	{
+		for(std::vector<const ApiObject*>::iterator it = f_leaf_objs.begin(); it != f_leaf_objs.end(); it++)
+		{
+			instrs = this->tree.traverseBetweenTwoNodes((*rit)->var, *it);
+
+			if(min < instrs.size())
+			{
+				min = instrs.size();
+				res = *it;	
+			}
+		}
+	}
+	#endif
+
+	return res;
+}
+
 std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> red)
 {
-
-//	std::cout << "Special Object: " << special_obj.first->toStr() << " : " << special_obj.second->toStr() << std::endl;
-
-	if(!special_obj.first)
-	{
-		return this->tree.traverse();
-	}
 
 	std::vector<NodeT*> root = this->tree.getRoots();
 
@@ -3877,18 +3905,9 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 //	obj = generateApiObjectDecl("new_matrix", node->var->getType(), true);
 //	obj = getSingletonObject(node->var->getType());
 
-	obj = special_obj.first;
+	obj = getReplacementObject(node->var->getType());
 
 	NodeT* new_node1 = new_tree.insertNode(obj);
-
-	#if 0
-	std::vector<NodeT*> dests;
-	const ApiInstructionInterface* api_new_instr;
-//	api_new_instr = this->instrs.at(this->instrs.size()-1);	
-	api_new_instr = special_obj.second;
-
-	new_tree.addEdge(new_node1, dests, api_new_instr);
-	#endif
 
 //	std::cout << "Inside subTreeReduction" << std::endl;
 

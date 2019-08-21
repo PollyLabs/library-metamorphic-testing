@@ -10,6 +10,7 @@
 #include <sstream>
 #include <vector>
 #include <set>
+#include <stack>
 
 #include "fmt/format.h"
 
@@ -573,7 +574,7 @@ class DependenceTree
 		std::vector<const ApiInstructionInterface*> traverseChildren(NodeT* node);
 		std::vector<const ApiInstructionInterface*> traverseEdgeInSubTree(EdgeT* edge);
 		
-		void addRoot(NodeT *node) { this->roots.push_back(node); };
+		void addRoot(NodeT *node);
 
 		void addEdge(NodeT* parent, std::vector<NodeT*> child, const ApiInstructionInterface* instr);
 
@@ -583,6 +584,10 @@ class DependenceTree
 		std::vector<EdgeT*> getImmAncestors(NodeT* node);
 
 		void removeChildren(std::vector<EdgeT*> new_child);
+
+		std::vector<const ApiObject*> getLeafNodes();
+		std::vector<NodeT*> getDescendants(NodeT* node);
+		std::vector<const ApiInstructionInterface*> traverseBetweenTwoNodes(const ApiObject* node1, const ApiObject* node2);
 };
 
 

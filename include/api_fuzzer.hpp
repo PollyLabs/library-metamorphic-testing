@@ -202,6 +202,7 @@ class ApiFuzzerNew : public ApiFuzzer {
 	std::pair<std::string, std::string> createTestCaseSimplify(std::vector<const ApiInstructionInterface*> input_insts, std::vector<const ApiInstructionInterface*> red, std::vector<const ApiInstructionInterface*> var, std::map<const ApiInstructionInterface*, const ApiInstructionInterface*> map_relations, std::string output_file);
 	std::vector<const ApiInstructionInterface*> instructionMerge(std::vector<const ApiInstructionInterface*> mvar1, std::vector<const ApiInstructionInterface*> mvar2);
 	
+	const ApiObject* getReplacementObject(const ApiType* type);
     private:
         void initPrimitiveTypes();
         void initInputs(YAML::Node);
@@ -269,6 +270,4 @@ extern std::map<const ApiObject*, original_simplified_mapping> mvar_relations;
 
 const ApiInstructionInterface* isPresent(std::vector<const ApiInstructionInterface*> red, const ApiInstructionInterface* instr);
 extern int try_outs;
-extern std::pair<const ApiObject*, const ApiInstructionInterface*> special_obj;
-
 #endif

@@ -395,7 +395,7 @@ main(int argc, char** argv)
 
 			input_insts = api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file, red);
 
-//			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
+			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
 
 //			std::cout << "Instructions after Fuzzing: " << input_insts.size() << std::endl;
 //			printVectorApiInstructions(input_insts);
