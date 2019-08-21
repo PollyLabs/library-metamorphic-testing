@@ -3781,8 +3781,10 @@ const ApiObject* ApiFuzzerNew::getReplacementObject(const ApiType* type)
 
 	f_leaf_objs = filterObjList(leaf_objs, &ApiObject::hasType, type);
 
-	const ApiObject* res;
-	res = f_leaf_objs.at(0);
+	const ApiObject* res = NULL;
+
+	if(!f_leaf_objs.empty())
+		res = f_leaf_objs.at(0);
 
 	#if 0
 	std::vector<NodeT*> roots;
@@ -3906,6 +3908,13 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 //	obj = getSingletonObject(node->var->getType());
 
 	obj = getReplacementObject(node->var->getType());
+
+	if(obj == NULL)
+	{
+		createTestCaseTree(new_tree, output_file, red);
+
+		return;
+	}
 
 	NodeT* new_node1 = new_tree.insertNode(obj);
 
