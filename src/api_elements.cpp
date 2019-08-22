@@ -35,6 +35,7 @@ std::map<std::string, std::string> api_ops_map = {
 
 
 std::map<EdgeT*, bool> visited;
+std::map<NodeT*, bool> visitedNodes;
 std::vector<const ApiInstructionInterface*> declared_instrs;
 
 /*******************************************************************************
@@ -805,6 +806,8 @@ std::vector<const ApiInstructionInterface*> DependenceTree::traverseChildren(Nod
 		return res;
 	}
 
+	visitedNodes[node] = true;
+
 	std::vector<NodeT*> child;
 
 	EdgeT* edge;
@@ -857,6 +860,11 @@ std::vector<const ApiInstructionInterface*> DependenceTree::traverseEdgeInSubTre
 			continue;
 		}
 
+		if(visitedNodes[*it])
+		{
+			continue;
+		}
+
 		temp = traverseChildren(*it);
 		
 		for(std::vector<const ApiInstructionInterface*>::iterator ait = temp.begin(); ait != temp.end(); ait++)
@@ -884,10 +892,10 @@ std::vector<const ApiInstructionInterface*> DependenceTree::traverseSubTree(Node
 
 //	std::cout << "Traversing SubTree: " << node->var->toStr() << std::endl;
 
-	#if 0
-	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
+	#if 1
+	for(std::map<const ApiObject*, NodeT*>::iterator it = nodes.begin(); it != nodes.end(); it++)
 	{
-		visited[*it] = false;
+		visitedNodes[it->second] = false;
 	}
 	#endif	
 

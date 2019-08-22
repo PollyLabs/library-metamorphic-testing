@@ -3024,6 +3024,12 @@ bool ApiFuzzerNew::assertReduction(const ApiInstructionInterface* assert, std::v
 
 std::vector<int> ApiFuzzerNew::MHReduceInstr(std::string compile_err, std::string exe_err, std::vector<const ApiObject*> var, std::vector<int> rel_indices, std::string output_file)
 {
+	if(rel_indices.size() <= 1)
+	{
+		createTestCaseMHReduce(exe_err, var, rel_indices, output_file);
+		return rel_indices;
+	}
+
 	std::pair<std::string, std::string> p1;
 
 	std::string nc_err, n_exe_err;
@@ -3194,10 +3200,17 @@ std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseMHReduce(std::st
 			writeLine(new_ss_m, temp.at(rel_indices.at(i))->toStr());
 		}
 
-		if(assertReduction(temp.at(meta_test_count+1), assert_vars))
+		if(var1 != "" && var2 != "")
+		{
+			if(assertReduction(temp.at(meta_test_count+1), assert_vars))
+			{
+				writeLine(new_ss_m, temp.at(meta_test_count+1)->toStr());
+			}
+		}
+		else
 		{
 			writeLine(new_ss_m, temp.at(meta_test_count+1)->toStr());
-		}
+		}	
 	}
 
 	std::ofstream ofs;
@@ -3417,6 +3430,12 @@ std::vector<const ApiObject*> ApiFuzzerNew::verticalReduction(std::string compil
 
     	logDebug(fmt::format("Inside verticalReduction"));
 	printVectorApiObjects(mvar);
+
+	if(mvar.size() <= 1)
+	{
+		createTestCase(mvar, output_file);
+		return mvar;
+	}
 
 	//Find the mid of the input vector mvar
 
@@ -3655,6 +3674,12 @@ std::vector<EdgeT*> ApiFuzzerNew::childReduction(std::string compile_err, std::s
 //	std::cout << "Inside childReduction: " << node->var->toStr() << std::endl;
 	printVectorEdges(child);
 
+	if(child.size() <= 1)
+	{
+		createTestCaseEdge(node, child, output_file, red);
+		return child;
+	}
+
 	std::vector<EdgeT*> new_child1, new_child2, ip1, ip2, new_child;
 
 	//Find the mid of the input vector child
@@ -3816,7 +3841,7 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::str
 
 	std::vector<NodeT*> root = this->tree.getRoots();
 
-	std::vector<NodeT*> nodes, temp;
+	std::vector<NodeT*> nodes, temp, vec_nodes;
 	std::vector<EdgeT*> vec_edges, vec_edges_temp;
 
 //	std::cout << "Inside reduceSubTree" << std::endl;
@@ -3825,40 +3850,35 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::str
 	{
 //		std::cout << "Root: " << (*it)->var->toStr() << std::endl;
 
-		vec_edges = this->tree.getImmDescendants(*it);
+		vec_nodes = this->tree.getDescendants(*it);
 
 		int max = 0;
 		NodeT* node = NULL;
 
-		for(std::vector<EdgeT*>::iterator vit = vec_edges.begin(); vit != vec_edges.end(); vit++)
+		for(std::vector<NodeT*>::iterator nit = vec_nodes.begin(); nit != vec_nodes.end(); nit++)
 		{
-			temp = (*vit)->dests;	
-
-			for(std::vector<NodeT*>::iterator nit = temp.begin(); nit != temp.end(); nit++)
+			if(find(nodes.begin(), nodes.end(), *nit) == nodes.end())
 			{
-				if(find(nodes.begin(), nodes.end(), *nit) == nodes.end())
+				if(*nit != *it)
 				{
-					if(*nit != *it)
+					if((*nit)->var->getType()->isPrimitive())
 					{
-						if((*nit)->var->getType()->isPrimitive())
-						{
-							continue;
-						}
-
-						subTreeReduction(compile_err, exe_err, *nit, output_file, red);
-
-						#if 0
-						vec_edges_temp = this->tree.getImmDescendants(*nit);
-
-						if(vec_edges_temp.size() > max)
-						{
-							max = vec_edges.size();
-							node = *nit;
-						}
-
-						nodes.push_back(*nit);
-						#endif
+						continue;
 					}
+
+					subTreeReduction(compile_err, exe_err, *nit, output_file, red);
+
+					#if 0
+					vec_edges_temp = this->tree.getImmDescendants(*nit);
+
+					if(vec_edges_temp.size() > max)
+					{
+						max = vec_edges.size();
+						node = *nit;
+					}
+
+					nodes.push_back(*nit);
+					#endif
 				}
 			}
 		}
@@ -3889,8 +3909,6 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 
         const ApiObject* obj;
 
-	DependenceTree new_tree = this->tree;
-
 	#if 0
 	std::vector<const ApiObject*> candidate_params = this->filterObjs(&ApiObject::hasType, node->var->getType());
 
@@ -3911,10 +3929,10 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 
 	if(obj == NULL)
 	{
-		createTestCaseTree(new_tree, output_file, red);
-
 		return;
 	}
+
+	DependenceTree new_tree = this->tree;
 
 	NodeT* new_node1 = new_tree.insertNode(obj);
 
@@ -4247,6 +4265,11 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelations(
 		return red;
 	}
 
+	if(red.size() <= 1)
+	{
+		return red;
+	}
+	
 	std::vector<const ApiInstructionInterface*> new_red, ip1, ip2, new_red1, new_red2;
 
 	int size = red.size();

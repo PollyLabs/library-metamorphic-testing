@@ -597,6 +597,7 @@ extern unsigned int global_count;
 extern std::vector<const ApiFuncObject*> api_func_objects, special_api_func_objects;
 
 extern std::map<EdgeT*, bool> visited;
+extern std::map<NodeT*, bool> visitedNodes;
 
 extern unsigned int edgeCount;
 
