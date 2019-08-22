@@ -197,7 +197,9 @@ std::string exeExec(const char* cmd)
         std::string err = "";
 
         redi::ipstream proc(cmd, redi::pstreams::pstdout | redi::pstreams::pstderr);
-        std::string line;
+        std::string line, last_line;
+
+	last_line = "";
 
         // read child's stdout
 //      while (std::getline(proc.out(), line))
@@ -209,6 +211,7 @@ std::string exeExec(const char* cmd)
         while (std::getline(proc.err(), line))
         {
 //              std::cout << "stderr: " << line << '\n';
+		last_line = line;
 
                 pos1 = line.find("Assertion `r");  // Assumption that the error caused due to Assertion failure caused by meta variants
 
@@ -218,16 +221,25 @@ std::string exeExec(const char* cmd)
 
 //      std::cout << "Err: " << err << std::endl;
 
-        std::pair<std::string, std::string> res = parseErrorMsg(err);
-        std::string new_err = "";
+        std::pair<std::string, std::string> res;
 
-        if(res.first != "")
-        {
-                new_err = res.first + "," + res.second;
-        }
+	if(err != "")
+	{
+		res = parseErrorMsg(err);
+        	std::string new_err = "";
 
-//        std::cout << "New Err: " << new_err << std::endl;
-        return new_err;
+        	if(res.first != "")
+        	{
+                	new_err = res.first + "," + res.second;
+        	}
+
+//        	std::cout << "New Err: " << new_err << std::endl;
+        	return new_err;
+	}
+	else
+	{
+		return last_line;
+	}
 }
 
 int
@@ -303,7 +315,7 @@ main(int argc, char** argv)
     #if REDUCE 
     // Code Added by Pritam
 
-    std::string compile_bin = working_dir + config_data["meta_runner"]["test_compile_bin"].as<std::string>();
+    std::string compile_bin = config_data["meta_runner"]["test_compile_bin"].as<std::string>();
     std::string compile_dir = working_dir + config_data["meta_runner"]["test_compile_dir"].as<std::string>();
 
    // Extracting the test object for execution using string manipulations
@@ -329,7 +341,7 @@ main(int argc, char** argv)
 
    // Compiling the Test Case
 
-    std::string compile_cmd = compile_bin + " " + args.output_file;
+    std::string compile_cmd = compile_dir + "/" + compile_bin + " " + args.output_file;
 
     command = compile_cmd.c_str();
 
