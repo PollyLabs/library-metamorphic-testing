@@ -3,6 +3,7 @@
 #include <system_error>
 #include <pstream.h>
 #include <regex>
+#include <time.h>
 
 #define REDUCE 1
 
@@ -230,6 +231,15 @@ bool isAlertError(std::string exe_err)
 	return true;
 }
 
+int timeout(int seconds)
+{
+    clock_t endwait;
+    endwait = clock () + seconds * CLOCKS_PER_SEC ;
+    while (clock() < endwait) {}
+
+    return  1;
+}
+
 std::string exeExec(const char* cmd)
 {
         std::string err = "";
@@ -256,6 +266,14 @@ std::string exeExec(const char* cmd)
                 if (pos1 != std::string::npos)
                         err += line;
         }
+
+	#if 0
+	if( timeout(90) == 1 )
+	{
+//        	printf("Time Out\n");
+	        return "";
+    	}
+	#endif
 
 //      std::cout << "Err: " << err << std::endl;
 

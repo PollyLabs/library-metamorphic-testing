@@ -43,4 +43,5 @@ std::string exeExec(const char* cmd);
 bool isAlertError(std::string exe_err);
 std::pair<std::string, std::string> parseErrorMsg(std::string msg);
 
+int timeout(int seconds);
 #endif
