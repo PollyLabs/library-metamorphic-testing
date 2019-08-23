@@ -1595,7 +1595,7 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
                         "targeted result obj"));
         const ApiObject* res = generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
 
-	NodeT* node = tree.insertNode(res);
+//	NodeT* node = tree.insertNode(res);
 
 	return res;
     }
@@ -3301,7 +3301,14 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::MHReduceInstrPrep(std:
 			res.push_back(temp.at(indices.at(i)));
 		}
 		
-		if(assertReduction(temp.at(meta_test_count+1), assert_vars))
+		if(var1 != "" && var2 != "")
+		{
+			if(assertReduction(temp.at(meta_test_count+1), assert_vars))
+			{
+				res.push_back(temp.at(meta_test_count+1));
+			}
+		}
+		else
 		{
 			res.push_back(temp.at(meta_test_count+1));
 		}
@@ -3688,9 +3695,9 @@ std::vector<EdgeT*> ApiFuzzerNew::childReduction(std::string compile_err, std::s
 	int msize;
 
 	if(size%2 == 0)
-		msize = ceil(size/2);
+		msize = size/2;
 	else
-		msize = ceil(size/2) + 1;
+		msize = size/2 + 1;
 
 	// Create two vectors each containing ip1 and ip2 half of the original input vector 
 
@@ -4276,9 +4283,9 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelations(
 	int msize;
 
 	if(size%2 == 0)
-		msize = ceil(size/2);
+		msize = size/2;
 	else
-		msize = ceil(size/2) + 1;
+		msize = size/2 + 1;
 
 	// Create two vectors each containing ip1 and ip2 half of the original input vector 
 
