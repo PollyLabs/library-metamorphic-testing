@@ -192,6 +192,44 @@ std::string Exec(const char* cmd)
 	return err;
 }
 
+bool isAlertError(std::string exe_err)
+{
+	std::string var1 = "";	
+	std::string var2 = "";	
+
+	std::string delim = ",";
+        auto start = 0U;
+        auto end = exe_err.find(delim);
+
+        int count = 1;
+
+        while (end != std::string::npos)
+        {
+                if(count == 1)
+                {
+                        var1 = exe_err.substr(start, end - start);
+                }
+                else if(count == 2)
+                {
+                        var2 = exe_err.substr(start, end - start);
+                }
+
+                count++;
+
+                start = end + delim.length();
+                end = exe_err.find(delim, start);
+        }
+
+        var2 = exe_err.substr(start, end);
+
+	if(var1 == "" || var2 == "")
+	{
+		return false;
+	}
+
+	return true;
+}
+
 std::string exeExec(const char* cmd)
 {
         std::string err = "";
@@ -409,10 +447,12 @@ main(int argc, char** argv)
 
 			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
 
+			red = api_fuzzer->replaceMetaInputVariables(compile_err, exe_err, red, args.output_file);
+
 //			std::cout << "Instructions after Fuzzing: " << input_insts.size() << std::endl;
 //			printVectorApiInstructions(input_insts);
 
-			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, input_insts, red);
+			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, api_fuzzer->tree.traverse(), red);
 		}
 		else
                 {

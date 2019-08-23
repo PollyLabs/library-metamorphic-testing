@@ -981,6 +981,29 @@ void DependenceTree::removeChildren(std::vector<EdgeT*> new_child)
 //	traverse();
 }
 
+void DependenceTree::removeRootNode(NodeT* node)
+{
+	EdgeT* edge;
+	std::vector<EdgeT*> new_edges;
+
+	const ApiObject* obj;	
+	obj = node->var;
+
+	this->nodes.erase(obj);
+
+	for(std::vector<EdgeT*>::iterator it = this->edges.begin(); it != this->edges.end(); it++)
+	{
+		edge = *it;
+
+		if(edge->src->var->getID() != obj->getID())
+		{
+			new_edges.push_back(edge);
+		}
+	}
+	
+	this->edges = new_edges;
+}
+
 std::vector<const ApiObject*> DependenceTree::getLeafNodes()
 {
 	std::vector<const ApiObject*> res;

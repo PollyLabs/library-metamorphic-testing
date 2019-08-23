@@ -584,6 +584,7 @@ class DependenceTree
 		std::vector<EdgeT*> getImmAncestors(NodeT* node);
 
 		void removeChildren(std::vector<EdgeT*> new_child);
+		void removeRootNode(NodeT* node);
 
 		std::vector<const ApiObject*> getLeafNodes();
 		std::vector<NodeT*> getDescendants(NodeT* node);

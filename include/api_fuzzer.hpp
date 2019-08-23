@@ -185,6 +185,11 @@ class ApiFuzzerNew : public ApiFuzzer {
 	bool checkTestCase(std::string c_err, std::string n_c_err, std::string e_err, std::string n_e_err);
 	
 	DependenceTree tree;
+
+	std::vector<const ApiInstructionInterface*> replaceMetaInputVariables(std::string compiler_err, std::string exe_err, std::vector<const ApiInstructionInterface*> red, std::string output_file);
+	std::pair<std::string, std::string> createTestCaseForInputVarReduction(std::vector<const ApiInstructionInterface*> red, std::string output_file, DependenceTree tree);
+	const ApiInstructionInterface* getNewInstructionForMetaRelation(const ApiInstructionInterface* instr, const ApiObject* original_obj, const ApiObject* new_obj);
+	const FuncObject* processFuncObject(const FuncObject* f_obj, const ApiObject* original_obj, const ApiObject* new_obj);
 	
 	void insertInstructionInTheTree(const ApiInstructionInterface* int_instr);
 

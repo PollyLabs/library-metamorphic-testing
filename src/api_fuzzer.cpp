@@ -3244,6 +3244,11 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::MHReduceInstrPrep(std:
 		indices.push_back(i);
 	}
 
+	if(!isAlertError(exe_err))
+	{
+		indices.push_back(meta_test_count+1);
+	}
+
 	indices = MHReduceInstr(compile_err, exe_err, var, indices, output_file);
 
 	std::pair<std::string,std::string> parsed_msg;	
@@ -3807,6 +3812,26 @@ std::vector<EdgeT*> ApiFuzzerNew::childReduction(std::string compile_err, std::s
 
 const ApiObject* ApiFuzzerNew::getReplacementObject(const ApiType* type)
 {
+	#if 0
+	const ApiObject* obj;
+	int x;
+
+	x = this->depth;
+	this->depth = this->max_depth+1;
+
+	obj = generateObject(type);
+	const ApiInstructionInterface* instrNode;
+	instrNode = this->instrs.at(this->instrs.size()-1);	
+	
+//	std::cout << "New Object: " << obj->toStr() << std::endl;
+//	std::cout << "instruction inserted: " << instrNode->toStr() << std::endl;
+
+	this->depth = x;
+
+	return obj;
+	#endif
+
+	#if 1	
 	std::vector<const ApiObject*> leaf_objs, f_leaf_objs;	
 
 	leaf_objs = this->tree.getLeafNodes();
@@ -3841,6 +3866,7 @@ const ApiObject* ApiFuzzerNew::getReplacementObject(const ApiType* type)
 	#endif
 
 	return res;
+	#endif
 }
 
 std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::string compile_err, std::string exe_err, std::string output_file, std::vector<const ApiInstructionInterface*> red)
@@ -3850,6 +3876,8 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::str
 
 	std::vector<NodeT*> nodes, temp, vec_nodes;
 	std::vector<EdgeT*> vec_edges, vec_edges_temp;
+	const ApiObject* obj = NULL;
+	const ApiType* type;	
 
 //	std::cout << "Inside reduceSubTree" << std::endl;
 
@@ -3872,6 +3900,24 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::str
 					{
 						continue;
 					}
+					
+					#if 0
+					type = (*nit)->var->getType();
+
+					if(obj == NULL)
+					{
+						obj = getReplacementObject(type);
+					}
+					else
+					{
+						if(obj->getType() != type)
+						{
+							obj = getReplacementObject(type);
+						}
+					}
+		
+					subTreeReduction(compile_err, exe_err, *nit, output_file, red, obj);
+					#endif
 
 					subTreeReduction(compile_err, exe_err, *nit, output_file, red);
 
@@ -3917,6 +3963,8 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
         const ApiObject* obj;
 
 	#if 0
+        const ApiObject* obj;
+
 	std::vector<const ApiObject*> candidate_params = this->filterObjs(&ApiObject::hasType, node->var->getType());
 
 	if(!candidate_params.empty())
@@ -3927,10 +3975,11 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 	{
 		obj = generateNewObject(node->var->getType());
 	}
-	#endif
 
 //	obj = generateApiObjectDecl("new_matrix", node->var->getType(), true);
 //	obj = getSingletonObject(node->var->getType());
+
+	#endif
 
 	obj = getReplacementObject(node->var->getType());
 
@@ -3962,6 +4011,9 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 	std::string n_exe_err = res.second;
 
 	NodeT* new_node2;
+
+	const ApiObject* n_obj = NULL;
+	const ApiType* n_type;
 
 	if(checkTestCase(compile_err, nc_err, exe_err, n_exe_err)) //Error Replicated, perform more reduction
 	{
@@ -4011,13 +4063,56 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 
 		if(enode != NULL)
 		{
+			#if 0
+			n_type = enode->var->getType();
+
+			if(obj == NULL)
+			{
+				n_obj = getReplacementObject(n_type);
+			}
+			else
+			{
+				if(obj->getType() != n_type)
+				{
+					n_obj = getReplacementObject(n_type);
+				}
+				else
+				{
+					n_obj = obj;
+				}
+			}
+			#endif
+
 //			std::cout << "21 Node selected for reduction: " << node->var->toStr() << std::endl;
+
 			subTreeReduction(compile_err, exe_err, enode, output_file, red);
 		}
 		else if(!nodes.empty())
 		{
 //			std::cout << "22 Node selected for reduction: " << node->var->toStr() << std::endl;
+
 			enode = nodes.at(rand()%nodes.size());
+
+			#if 0
+			n_type = enode->var->getType();
+
+			if(obj == NULL)
+			{
+				n_obj = getReplacementObject(n_type);
+			}
+			else
+			{
+				if(obj->getType() != n_type)
+				{
+					n_obj = getReplacementObject(n_type);
+				}
+				else
+				{
+					n_obj = obj;
+				}
+			}
+			#endif
+
 			subTreeReduction(compile_err, exe_err, enode, output_file, red);
 		}
 
@@ -4157,6 +4252,7 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsP
 
 	try_outs = 0;
 
+	#if 0
 	std::vector<const ApiInstructionInterface*> simp_red;
 
 	for(int i = 0; i < red.size(); i++)
@@ -4166,8 +4262,9 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::simplifyMetaRelationsP
 			simp_red.push_back(red.at(i));
 		}
 	}
+	#endif
 
-	res = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, simp_red, map_relations);
+	res = simplifyMetaRelations(compile_err, exe_err, output_file, input_insts, red, red, map_relations);
 
 	return res;
 	
@@ -4538,5 +4635,313 @@ DependenceTree ApiFuzzerNew::replaceSubTree(DependenceTree tree, NodeT* node, No
 
 	return new_tree;
 }
+
+std::vector<const ApiInstructionInterface*> ApiFuzzerNew::replaceMetaInputVariables(std::string compile_err, std::string exe_err, std::vector<const ApiInstructionInterface*> red, std::string output_file)
+{
+	std::vector<NodeT*> roots = this->tree.getRoots();
+	const ApiObject* obj = NULL;
+	const ApiType* type;
+	const ApiObject* result_obj;
+	DependenceTree new_tree;
+	NodeT* root = NULL;
+	std::pair<std::string, std::string> res;
+	std::string new_compile_err = "";
+	std::string new_exe_err = "";	
+	const ApiInstructionInterface* old_instr;
+	const ApiInstructionInterface* new_instr;
+	std::vector<const ApiInstructionInterface*> new_red;
+
+	for(std::vector<NodeT*>::iterator it = roots.begin(); it != roots.end(); it++)
+	{
+		root = *it;
+
+//		std::cout << "Replacing Meta Input Variable: " << root->var->toStr() << std::endl;
+
+		type = root->var->getType();
+
+		#if 0
+		if(obj == NULL)
+		{
+			obj = getReplacementObject(type);
+		}
+		else
+		{
+			if(obj->getType() != type)
+			{
+				obj = getReplacementObject(type);
+			}
+		}
+		#endif
+
+		obj = getReplacementObject(type);
+
+		if(obj == NULL)
+		{
+			continue;
+		}
+
+//		std::cout << "Replacing Meta Input Variable by Object: " << obj->toStr() << std::endl;
+
+		for(std::vector<const ApiInstructionInterface*>::iterator rit = red.begin(); rit != red.end(); rit++)
+		{
+			old_instr = *rit;
+
+//			std::cout << "Old Instr: " << old_instr->toStr() << std::endl;
+
+			new_instr = getNewInstructionForMetaRelation(old_instr, root->var, obj);
+			
+			new_red.push_back(new_instr);	
+		}
+
+		#if 0
+		std::cout << "Red Before: " << red.size() << std::endl;
+		printVectorApiInstructions(red);
+		std::cout << "Red After: " << new_red.size() << std::endl;
+		printVectorApiInstructions(new_red);
+		#endif
+
+		new_tree = this->tree;
+
+		new_tree.removeRootNode(root);
+
+//		std::cout << "Tree after deleting root: " << root->var->toStr() << std::endl;
+//		printVectorApiInstructions(new_tree.traverse());
+
+		res = createTestCaseForInputVarReduction(new_red, output_file, new_tree);
+
+		new_compile_err = res.first;
+		new_exe_err = res.second;
+
+		if(checkTestCase(compile_err, new_compile_err, exe_err, new_exe_err))
+		{
+//			std::cout << "Test Case retained error after deleting root: " << root->var->toStr() << std::endl;
+			this->tree = new_tree;
+			red = new_red;
+		}
+	}
+
+	return red;
+}
+
+std::pair<std::string, std::string> ApiFuzzerNew::createTestCaseForInputVarReduction(std::vector<const ApiInstructionInterface*> red, std::string output_file, DependenceTree tree)
+{
+	std::vector<const ApiInstructionInterface*> list_inst;
+	std::stringstream new_ss_m;
+
+	list_inst = tree.traverse();
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = list_inst.begin(); it != list_inst.end(); it++)
+	{
+		writeLine(new_ss_m, (*it)->toStr());
+	}
+
+	for(std::vector<const ApiInstructionInterface*>::iterator it = red.begin(); it != red.end(); it++)
+	{
+		writeLine(new_ss_m, (*it)->toStr());
+	}
+
+	std::ofstream ofs;
+	ofs.open(output_file);
+
+	ofs << new_ss_i.str();
+	ofs << new_ss_m.str();
+	ofs << new_ss_p.str();
+	ofs.close();
+
+	std::string new_compile_err = "";	
+	std::string new_exe_err = "";	
+	std::pair<std::string,std::string> res;	
+
+ 	new_compile_err = Exec(command);
+	new_exe_err = exeExec(exe_command);
+
+	res = std::make_pair(new_compile_err, new_exe_err);
+
+	return res;
+}
+
+const FuncObject* ApiFuzzerNew::processFuncObject(const FuncObject* f_obj, const ApiObject* original_obj, const ApiObject* new_obj)
+{
+//	std::cout << "Inside processFuncObject: " << f_obj->toStr() << std::endl;
+
+	const ApiObject* t_obj = NULL;
+	const ApiObject* p_obj = NULL;
+	const FuncObject* temp_obj = NULL;
+	const FuncObject* temp_f_obj = NULL;
+	std::vector<const ApiObject*> params, all_objs, new_params;
+
+	t_obj = f_obj->getTarget();
+
+	if(t_obj != NULL)
+	{
+//		std::cout << "t_obj: " << t_obj->toStr() << std::endl;
+
+		all_objs = t_obj->getAllObjs();
+
+		if(all_objs.size() == 1)
+		{
+			if(all_objs.at(0) && all_objs.at(0) == original_obj)
+			{
+				t_obj = new_obj;
+			}
+		}
+		else
+		{
+			temp_f_obj = (const FuncObject*)(t_obj);
+
+			temp_obj = processFuncObject(temp_f_obj, original_obj, new_obj);
+
+			t_obj = dynamic_cast<const ApiObject*>(temp_obj);
+		}
+		
+//		std::cout << "t_obj new: " << t_obj->toStr() << std::endl;
+	}
+
+	params = f_obj->getParams();
+
+	for(std::vector<const ApiObject*>::iterator it = params.begin(); it != params.end(); it++)
+	{
+		p_obj = *it;
+
+//		std::cout << "Parameter: " << p_obj->toStr() << std::endl;
+
+		if(p_obj != NULL)
+		{
+			all_objs = p_obj->getAllObjs();
+
+			if(all_objs.size() == 1)
+			{
+				if(all_objs.at(0) && all_objs.at(0) == original_obj)
+				{
+					p_obj = new_obj;
+				}
+			}
+			else
+			{
+				temp_f_obj = (const FuncObject*)(p_obj);
+
+				temp_obj = processFuncObject(temp_f_obj, original_obj, new_obj);
+
+				p_obj = dynamic_cast<const ApiObject*>(temp_obj);
+			}
+		}
+
+//		std::cout << "Pushing New parameter: " << p_obj->toStr() << std::endl;
+
+		new_params.push_back(p_obj);
+	}	
+
+	const FuncObject* new_f_obj;
+
+	new_f_obj = new FuncObject(f_obj->getFunc(), t_obj, new_params);
+
+	return new_f_obj;
+}
+
+const ApiInstructionInterface* ApiFuzzerNew::getNewInstructionForMetaRelation(const ApiInstructionInterface* instr, const ApiObject* original_obj, const ApiObject* new_obj)
+{
+	const ApiObject* target = NULL;
+	const ApiObject* parameter = NULL;
+	const ApiObject* obj = NULL;
+	const ApiInstruction* new_instr;
+	std::vector<const ApiObject*> params, new_params;
+	std::vector<const ApiObject*> all_objs;
+	const FuncObject* func_obj;
+
+//	std::cout << "Hey Der" << std::endl;
+
+	const ApiInstruction* old_instr = NULL;
+
+	old_instr = dynamic_cast<const ApiInstruction*>(instr);
+
+	if(old_instr == NULL)
+	{
+		return instr;
+	}
+	else if(old_instr->getFunc()->getName() == "assert")
+	{
+		return instr;
+	}
+
+	target = old_instr->getTargetObj();
+
+	if(target != NULL)
+	{
+//		std::cout << "Target Before: " << target->toStr() << std::endl;
+
+		all_objs = target->getAllObjs();
+
+		if(all_objs.size() == 1)
+		{
+			if(all_objs.at(0) && all_objs.at(0) == original_obj)
+			{
+				target = new_obj;
+			}
+		}
+		else
+		{
+			func_obj = (const FuncObject*)(target);
+
+			func_obj = processFuncObject(func_obj, original_obj, new_obj);
+
+			target = dynamic_cast<const ApiObject*>(func_obj);
+		}
+		
+//		std::cout << "Target After: " << target->toStr() << std::endl;
+	}
+
+	params = old_instr->getFuncParams();
+
+	for(std::vector<const ApiObject*>::iterator it = params.begin(); it != params.end(); it++)
+	{
+		parameter = *it;
+
+		if(parameter != NULL)
+		{
+//			std::cout << "Parameter Before: " << parameter->toStr() << std::endl;
+
+			all_objs = parameter->getAllObjs();
+
+			if(all_objs.size() == 1)
+			{
+				if(all_objs.at(0) && all_objs.at(0) == original_obj)
+				{
+					parameter = new_obj;
+				}
+			}
+			else
+			{
+				func_obj = (const FuncObject*)(parameter);
+
+				func_obj = processFuncObject(func_obj, original_obj, new_obj);
+
+				parameter = dynamic_cast<const ApiObject*>(func_obj);
+			}
+		
+//			std::cout << "Parameter After: " << parameter->toStr() << std::endl;
+		}
+
+		new_params.push_back(parameter);
+	}
+
+	obj = old_instr->getResultObj();
+
+//	std::cout << "Result: " << obj->toStr() << std::endl;
+
+	const ApiInstruction* e_instr;
+	e_instr = dynamic_cast<const ApiInstruction*>(old_instr);
+
+        if(e_instr->isDeclInstr())
+	{
+		obj->resetDeclared();
+	}
+
+	new_instr = new ApiInstruction(old_instr->getFunc(), obj, target, new_params);
+
+//	std::cout << "New Instruction: " << new_instr->toStr() << std::endl;
+
+	return ((const ApiInstructionInterface*)(new_instr));
+}
+
 
 #endif
