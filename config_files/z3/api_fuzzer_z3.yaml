@@ -64,6 +64,10 @@ funcs:
       return_type: 'bool'
       param_types: ['z3::expr', 'unsigned int']
       special: true
+    - name: 'z3::pw'
+      return_type: 'z3::expr'
+      param_types: ['z3::expr', 'z3::expr']
+      special: true
     - name: 'wrap::pw'
       return_type: 'z3::expr'
       param_types: ['z3::expr', 'z3::expr']
