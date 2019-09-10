@@ -58,7 +58,7 @@ div(z3::expr e, int i)
 z3::expr
 pw(z3::expr e1, z3::expr e2)
 {
-    return ite(e1 != 0 && e2 != 0, z3::pw(e1, e2), e1);
+    return ite(e1 != 0 || e2 != 0, z3::pw(e1, e2), e1);
 }
 
 z3::expr
