@@ -6,9 +6,11 @@
 #include<iostream>
 #include <stdlib.h>
 
-Eigen::Matrix3i getIdentity()
+#define THRESHOLD 0.1
+
+Eigen::Matrix3f getIdentity()
 {
-	Eigen::Matrix3i res;
+	Eigen::Matrix3f res;
 
 	for(unsigned int i=0; i < 3; i++)
 	{
@@ -24,7 +26,7 @@ Eigen::Matrix3i getIdentity()
 	return res;
 }
 
-bool isIdentity(Eigen::Matrix3i m)
+bool isIdentity(Eigen::Matrix3f m)
 {
 	for(unsigned int i=0; i < m.rows(); i++)
 	{
@@ -40,6 +42,16 @@ bool isIdentity(Eigen::Matrix3i m)
 	return true;
 }
 
+int getRNumber()
+{
+	return 5;
+}
+
+int getZero()
+{
+	return 0;
+}
+
 int getMinusOne()
 {
 	return -1;
@@ -50,29 +62,89 @@ int getInteger(int x)
 	return x;
 }
 
-Eigen::Matrix3i Truncate(Eigen::Matrix3i m)
+float round(float var) 
+{ 
+    float value = (int)(var * 100 + .5); 
+    return (float)value / 100; 
+}
+
+Eigen::Matrix3f Truncate(Eigen::Matrix3f m)
 {
-	Eigen::Matrix3i res;
+	#if 0
+	Eigen::Matrix3f res;
 
 	for(unsigned int i=0; i < 3; i++)
 	{
 		for(unsigned int j=0; j < 3; j++)
 		{
-			res(i,j) = res(i,j)%100;
+			res(i,j) = round(m(i,j));
 		}
 	}
 
 	return res;
+	#endif
+
+	return m;
+}
+
+bool compareM(Eigen::MatrixXf m, Eigen::MatrixXf n)
+{
+	#if 0
+	if((m.rows() != n.rows()) || (m.cols != n.cols()))
+	{
+		return false;
+	}
+	#endif	
+
+	for(int i = 0; i < m.rows(); i++)
+	{
+		for(int j = 0; j < m.cols(); j++)
+		{
+			if(!((n(i,j) - THRESHOLD <= m(i,j)) && (m(i,j) <= n(i,j) + THRESHOLD)))
+			{
+				return false;
+			}	
+		}	 
+	}	
+
+	return true; 
+}
+
+Eigen::MatrixXf addM(Eigen::MatrixXf m, Eigen::MatrixXf n)
+{
+	return Truncate(m.operator+(n));
+}
+
+Eigen::MatrixXf subM(Eigen::MatrixXf m, Eigen::MatrixXf n)
+{
+	return Truncate(m.operator-(n));
+}
+
+Eigen::MatrixXf mulM(Eigen::MatrixXf m, Eigen::MatrixXf n)
+{
+	return Truncate(m.operator*(n));
+}
+
+Eigen::MatrixXf mulMS(Eigen::MatrixXf m, int n)
+{
+	return Truncate(m.operator*(n));
+}
+
+Eigen::MatrixXf Inverse(Eigen::MatrixXf m)
+{
+	if((m.rows() == m.cols()) && (m.determinant() != 0)) // Returns true for a square matrix with a non-zero determinant
+		return Truncate(m.inverse());
+	else
+		return m;
 }
 
 /*
-
-Eigen::Matrix3i Inverse(Eigen::Matrix3i m)
+Eigen::Matrix3f Inverse(Eigen::Matrix3f m)
 {
 	if((m.rows() == m.cols()) && (m.determinant() != 0)) // Returns true for a square matrix with a non-zero determinant
-		return m.inverse();
+		return Truncate(m.inverse());
 	else
-		return m;
+		return wrap::Truncate(m);
 
 	#if 0
 	unsigned int r, c;
@@ -129,9 +201,7 @@ Eigen::Matrix3i Inverse(Eigen::Matrix3i m)
 	}
 	#endif
 }
-*/
 
-/*
 Eigen::Matrix3i addMatrix3i(Eigen::Matrix3i m1, Eigen::Matrix3i m2)
 {
 //	assert(((m1.rows() == m2.rows()) && (m1.cols() == m2.cols())));

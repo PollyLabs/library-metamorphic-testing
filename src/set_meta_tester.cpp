@@ -279,6 +279,7 @@ SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
         fmt::format("No metamorphic inputs found for tester."));
     std::vector<const ApiInstructionInterface*> instrs;
     std::queue<std::string> rel_chain = this->makeAbstractMetaRelChain(rel_cnt);
+
     CHECK_CONDITION(!this->abstract_rel_chain.empty(),
         fmt::format("Abstract relation chain empty in metamorphic tester."));
     this->fuzzer->addInstr(new ApiComment(

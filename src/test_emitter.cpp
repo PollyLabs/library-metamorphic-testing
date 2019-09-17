@@ -120,7 +120,8 @@ std::pair<std::string, std::string> parseErrorMsg(std::string msg)
         std::string m_var1 = "", m_var2 = "", vars = "";
         std::pair<std::string, std::string> result("","");
 
-        std::regex r1("Assertion `r_[0-9]+.[a-zA-Z0-9_=.]+\\(r_[0-9]+\\)' failed");
+//        std::regex r1("Assertion `[a-zA-Z0-9=._\\(\\)]+' failed");
+        std::regex r1("Assertion `"); //[a-zA-Z0-9=._\\(\\)]+' failed");
         std::regex r2("r_[0-9]+");
 
         std::smatch m1, m2;
@@ -134,7 +135,7 @@ std::pair<std::string, std::string> parseErrorMsg(std::string msg)
         #if 1
         if (m1.size() == 1)
         {
-                vars = m1.str(0);
+		vars = msg;
 
                 try
                 {
@@ -261,7 +262,7 @@ std::string exeExec(const char* cmd)
 //              std::cout << "stderr: " << line << '\n';
 		last_line = line;
 
-                pos1 = line.find("Assertion `r");  // Assumption that the error caused due to Assertion failure caused by meta variants
+                pos1 = line.find("Assertion `");  // Assumption that the error caused due to Assertion failure caused by meta variants
 
                 if (pos1 != std::string::npos)
                         err += line;
@@ -275,7 +276,7 @@ std::string exeExec(const char* cmd)
     	}
 	#endif
 
-//      std::cout << "Err: " << err << std::endl;
+//	std::cout << "Err: " << err << std::endl;
 
         std::pair<std::string, std::string> res;
 
@@ -294,7 +295,7 @@ std::string exeExec(const char* cmd)
 	}
 	else
 	{
-		return last_line;
+		return err;
 	}
 }
 
@@ -308,7 +309,7 @@ main(int argc, char** argv)
     {
         args.config_file = default_config_file;
     }
-
+	
     YAML::Node config_data = loadYAMLFileWithCheck(args.config_file);
     std::string working_dir = config_data["working_dir"].as<std::string>();
     std::string api_fuzzer_path =
@@ -472,10 +473,12 @@ main(int argc, char** argv)
 
 			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, api_fuzzer->tree.traverse(), red);
 		}
+		#if 0	
 		else
                 {
                         std::cout << "Not an assertion failure" << std::endl;
                 }
+		#endif
 	  }	
       }	
     #endif

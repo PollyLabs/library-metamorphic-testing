@@ -3879,7 +3879,11 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::str
 	const ApiObject* obj = NULL;
 	const ApiType* type;	
 
-//	std::cout << "Inside reduceSubTree" << std::endl;
+	#if 0
+	std::cout << "Inside reduceSubTree" << std::endl;
+	this->tree.traverse();
+	std::cout << "Traverse Ends" << std::endl;
+	#endif
 
 	for(std::vector<NodeT*>::iterator it = root.begin(); it != root.end(); it++)
 	{
@@ -3892,7 +3896,7 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::reduceSubTree(std::str
 
 		for(std::vector<NodeT*>::iterator nit = vec_nodes.begin(); nit != vec_nodes.end(); nit++)
 		{
-			if(find(nodes.begin(), nodes.end(), *nit) == nodes.end())
+//			if(find(nodes.begin(), nodes.end(), *nit) == nodes.end())
 			{
 				if(*nit != *it)
 				{
@@ -3981,12 +3985,17 @@ void ApiFuzzerNew::subTreeReduction(std::string compile_err, std::string exe_err
 
 	#endif
 
+//	std::cout << "Inside subTreeReduction for Node: " << node->var->toStr() << std::endl;
+
 	obj = getReplacementObject(node->var->getType());
 
 	if(obj == NULL)
 	{
+//		std::cout << "Replacement Object is NULL " << std::endl;
 		return;
 	}
+
+//	std::cout << "Replacement Object: " << obj->toStr() << std::endl;
 
 	DependenceTree new_tree = this->tree;
 
@@ -4649,11 +4658,13 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::replaceMetaInputVariab
 	std::string new_exe_err = "";	
 	const ApiInstructionInterface* old_instr;
 	const ApiInstructionInterface* new_instr;
-	std::vector<const ApiInstructionInterface*> new_red;
+	std::vector<const ApiInstructionInterface*> new_red, temp_red;
 
 	for(std::vector<NodeT*>::iterator it = roots.begin(); it != roots.end(); it++)
 	{
 		root = *it;
+
+		temp_red = this->tree.traverseSubTree(root);
 
 //		std::cout << "Replacing Meta Input Variable: " << root->var->toStr() << std::endl;
 
@@ -4689,6 +4700,8 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::replaceMetaInputVariab
 //			std::cout << "Old Instr: " << old_instr->toStr() << std::endl;
 
 			new_instr = getNewInstructionForMetaRelation(old_instr, root->var, obj);
+
+//			std::cout << "New Instr: " << new_instr->toStr() << std::endl;
 			
 			new_red.push_back(new_instr);	
 		}
@@ -4718,6 +4731,12 @@ std::vector<const ApiInstructionInterface*> ApiFuzzerNew::replaceMetaInputVariab
 			this->tree = new_tree;
 			red = new_red;
 		}
+		#if 0
+		else
+		{
+			std::cout << "Test Case error after deleting root is gone: " << root->var->toStr() << std::endl;
+		}
+		#endif	
 	}
 
 	return red;

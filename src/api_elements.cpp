@@ -990,6 +990,7 @@ void DependenceTree::removeRootNode(NodeT* node)
 	obj = node->var;
 
 	this->nodes.erase(obj);
+//	this->roots.erase(node);
 
 	for(std::vector<EdgeT*>::iterator it = this->edges.begin(); it != this->edges.end(); it++)
 	{
@@ -1007,13 +1008,38 @@ void DependenceTree::removeRootNode(NodeT* node)
 std::vector<const ApiObject*> DependenceTree::getLeafNodes()
 {
 	std::vector<const ApiObject*> res;
+	std::vector<NodeT*> nodes;
 	EdgeT* edge;
+	int count;
+
+//	std::cout << "Leaf Nodes" << std::endl;
 
 	for(std::vector<EdgeT*>::iterator it = edges.begin(); it != edges.end(); it++)
 	{
 		edge = *it;
 
-		if(edge->dests.empty())
+		count = 0;
+
+		nodes = edge->dests;
+
+		for(std::vector<NodeT*>::iterator nit = nodes.begin(); nit != nodes.end(); nit++)
+		{
+			if((*nit)->var->getType()->isPrimitive())
+			{
+				continue;
+			}
+
+			count++;
+		}
+
+		#if 0
+		std::cout << "Edge Src: " << edge->src->var->toStr() << std::endl;
+		std::cout << "Edge Dests: " << edge->dests.size() << std::endl;
+		std::cout << "First Dest: " << (*edge->dests.begin())->var->toStr() << std::endl;
+		#endif
+
+		if(count == 0)
+//		if(edge->dests.empty() || (edge->dests.size() == 1 && *(edge->dests.begin()) == NULL))
 		{
 			if(find(res.begin(), res.end(), edge->src->var) == res.end())
 			{

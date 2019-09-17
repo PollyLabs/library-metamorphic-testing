@@ -1,10 +1,9 @@
 includes:
     - "Eigen/Dense"
     - "testing/eigen-matrix-helpers.h"
-    - "stdlib.h"
 
-pre_setup:
-##    - "typedef Eigen::Matrix<float,Dynamic,Dynamic> Eigen::Matrix3i;"
+##pre_setup:
+##    - "typedef Eigen::Matrix<float,Dynamic,Dynamic> Eigen::MatrixXf;"
 
 inputs:
     - name: 'var2'
@@ -17,88 +16,83 @@ inputs:
       descriptor: '<unsigned int=range=[1,10]>'
 
 types:
-    - name: 'Eigen::Matrix3i'
+    - name: 'Eigen::MatrixXf'
 
 funcs:
-    - name: 'operator-'
-      enclosing_class: 'Eigen::Matrix3i'
-      return_type: 'Eigen::Matrix3i'
-      param_types: ['Eigen::Matrix3i']
+    - name: 'subM'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
       conditions: []
-    - name: 'operator+'
-      enclosing_class: 'Eigen::Matrix3i'
-      return_type: 'Eigen::Matrix3i'
-      param_types: ['Eigen::Matrix3i']
+    - name: 'addM'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
       conditions: []
-    - name: 'operator=='
-      enclosing_class: 'Eigen::Matrix3i'
+    - name: 'compareM'
       return_type: 'bool'
-      param_types: ['Eigen::Matrix3i']
+      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
       conditions: []
-    - name: 'operator*'
-      enclosing_class: 'Eigen::Matrix3i'
-      return_type: 'Eigen::Matrix3i'
-      param_types: ['Eigen::Matrix3i']
+    - name: 'mulM'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
       conditions: []
-    - name: 'operator*'
-      enclosing_class: 'Eigen::Matrix3i'
-      return_type: 'Eigen::Matrix3i'
-      param_types: ['int']
+    - name: 'mulMS'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf', 'int']
       conditions: []
-    - name: 'operator*'
-      return_type: 'Eigen::Matrix3i'
-      param_types: ['int', 'Eigen::Matrix3i']
-      conditions: []
+##    - name: 'operator*'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['int', 'Eigen::MatrixXf']
+##      conditions: []
     - name: 'getIdentity'
-      return_type: 'Eigen::Matrix3i'
+      return_type: 'Eigen::MatrixXf'
       param_types: []
       conditions: []	
       special: true
     - name: 'rows'	
-      enclosing_class: 'Eigen::Matrix3i'
+      enclosing_class: 'Eigen::MatrixXf'
       return_type: 'unsigned int'
       param_types: []
       conditions: []	
     - name: 'cols'	
-      enclosing_class: 'Eigen::Matrix3i'
+      enclosing_class: 'Eigen::MatrixXf'
       return_type: 'unsigned int'
       param_types: []
       conditions: []	
     - name: 'transpose'	
-      enclosing_class: 'Eigen::Matrix3i'
-      return_type: 'Eigen::Matrix3i'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
       param_types: []
       conditions: []	
     - name: 'eval'	
-      enclosing_class: 'Eigen::Matrix3i'
-      return_type: 'Eigen::Matrix3i'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
       param_types: []
       conditions: []	
     - name: 'adjoint'	
-      enclosing_class: 'Eigen::Matrix3i'
-      return_type: 'Eigen::Matrix3i'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
       param_types: []
       conditions: []	
-##    - name: 'adjointInPlace'	
-##      enclosing_class: 'Eigen::Matrix3i'
-##      return_type: 'Eigen::Matrix3i'
-##      param_types: []
-##      conditions: []	
-##    - name: 'inverse'	
-##      enclosing_class: 'Eigen::Matrix3i'
-##      return_type: 'Eigen::Matrix3i'
-##      param_types: []
-##      conditions: []	
-##    - name: 'Inverse'	
-##      return_type: 'Eigen::Matrix3i'
-##      param_types: ['Eigen::Matrix3i']
-##      conditions: []	
+    - name: 'Inverse'	
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []	
     - name: 'determinant'	
-      enclosing_class: 'Eigen::Matrix3i'
+      enclosing_class: 'Eigen::MatrixXf'
       return_type: 'int'
       param_types: []
       conditions: []	
     - name: 'getMinusOne'
+      return_type: 'int'
+      param_types: []
+      conditions: []	
+      special: true
+    - name: 'getZero'
+      return_type: 'int'
+      param_types: []
+      conditions: []	
+      special: true
+    - name: 'getRNumber'
       return_type: 'int'
       param_types: []
       conditions: []	
@@ -108,11 +102,6 @@ funcs:
       param_types: ['int']
       conditions: []	
       special: true
-    - name: 'Truncate'
-      return_type: 'Eigen::Matrix3i'
-      param_types: ['Eigen::Matrix3i']
-      conditions: []	
-      special: true
     - name: 'assert'
       return_type: 'bool'
       param_types: ['bool']
@@ -120,36 +109,28 @@ funcs:
       special: true
 
 constructors:
-    - name: 'Eigen::Matrix3i::Random'
-##    - name: 'Eigen::Matrix3i::Constant'
-      return_type: 'Eigen::Matrix3i'
-##      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>', '<unsigned int=range=[1,10]>']
-      param_types: []
-##    - name: 'Eigen::Matrix3i::Random'
-##      return_type: 'Eigen::Matrix3i'
-##      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>']
+    - name: 'Eigen::MatrixXf::Random'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>']
 
 set_gen:
     - type: 'for'
       counter: '[0,<var=input=size>)'
-      func: 'operator*'
+      func: 'mulM'
       return: '<special=output_var=>'
       func_params:
+        - '<special=output_var=>'
         - '<special=output_var=>'
     - type: 'for'
       counter: '[0,<var=input=size>)'
-      func: 'operator+'
+      func: 'addM'
       return: '<special=output_var=>'
       func_params:
         - '<special=output_var=>'
-##    - type: 'func'
-##      func: 'transpose'
-##      return: '<special=output_var=>'
-##    - type: 'func'
-##      func: 'adjoint'
-##      return: '<special=output_var=>'
+        - '<special=output_var=>'
     - type: 'func'
-      func: 'operator-'
+      func: 'Inverse'
       return: '<special=output_var=>'
-      func_params:
-        - '<special=output_var=>'
+    - type: 'func'
+      func: 'subM'
+      return: '<special=output_var=>'
