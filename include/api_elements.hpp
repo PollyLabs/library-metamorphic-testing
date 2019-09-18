@@ -574,6 +574,8 @@ class DependenceTree
 		std::vector<const ApiInstructionInterface*> traverseChildren(NodeT* node);
 		std::vector<const ApiInstructionInterface*> traverseEdgeInSubTree(EdgeT* edge);
 		
+		std::vector<EdgeT*> subTreeTraversal(NodeT* node);
+
 		void addRoot(NodeT *node);
 
 		void addEdge(NodeT* parent, std::vector<NodeT*> child, const ApiInstructionInterface* instr);

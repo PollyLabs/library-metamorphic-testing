@@ -1,4 +1,3 @@
-#include "set_meta_tester.hpp"
 #include "api_fuzzer.hpp"
 
 int
@@ -152,20 +151,33 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
     res = this->fuzzer->concretizeRelation(concrete_relation, meta_variant_var, first, false);
     simp_res = this->fuzzer->concretizeRelation(concrete_relation_candidates.at(0), meta_variant_var, first, true);
 
-    original_simplified_mapping vecs = mvar_relations[meta_variant_var];
-
+    original_simplified_mapping vecs;
     std::vector<const MetaRelation*> rel_temp1, rel_temp2;
-    rel_temp1 = vecs.first;
-    rel_temp2 = vecs.second;
 
-//    if(find(rel_temp1.begin(), rel_temp1.end(), res) == rel_temp1.end())
-    {
+    if(mvar_relations.find(meta_variant_var) != mvar_relations.end())
+   {	
+	vecs = mvar_relations[meta_variant_var];
+
+    	rel_temp1 = vecs.first;
+        rel_temp2 = vecs.second;
+
+    	if(find(rel_temp1.begin(), rel_temp1.end(), res) == rel_temp1.end())
+	{
+		rel_temp1.push_back(res);
+		rel_temp2.push_back(simp_res);
+
+		vecs = std::make_pair(rel_temp1, rel_temp2);
+		mvar_relations[meta_variant_var] = vecs;
+        }
+    }
+    else	
+    { 
 	rel_temp1.push_back(res);
 	rel_temp2.push_back(simp_res);
 
 	vecs = std::make_pair(rel_temp1, rel_temp2);
 	mvar_relations[meta_variant_var] = vecs;
-    }	
+    }
 		
     #if 0	
 //    std::cout << "Concrete Rel: " << concrete_relation->toStr() << std::endl;

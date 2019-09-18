@@ -23,7 +23,6 @@ std::map<std::string, Modes> string_to_mode {
     {"SET_META_NEW", SET_META_NEW},
 };
 
-std::stringstream new_ss_i, new_ss_mi, new_ss_p;
 const char *command, *exe_command;
 
 void
@@ -436,42 +435,43 @@ main(int argc, char** argv)
 
 		std::vector<const ApiInstructionInterface*> list_inst, input_inst;
 
-//		res = parseErrorMsg(exe_err);
+		input_inst = api_fuzzer->InputInstrs;
+    
+		for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
+		{
+			writeLine(new_ss_mi, (*it)->toStr());
+		}
 
 		if(exe_err != "") // Execution failed but not because of the assertion failure
 		{
-			input_inst = api_fuzzer->InputInstrs;
-    
-			for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
+			std::vector<const ApiInstructionInterface*> O_RED, O_FUZ_IP;
+			std::vector<const ApiObject*> O_MVAR;
+
+			while(true)
 			{
-				writeLine(new_ss_mi, (*it)->toStr());
+				O_MVAR = MVAR;
+				O_RED = RED;
+				O_FUZ_IP = FUZ_IP;
+
+				MVAR = api_fuzzer->verticalReduction(compile_err, exe_err, MVAR, args.output_file); // Reducing the MetaTests/Meta Variants
+
+				// Reducing number of meta relations 
+
+				api_fuzzer->MHReduceInstrPrep(compile_err, exe_err, args.output_file); // Reducing Meta Relations
+
+				api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file); // Fuzzer Reduction
+
+				api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file); // Fine-grained Fuzzer Reduction
+
+				api_fuzzer->replaceMetaInputVariables(compile_err, exe_err, args.output_file); // Elimination Meta Input Variables
+
+				api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, args.output_file); // Simplifying Meta Relations
+
+				if(O_MVAR == MVAR && O_RED == RED && O_FUZ_IP == FUZ_IP)
+				{
+					break;
+				}
 			}
-
-			// Reducing number of meta variants
-
-			std::vector<const ApiObject*> var;
-
-			var = api_fuzzer->verticalReduction(compile_err, exe_err, api_fuzzer->meta_variants, args.output_file);
-
-			// Reducing number of meta relations 
-
-			std::vector<const ApiInstructionInterface*> red = api_fuzzer->MHReduceInstrPrep(compile_err, exe_err, var, args.output_file);
-
-//			std::cout << "Instructions red: " << red.size() << std::endl;
-//			printVectorApiInstructions(red);
-
-			std::vector<const ApiInstructionInterface*> input_insts;
-
-			input_insts = api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file, red);
-
-			input_insts = api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file, red);
-
-			red = api_fuzzer->replaceMetaInputVariables(compile_err, exe_err, red, args.output_file);
-
-//			std::cout << "Instructions after Fuzzing: " << input_insts.size() << std::endl;
-//			printVectorApiInstructions(input_insts);
-
-			api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, var, args.output_file, api_fuzzer->tree.traverse(), red);
 		}
 		#if 0	
 		else

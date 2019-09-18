@@ -9,7 +9,6 @@
 
 #include "api_fuzzer.hpp"
 
-extern std::stringstream new_ss_i, new_ss_mi, new_ss_p;
 extern const char *command, *exe_command;
 
 enum Modes {

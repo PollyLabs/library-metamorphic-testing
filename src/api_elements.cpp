@@ -902,6 +902,62 @@ std::vector<const ApiInstructionInterface*> DependenceTree::traverseSubTree(Node
 	return traverseChildren(node);
 }
 
+
+std::vector<EdgeT*> DependenceTree::subTreeTraversal(NodeT* node)
+{
+	std::vector<EdgeT*> des, res, temp;
+	std::vector<NodeT*> dests;
+
+	visitedNodes[node] = true;
+
+//	std::cout << "Inside subTreeTraversal: " << node->var->toStr() << std::endl;
+
+	des = getImmDescendants(node);
+
+	for(std::vector<EdgeT*>::iterator it = des.begin(); it != des.end(); it++)
+	{
+		if(find(res.begin(), res.end(), *it) == res.end())
+		{
+//			std::cout << "Dest Edge" << std::endl;
+//			printEdge(*it);
+
+			res.push_back(*it);
+
+			dests = (*it)->dests;
+
+			for(std::vector<NodeT*>::iterator nit = dests.begin(); nit != dests.end(); nit++)
+			{
+				if((*nit)->var->getType()->isPrimitive())
+				{
+					continue;
+				}
+
+//				std::cout << "Descendants: " << (*nit)->var->toStr() << std::endl;
+
+				if(visitedNodes[*nit])
+				{
+					continue;
+				}
+
+				temp = subTreeTraversal(*nit);
+
+				for(std::vector<EdgeT*>::iterator tit = temp.begin(); tit != temp.end(); tit++)
+				{
+					if(find(res.begin(), res.end(), *tit) == res.end())
+					{
+//						printEdge(*tit);
+						res.push_back(*tit);
+					}	
+				}
+			}
+		}
+	}
+
+//	std::cout << "End of subTreeTraversal" << std::endl;
+
+	return res;
+}
+
 void printEdge(EdgeT* edge)
 {
 	if(edge->src->id != -1)
@@ -984,7 +1040,7 @@ void DependenceTree::removeChildren(std::vector<EdgeT*> new_child)
 void DependenceTree::removeRootNode(NodeT* node)
 {
 	EdgeT* edge;
-	std::vector<EdgeT*> new_edges;
+	std::vector<EdgeT*> new_edges, temp_edges;
 
 	const ApiObject* obj;	
 	obj = node->var;
@@ -992,6 +1048,34 @@ void DependenceTree::removeRootNode(NodeT* node)
 	this->nodes.erase(obj);
 //	this->roots.erase(node);
 
+	for(std::map<const ApiObject*, NodeT*>::iterator it = nodes.begin(); it != nodes.end(); it++)
+	{
+		visitedNodes[it->second] = false;
+	}	
+
+	temp_edges = subTreeTraversal(node);
+
+//	std::cout << "Hiyaaa" << std::endl;
+
+	new_edges = this->edges;
+
+	std::vector<EdgeT*>::iterator eit;
+
+	for(std::vector<EdgeT*>::iterator it = temp_edges.begin(); it != temp_edges.end(); it++)
+	{
+		edge = *it;
+
+		eit = find(new_edges.begin(), new_edges.end(), edge);
+
+		if(eit != new_edges.end())
+		{
+			new_edges.erase(eit);
+		}
+	}
+
+	this->edges = new_edges;
+
+	#if 0
 	for(std::vector<EdgeT*>::iterator it = this->edges.begin(); it != this->edges.end(); it++)
 	{
 		edge = *it;
@@ -1003,6 +1087,7 @@ void DependenceTree::removeRootNode(NodeT* node)
 	}
 	
 	this->edges = new_edges;
+	#endif
 }
 
 std::vector<const ApiObject*> DependenceTree::getLeafNodes()

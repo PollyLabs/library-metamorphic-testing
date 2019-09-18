@@ -62,15 +62,15 @@ int getInteger(int x)
 	return x;
 }
 
-float round(float var) 
+float round(float var) //Round off by 4 decimals
 { 
-    float value = (int)(var * 100 + .5); 
-    return (float)value / 100; 
+    float value = (int)(var * 10000 + .5); 
+    return (float)value / 10000; 
 }
 
 Eigen::Matrix3f Truncate(Eigen::Matrix3f m)
 {
-	#if 0
+	#if 1
 	Eigen::Matrix3f res;
 
 	for(unsigned int i=0; i < 3; i++)
@@ -84,7 +84,7 @@ Eigen::Matrix3f Truncate(Eigen::Matrix3f m)
 	return res;
 	#endif
 
-	return m;
+//	return m;
 }
 
 bool compareM(Eigen::MatrixXf m, Eigen::MatrixXf n)
