@@ -18,6 +18,7 @@ std::map<std::string, PrimitiveTypeEnum> primitives_map = {
     { "nqstring", NQSTRING },
     { "unsigned int", UINT },
     { "int", INT},
+    { "long", LONG},
     { "bool", BOOL },
 };
 
@@ -118,7 +119,8 @@ operator<<(std::ostream& os, ApiType* type)
  ******************************************************************************/
 
 ExplicitType::ExplicitType(std::string _definition, const ApiType* _underlying_type) :
-    ApiType(_definition), definition(_definition), underlying_type(_underlying_type)
+    ApiType(_definition), underlying_type(_underlying_type),
+    definition(_definition)
 {
     size_t mid_one = _definition.find(delim_mid);
     size_t mid_two = _definition.find(delim_mid, mid_one + 1);
@@ -468,17 +470,138 @@ ApiFunc::checkFlag(std::string flag) const
     {
         flag.erase(flag.begin());
     }
-    CHECK_CONDITION(flags.count(flag) != 0,
-        fmt::format("Could not find flag {} for ApiFunc {}.",
-            flag, this->name));
+    assert(flags.count(flag) != 0);
+    //CHECK_CONDITION(flags.count(flag) != 0,
+        //fmt::format("Could not find flag {} for ApiFunc {}.",
+            //flag, this->name));
     return negative ^ this->flags.find(flag)->second;
 }
+
+/**
+ * @brief Checks whether a function is callable given existing ApiObjects
+ *
+ * In order for a function to be callable, there must exist objects of required
+ * types to pass as parameters or as a required object instance. If such objects
+ * do exist in the provided `obj_list`, then this function yields `true`.
+ *
+ * @param obj_list List of available objects to use by a potential function call
+ *
+ * @return Whether there are sufficient objects to construct a function call
+ */
+bool
+ApiFunc::isCallable(std::pair<ApiObject_c, ApiFunc_c> gen_data) const
+{
+    logDebug(fmt::format("Checking if {} is callable.", this->name));
+    ApiObject_c obj_list = gen_data.first;
+    ApiFunc_c func_list = gen_data.second;
+    if (obj_list.empty() && func_list.empty())
+    {
+        return false;
+    }
+
+    if (this->enclosing_class)
+    {
+        ApiObject_c::iterator obj_it =
+            std::find_if(obj_list.begin(), obj_list.end(),
+            [this](const ApiObject* obj)
+            {
+                return obj->hasType(this->getClassType());
+            });
+        ApiFunc_c::iterator func_it =
+            std::find_if(func_list.begin(), func_list.end(),
+            [this](const ApiFunc* func)
+            {
+                return func->checkFlag("ctor") &&
+                    func->hasReturnType(this->getClassType());
+            });
+        if ((obj_list.empty() || obj_it == obj_list.end()) &&
+                (func_list.empty() || func_it == func_list.end()))
+        {
+            logDebug(fmt::format("Could not find existing object or constructor "
+                "of type {} for instance of func {}.",
+                this->enclosing_class->toStr(), this->name));
+            return false;
+        }
+    }
+    for (const ApiType* param_type : this->param_types)
+    {
+        ApiObject_c::iterator obj_it =
+            std::find_if(obj_list.begin(), obj_list.end(),
+            [param_type](const ApiObject* obj)
+            {
+                return obj->hasType(param_type);
+            });
+        ApiFunc_c::iterator func_it =
+            std::find_if(func_list.begin(), func_list.end(),
+            [param_type](const ApiFunc* func)
+            {
+                return func->checkFlag("ctor") &&
+                    func->hasReturnType(param_type);
+            });
+        if ((obj_list.empty() || obj_it == obj_list.end()) &&
+                (func_list.empty() || func_it == func_list.end()))
+        {
+            logDebug(fmt::format("Could not find existing object or "
+                " constructor of type {} for param of func {}.",
+                param_type->toStr(), this->name));
+            return false;
+        }
+    }
+    logDebug(fmt::format("{} found callable.", this->name));
+    return true;
+}
+
+//bool
+//ApiFunc::isConstructorCallable(
+    //std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> func_list) const
+//{
+    //logDebug(fmt::format("Checking if {} is constructor callable.", this->name));
+    //if (func_list.empty())
+    //{
+        //return false;
+    //}
+    //if (this->enclosing_class)
+    //{
+        //std::set<const ApiFunc*, decltype(&ApiType::pointerCmp)>::iterator it =
+            //std::find_if(func_list.begin(), func_list.end(),
+            //[this](const ApiFunc* af)
+            //{
+                //return af->checkFlag("ctor") &&
+                    //af->hasReturnType(this->getClassType());
+            //});
+        //if (it == func_list.end())
+        //{
+            //logDebug(fmt::format("Could not find existing ctor func of type {} "
+                //"for instance of func {}.", this->enclosing_class->toStr(),
+                //this->name));
+            //return false;
+        //}
+    //}
+    //for (const ApiType* param_type : this->param_types)
+    //{
+        //std::set<const ApiFunc*, decltype(&ApiType::pointerCmp)>::iterator it =
+            //std::find_if(func_list.begin(), func_list.end(),
+            //[&param_type](const ApiFunc* af)
+            //{
+                //return af->checkFlag("ctor") && af->hasReturnType(param_type);
+            //});
+        //if (it == func_list.end())
+        //{
+            //logDebug(fmt::format("Could not find existing ctor func of type {} "
+                //"for param of func {}.", param_type->toStr(), this->name));
+            //return false;
+        //}
+    //}
+    //logDebug(fmt::format("{} found callable.", this->name));
+    //return true;
+//}
 
 std::string
 ApiFunc::printSignature() const
 {
     std::stringstream print_ss;
-    if (this->getClassType()->toStr() != "")
+    //if (this->getClassType()->toStr() != "")
+    if (this->getClassType())
     {
         print_ss << this->getClassType()->toStr() << ".";
     }

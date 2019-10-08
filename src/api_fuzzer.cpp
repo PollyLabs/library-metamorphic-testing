@@ -46,6 +46,20 @@ getRandomSetElem(const std::set<T>& set_in, std::mt19937* rng)
     return *it;
 }
 
+template<typename T, typename U>
+T
+getRandomSetElem(const std::set<T,U>& set_in, std::mt19937* rng)
+{
+    typename std::set<T,U>::iterator it = set_in.begin();
+    unsigned int rand_val = (*rng)();
+    logDebug(fmt::format("RAND GEN {}", rand_val));
+    CHECK_CONDITION(set_in.size() != 0,
+        fmt::format("Attempt to get element of empty set."));
+    int advance_count = rand_val % set_in.size();
+    std::advance(it, advance_count);
+    return *it;
+}
+
 std::vector<const ApiObject*>
 filterObjList(std::vector<const ApiObject*> obj_list,
     bool (ApiObject::*filter_func)() const)
@@ -77,34 +91,34 @@ filterObjList(std::vector<const ApiObject*> obj_list,
     return filtered_objs;
 }
 
-std::set<const ApiFunc*>
-filterFuncList(std::set<const ApiFunc*> func_list,
+std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+filterFuncList(std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> func_list,
     bool (ApiFunc::*filter_func)() const)
 {
-    std::set<const ApiFunc*> filtered_funcs;
-    for (const ApiFunc* fn : func_list)
-    {
-        if ((fn->*filter_func)())
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+        filtered_funcs(&ApiFunc::pointerCmp);
+    std::copy_if(func_list.begin(), func_list.end(),
+        std::inserter(filtered_funcs, filtered_funcs.end()),
+        [&](const ApiFunc* af)
         {
-            filtered_funcs.insert(fn);
-        }
-    }
+            return (af->*filter_func)();
+        });
     return filtered_funcs;
 }
 
 template<typename T>
-std::set<const ApiFunc*>
-filterFuncList(std::set<const ApiFunc*> func_list,
+std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+filterFuncList(std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> func_list,
     bool (ApiFunc::*filter_func)(T) const, T filter_check)
 {
-    std::set<const ApiFunc*> filtered_funcs;
-    for (const ApiFunc* fn : func_list)
-    {
-        if ((fn->*filter_func)(filter_check))
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+        filtered_funcs(&ApiFunc::pointerCmp);
+    std::copy_if(func_list.begin(), func_list.end(),
+        std::inserter(filtered_funcs, filtered_funcs.end()),
+        [&](const ApiFunc* af)
         {
-            filtered_funcs.insert(fn);
-        }
-    }
+            return (af->*filter_func)(filter_check);
+        });
     return filtered_funcs;
 }
 
@@ -141,13 +155,13 @@ ApiFuzzer::getAllObjList() const
     return this->all_objs;
 }
 
-std::set<const ApiType*>
+std::set<const ApiType*, decltype(&ApiType::pointerCmp)>
 ApiFuzzer::getTypeList() const
 {
     return this->types;
 }
 
-std::set<const ApiFunc*>
+std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
 ApiFuzzer::getFuncList() const
 {
     return this->funcs;
@@ -155,6 +169,13 @@ ApiFuzzer::getFuncList() const
 
 int
 ApiFuzzer::getRandInt(int min, int max)
+{
+    assert(max >= min);
+    return (*this->rng)() % (max - min + 1) + min;
+}
+
+long
+ApiFuzzer::getRandLong(long min, long max)
 {
     assert(max >= min);
     return (*this->rng)() % (max - min + 1) + min;
@@ -221,6 +242,14 @@ const ApiObject*
 ApiFuzzer::addNewObj(std::string name, const ApiType* type)
 {
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
+    this->addObj(new_obj);
+    return new_obj;
+}
+
+const ApiObject*
+ApiFuzzer::addNewNamedObj(std::string name, const ApiType* type)
+{
+    const ApiObject* new_obj = new NamedObject(name, this->getNextID(), type);
     this->addObj(new_obj);
     return new_obj;
 }
@@ -334,10 +363,28 @@ ApiFuzzer::getTypeByName(std::string type_check) const
     assert(false);
 }
 
+const ApiObject*
+ApiFuzzer::getObjectByName(std::string obj_name) const
+{
+    std::vector<const ApiObject*> filtered_objs =
+        this->filterObjs(&ApiObject::hasName, obj_name);
+    CHECK_CONDITION(filtered_objs.size() == 1,
+        fmt::format("Expected 1 ApiObject with name {}, found {}.",
+            obj_name, filtered_objs.size()));
+    return filtered_objs.front();
+}
+
 template<typename T>
 std::vector<const ApiObject*>
 ApiFuzzer::filterObjs(bool (ApiObject::*filter_func)(T) const, T filter_check) const
 {
+    std::vector<const ApiObject*> result;
+    //std::copy_if(this->getObjList().begin(), this->getObjList().end(),
+        //std::back_inserter(result), [&](const ApiObject* ao)
+        //{
+            //return (ao->*filter_func)(filter_check);
+        //});
+    //return result;
     return filterObjList(this->getObjList(), filter_func, filter_check);
 }
 
@@ -345,20 +392,36 @@ template<typename T>
 std::vector<const ApiObject*>
 ApiFuzzer::filterAllObjs(bool (ApiObject::*filter_func)(T) const, T filter_check) const
 {
+    std::vector<const ApiObject*> result;
+    //std::copy_if(this->getAllObjList().begin(), this->getAllObjList().end(),
+        //std::back_inserter(result), [&](const ApiObject* ao)
+        //{
+            //return (ao->*filter_func)(filter_check);
+        //});
+    //return result;
     return filterObjList(this->getAllObjList(), filter_func, filter_check);
 }
 
 template<typename T>
-std::set<const ApiFunc*>
+std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
 ApiFuzzer::filterFuncs(bool (ApiFunc::*filter_func)(T) const, T filter_check) const
 {
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+        result(&ApiFunc::pointerCmp);
+    //std::copy_if(this->getFuncList().begin(), this->getFuncList().end(),
+        //std::inserter(result, result.end()), [&](const ApiFunc* af)
+        //{
+            //return (af->*filter_func)(filter_check);
+        //});
+    //return result;
     return filterFuncList(this->getFuncList(), filter_func, filter_check);
 }
 
 const ApiFunc*
 ApiFuzzer::getAnyFuncByName(std::string name) const
 {
-    std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> filtered_funcs =
+        filterFuncs(&ApiFunc::hasName, name);
     logDebug("Searching for any func name " + name);
     return getRandomSetElem(filtered_funcs, this->getRNG());
 }
@@ -366,7 +429,8 @@ ApiFuzzer::getAnyFuncByName(std::string name) const
 const ApiFunc*
 ApiFuzzer::getSingleFuncByName(std::string name) const
 {
-    std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> filtered_funcs =
+        filterFuncs(&ApiFunc::hasName, name);
     logDebug("Searching for single func name " + name);
     assert(filtered_funcs.size() == 1);
     return getRandomSetElem(filtered_funcs, this->getRNG());
@@ -380,7 +444,8 @@ ApiFuzzer::getFuncBySignature(std::string name,
     logDebug(
         fmt::format("Searching for func signature with name `{}` and types [{}]."
             , name, makeArgString(param_types)));
-    std::set<const ApiFunc*> filtered_funcs = filterFuncs(&ApiFunc::hasName, name);
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> filtered_funcs =
+        filterFuncs(&ApiFunc::hasName, name);
     filtered_funcs = filterFuncList(filtered_funcs, &ApiFunc::hasParamTypes,
         param_types);
     if (return_type)
@@ -405,7 +470,6 @@ ApiFuzzer::generateNamedObject(std::string name, const ApiType* type,
     const ApiFunc* init_func, const ApiObject* target_obj,
     std::vector<const ApiObject*> init_func_args)
 {
-    bool new_obj_decl = true;
     const NamedObject* new_obj = new NamedObject(name, this->getNextID(), type);
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
         target_obj, init_func_args);
@@ -534,12 +598,10 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     {
         if (!param_type->isExplicit() &&
                 (this->getRandInt(0, this->max_depth) < this->depth ||
-                 this->depth > this->max_depth))
+                 this->depth >= this->max_depth))
         {
             std::vector<const ApiObject*> candidate_params =
                 this->filterObjs(&ApiObject::hasType, param_type);
-            //candidate_params = filterObjList(candidate_params,
-                //&ApiObject::isDeclared);
             if (!candidate_params.empty())
             {
                 params.push_back(getRandomVectorElem(candidate_params, this->getRNG()));
@@ -555,6 +617,9 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
 /*******************************************************************************
  * ApiFuzzerNew functions
  ******************************************************************************/
+
+ApiFuzzerNew::ApiFuzzerNew(size_t _seed) :
+    ApiFuzzer(_seed,  new std::mt19937(_seed)) {}
 
 ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_path,
     unsigned int _seed, std::mt19937* _rng) :
@@ -599,7 +664,8 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     for (int i = 1; i <= input_var_count; ++i)
     {
         this->current_output_var = this->addNewObj("out", this->meta_variant_type);
-        this->objs.clear();
+        //this->objs.clear();
+        this->resetApiObjs();
         this->output_vars.push_back(this->current_output_var);
         this->addInstr(new ApiComment(fmt::format(
             "Start generate input var id {} in variable {}",
@@ -672,6 +738,25 @@ ApiFuzzerNew::~ApiFuzzerNew()
     std::for_each(this->meta_variants.begin(), this->meta_variants.end(),
         [](const ApiObject* meta_var){ delete meta_var; });
 }
+
+void
+ApiFuzzerNew::fuzzerMetaInit(const std::string& meta_test_path)
+{
+    YAML::Node meta_test_data = YAML::LoadFile(meta_test_path);
+    CHECK_YAML_FIELD(meta_test_data, "meta_var_type");
+    CHECK_YAML_FIELD(meta_test_data, "variant_count");
+    CHECK_YAML_FIELD(meta_test_data, "meta_test_count");
+    this->meta_variant_type = this->getTypeByName(
+        meta_test_data["meta_var_type"].as<std::string>());
+    this->meta_variant_count = meta_test_data["variant_count"].as<size_t>();
+    this->meta_test_count = meta_test_data["meta_test_count"].as<size_t>();
+    this->initMetaVariantVars();
+    this->initMetaVarObjs(meta_test_data["generators"],
+        meta_test_data["input_count"]);
+    this->initMetaGenerators(meta_test_data["generators"]);
+    this->initMetaRelations(meta_test_data["relations"]);
+}
+
 
 /**
 * @brief Return a pointer to the current metamorphic input being generated
@@ -891,8 +976,8 @@ ApiFuzzerNew::initConstructors(YAML::Node ctors_yaml)
         bool new_func_special = false;
         bool new_func_statik = false;
         bool new_func_ctor = true;
-        bool max_depth = ctor_yaml["max_depth"].IsDefined() &&
-            ctor_yaml["max_depth"].as<bool>();
+        //bool max_depth = ctor_yaml["max_depth"].IsDefined() &&
+            //ctor_yaml["max_depth"].as<bool>();
         this->addFunc(new ApiFunc(func_name, enclosing_class, return_type,
             param_types_list, cond_list, new_func_special, new_func_statik,
             new_func_ctor));
@@ -1342,7 +1427,8 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
 {
     CHECK_CONDITION(obj_type != nullptr,
         fmt::format("Given null type to generate object for."));
-    logDebug("Generating object of type " + obj_type->toStr());
+    logDebug(fmt::format("Generating object of type {} at depth {}/{}.",
+        obj_type->toStr(), this->depth, this->max_depth));
     if (obj_type->checkFlag("singleton"))
     {
         return this->getSingletonObject(obj_type);
@@ -1358,6 +1444,12 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     }
     else
     {
+        if (this->depth >= this->max_depth)
+        {
+            logDebug(fmt::format("Max depth reached; constructing object of type {}",
+                obj_type->toStr()));
+            return this->constructObject(obj_type);
+        }
         return this->generateNewObject(obj_type);
     }
 }
@@ -1560,7 +1652,7 @@ ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
 const ApiObject*
 ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result_obj)
 {
-    //logDebug("DEPTH " + std::to_string(this->depth));
+    logDebug("DEPTH " + std::to_string(this->depth));
     if (obj_type->isPrimitive())
     {
         CHECK_CONDITION(result_obj == nullptr,
@@ -1574,14 +1666,19 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
         //return result_obj;
     //}
     ++this->depth;
-    std::set<const ApiFunc*> ctor_func_candidates = this->filterFuncs(
-        &ApiFunc::hasReturnType, obj_type);
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+        ctor_func_candidates = this->filterFuncs(
+            &ApiFunc::hasReturnType, obj_type);
     if (this->depth >= this->max_depth)
     {
         logDebug(fmt::format("Reached max depth creating object type `{}`"
                             ", filtering constructors.", obj_type->toStr()));
-        ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::checkFlag, std::string("ctor"));
+        ApiFunc_c callable_funcs = filterFuncList(ctor_func_candidates,
+                &ApiFunc::isCallable, std::make_pair(this->getObjList(),
+                filterFuncs(&ApiFunc::checkFlag, std::string("ctor"))));
+        //ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            //&ApiFunc::checkFlag, std::string("ctor"));
+        ctor_func_candidates.insert(callable_funcs.begin(), callable_funcs.end());
     }
     else
     {
@@ -1589,13 +1686,29 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
             &ApiFunc::checkFlag, std::string("!special"));
         ctor_func_candidates = filterFuncList(ctor_func_candidates,
             &ApiFunc::checkFlag, std::string("!max_depth"));
-        std::set<const ApiFunc*> non_ctor_func_cands = filterFuncList(ctor_func_candidates,
-            &ApiFunc::checkFlag, std::string("!ctor"));
+        std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+            non_ctor_func_cands = filterFuncList(ctor_func_candidates,
+                &ApiFunc::checkFlag, std::string("!ctor"));
         // TODO this currently forces tests to be produced with full depth
-        if (!non_ctor_func_cands.empty())
-        {
-            ctor_func_candidates = non_ctor_func_cands;
-        }
+        //if (!non_ctor_func_cands.empty())
+        //{
+            //ctor_func_candidates = non_ctor_func_cands;
+        //}
+    }
+    if (ctor_func_candidates.empty())
+    {
+        logDebug(fmt::format("Unable to create new object of type {}, "
+            "attempting to fallback on existing objects.", obj_type->toStr()));
+        std::vector<const ApiObject*> fallback_objs =
+            this->filterObjs(&ApiObject::hasType, obj_type);
+        CHECK_CONDITION(!fallback_objs.empty(),
+            fmt::format("Unable to fallback from generating object - no "
+                "such object exists."));
+        const ApiObject* fallback_obj =
+            getRandomVectorElem(fallback_objs, this->rng);
+        logDebug(fmt::format("Found object of type {} with name {}.",
+            obj_type->toStr(), fallback_obj->toStr()));
+        return fallback_obj;
     }
     CHECK_CONDITION(ctor_func_candidates.size() != 0,
         fmt::format(
@@ -1614,7 +1727,7 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
     /* Check for target type; if exists, retrieve appropriate ApiObject pointer.
      * If object not declared, recursively call `generateNewObject` */
     const ApiObject* target_obj = nullptr;
-    if (gen_func->getClassType() != nullptr)
+    if (gen_func->getClassType() != nullptr && gen_func->checkFlag("!statik"))
     {
         const ApiType* target_type = gen_func->getClassType();
         std::vector<const ApiObject*> target_obj_candidates =
@@ -1665,6 +1778,48 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
     return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
 }
 
+const ApiObject*
+ApiFuzzerNew::constructObject(const ApiType* obj_type, const ApiObject* ret_obj)
+{
+    ApiFunc_c ctor_func_candidates = this->filterFuncs(&ApiFunc::hasReturnType,
+        obj_type);
+    ctor_func_candidates = filterFuncList(ctor_func_candidates,
+        &ApiFunc::checkFlag, std::string("ctor"));
+    CHECK_CONDITION(!ctor_func_candidates.empty(),
+        fmt::format("Unable to find constructor for type {}.", obj_type->toStr()));
+    const ApiFunc* ctor_func = getRandomSetElem(ctor_func_candidates, this->getRNG());
+    logDebug(fmt::format("Constructing object of type {} with ctor {}.",
+        obj_type->toStr(), ctor_func->getName()));
+    const ApiObject* target_obj = nullptr;
+    //std::cout << (ctor_func->getClassType() == nullptr) << std::endl;
+    //std::cout << ctor_func->checkFlag("statik") << std::endl;
+    CHECK_CONDITION((ctor_func->getClassType() == nullptr ||
+        ctor_func->checkFlag("statik")),
+        fmt::format("Unexpected class type for ctor {}.", ctor_func->getName()));
+
+    ApiObject_c ctor_args = this->getFuncArgs(ctor_func);
+    for (const ApiObject* ctor_arg : ctor_args)
+    {
+        if (!ctor_arg->isDeclared())
+        {
+            this->constructObject(ctor_arg->getType(), ctor_arg);
+        }
+    }
+
+    if (ret_obj != nullptr)
+    {
+        CHECK_CONDITION(ret_obj->hasType(obj_type),
+            fmt::format("Invalid types given for result object `{}` and "
+                        "expected type `{}`.", ret_obj->getType()->toStr(),
+                        obj_type->toStr()));
+        this->applyFunc(ctor_func, target_obj, ret_obj, ctor_args);
+        return ret_obj;
+    }
+
+    std::string var_name = this->getGenericVariableName(obj_type);
+    return generateApiObject(var_name, obj_type, ctor_func, target_obj, ctor_args);
+}
+
 /* @brief Return a reference to the input object with given name
  *
  * @param input_name Name of input object to search for
@@ -1709,6 +1864,14 @@ ApiFuzzerNew::parseDescriptor<int>(std::string descriptor)
 {
     std::pair<int, int> int_range = this->parseRange(descriptor);
     return this->getRandInt(int_range.first, int_range.second);
+}
+
+template<>
+long
+ApiFuzzerNew::parseDescriptor<long>(std::string descriptor)
+{
+    std::pair<long, long> long_range = this->parseRange(descriptor);
+    return this->getRandLong(long_range.first, long_range.second);
 }
 
 template<>
@@ -1808,7 +1971,8 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
             return this->generatePrimitiveObject(obj_type, name,
                 std::string("all"));
         }
-        case INT: {
+        case INT:
+        case LONG: {
             std::string range = "[-10,10]";
             range = fmt::format("{}range{}{}{}", delim_front, delim_mid,
                 range, delim_back);
@@ -1870,6 +2034,10 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
         case INT: {
             return this->generatePrimitiveObject<int>(obj_type,
                 obj_type->toStr(), this->parseDescriptor<int>(descriptor));
+        }
+        case LONG: {
+            return this->generatePrimitiveObject<long>(obj_type,
+                obj_type->toStr(), this->parseDescriptor<long>(descriptor));
         }
         case BOOL:
         default:
@@ -1991,8 +2159,8 @@ ApiFuzzerNew::generateSet()
 void
 ApiFuzzerNew::generateSeq(size_t seq_count)
 {
-    std::set<const ApiFunc*> func_list = this->filterFuncs(
-        &ApiFunc::checkFlag, std::string("!special"));
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> func_list =
+        this->filterFuncs(&ApiFunc::checkFlag, std::string("!special"));
     while (seq_count > 0)
     {
         const ApiFunc* seq_func = getRandomSetElem(func_list, this->getRNG());
@@ -2024,7 +2192,7 @@ ApiFuzzerNew::generateDecl(YAML::Node instr_config)
         return;
     }
     std::string var_name = instr_config["var_name"].as<std::string>();
-    bool init = instr_config["init"].IsDefined() && instr_config["init"].as<bool>();
+    //bool init = instr_config["init"].IsDefined() && instr_config["init"].as<bool>();
     if (instr_config["init"].IsDefined() && instr_config["init"].as<bool>())
     {
         //TODO pipe this through generateNewObject possibly?

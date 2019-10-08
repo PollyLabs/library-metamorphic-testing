@@ -79,12 +79,6 @@ class SetMetaTesterNew {
 
     public:
         SetMetaTesterNew(ApiFuzzerNew* fuzzer);
-            //const std::vector<const MetaRelation*>&,
-            //const std::vector<const MetaRelation*>&,
-            //const std::vector<const ApiObject*>&,
-            //const std::vector<const MetaVarObject*>&,
-            //const std::vector<const ApiObject*>&,
-            //const ApiType*, std::mt19937*);
         void genMetaTests(unsigned int);
         std::string getAbstractMetaRelChain() const;
         const ApiObject* getCurrentMetaVar() const

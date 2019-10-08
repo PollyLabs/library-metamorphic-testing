@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <random>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -27,6 +28,7 @@ enum PrimitiveTypeEnum {
     STRING,
     UINT,
     INT,
+    LONG,
     BOOL,
 };
 
@@ -40,6 +42,7 @@ void CHECK_CONDITION(bool, std::string);
 std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
 
+class ApiType;
 class ApiObject;
 class ApiFunc;
 class MetaRelation;
@@ -89,9 +92,14 @@ class ApiType {
         virtual const ApiType* getUnderlyingType() const { return this; };
         virtual const PrimitiveTypeEnum getTypeEnum() const { assert(false); };
 
-        inline bool operator<(const ApiType* other) const
+        static bool pointerCmp(const ApiType* lhs, const ApiType* rhs)
         {
-            return this->toStr() < other->toStr();
+            return lhs->toStr() < rhs->toStr();
+        }
+
+        bool operator<(const ApiType& other) const
+        {
+            return this->toStr() < other.toStr();
         };
 
         std::string toStr() const { return this->name; };
@@ -160,8 +168,8 @@ class ApiObject {
 
         ApiObject(std::string _name, size_t _id, const ApiType* _type,
             bool _initialize = true) :
-            id(_id), name(_name), type(_type), declared(false),
-            initialize(_initialize) {};
+            id(_id), name(_name), type(_type), initialize(_initialize),
+            declared(false) {};
         virtual ~ApiObject() = default;
 
         const ApiType* getType() const { return this->type; };
@@ -305,8 +313,21 @@ class ApiFunc {
         bool hasParamTypes(std::vector<const ApiType*>) const;
         bool checkFlag(std::string flag) const;
 
+        static bool
+        pointerCmp(const ApiFunc* const lhs, const ApiFunc* rhs)
+        {
+            return lhs->printSignature() < rhs->printSignature();
+        }
+
         bool checkArgs(std::vector<const ApiObject*>) const;
         std::string printSignature() const;
+
+        typedef
+            std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> ApiFunc_c;
+        typedef std::vector<const ApiObject*> ApiObject_c;
+        bool isCallable(std::pair<ApiObject_c, ApiFunc_c>) const;
+
+
 
         inline bool operator<(const ApiFunc& other) const {
             return this->printSignature() < other.printSignature();

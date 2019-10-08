@@ -22,29 +22,37 @@
 
 extern char delim_front, delim_back, delim_mid;
 
+typedef
+    std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> ApiFunc_c;
+typedef std::vector<const ApiObject*> ApiObject_c;
+typedef std::vector<const ApiType*> ApiType_c;
+
 void CHECK_YAML_FIELD(std::string);
 template<typename T> T getRandomVectorElem(const std::vector<T>&, std::mt19937*);
 template<typename T> T getRandomSetElem(const std::set<T>&, std::mt19937*);
+template<typename T, typename U> T
+    getRandomSetElem(const std::set<T, U>&, std::mt19937*);
 std::vector<const ApiObject*> filterObjList
     (std::vector<const ApiObject*>, bool (ApiObject::*)() const);
 template<typename T> std::vector<const ApiObject*> filterObjList
     (std::vector<const ApiObject*>, bool (ApiObject::*)(T) const, T);
-std::set<const ApiFunc*> filterFuncList(
+std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> filterFuncList(
     std::set<const ApiFunc*>, bool (ApiFunc::*)() const);
-template<typename T> std::set<const ApiFunc*> filterFuncList(
-    std::set<const ApiFunc*>, bool (ApiFunc::*)(T) const, T);
+template<typename T> std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+    filterFuncList(std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>,
+        bool (ApiFunc::*)(T) const, T);
 
 class ApiFuzzer {
     protected:
         /* Fuzzing members */
-        std::set<const ApiType*> types;
-        std::set<const ApiFunc*> funcs;
+        std::set<const ApiType*, decltype(&ApiType::pointerCmp)> types;
+        std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> funcs;
         std::vector<const ApiInstructionInterface*> instrs;
         std::vector<const ApiObject*> objs;
         std::vector<const ApiObject*> all_objs;
         mutable unsigned int next_obj_id;
-        unsigned int depth;
-        unsigned int max_depth;
+        size_t depth;
+        size_t max_depth;
         const unsigned int seed;
         std::mt19937* rng;
 
@@ -64,35 +72,41 @@ class ApiFuzzer {
         size_t meta_variant_count;
         size_t meta_test_count;
 
-        ApiFuzzer(unsigned int _seed, std::mt19937* _rng): next_obj_id(0), depth(0),
+        ApiFuzzer(unsigned int _seed, std::mt19937* _rng):
+            types(std::set<const ApiType*, decltype(&ApiType::pointerCmp)>
+                (&ApiType::pointerCmp)),
+            funcs(std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+                (&ApiFunc::pointerCmp)),
             instrs(std::vector<const ApiInstructionInterface*>()),
             objs(std::vector<const ApiObject*>()),
             all_objs(std::vector<const ApiObject*>()),
-            types(std::set<const ApiType*>()),
-            funcs(std::set<const ApiFunc*>()), rng(_rng), seed(_seed) {};
+            next_obj_id(0), depth(0), max_depth(10), seed(_seed), rng(_rng) {};
         virtual ~ApiFuzzer() = default;
 
         std::vector<const ApiInstructionInterface*> getInstrList() const;
         std::vector<std::string> getInstrStrs() const;
         std::vector<const ApiObject*> getObjList() const;
         std::vector<const ApiObject*> getAllObjList() const;
-        std::set<const ApiFunc*> getFuncList() const;
-        std::set<const ApiType*> getTypeList() const;
+        std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> getFuncList() const;
+        std::set<const ApiType*, decltype(&ApiType::pointerCmp)> getTypeList() const;
         std::mt19937* getRNG() const { return this->rng; };
 
         int getRandInt(int = 0, int = std::numeric_limits<int>::max());
+        long getRandLong(long = 0, long = std::numeric_limits<long>::max());
         unsigned int getNextID() const;
 
         bool hasTypeName(std::string);
         bool hasFuncName(std::string);
 
         const ApiType* getTypeByName(std::string) const;
+        const ApiObject* getObjectByName(std::string) const;
         template<typename T> std::vector<const ApiObject*> filterObjs(
             bool (ApiObject::*)(T) const, T) const;
         template<typename T> std::vector<const ApiObject*> filterAllObjs(
             bool (ApiObject::*)(T) const, T) const;
-        template<typename T> std::set<const ApiFunc*> filterFuncs(
-            bool (ApiFunc::*)(T) const, T) const;
+        template<typename T>
+            std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
+            filterFuncs(bool (ApiFunc::*)(T) const, T) const;
         const ApiFunc* getAnyFuncByName(std::string) const;
         const ApiFunc* getSingleFuncByName(std::string) const;
         const ApiFunc* getFuncBySignature(std::string, const ApiType*,
@@ -102,9 +116,12 @@ class ApiFuzzer {
         void addInstrVector(std::vector<const ApiInstructionInterface*>);
         const ApiObject* addNewObj(const ApiType*);
         const ApiObject* addNewObj(std::string, const ApiType*);
+        const ApiObject* addNewNamedObj(std::string, const ApiType*);
         void addObj(const ApiObject*);
         void addType(const ApiType*);
         void addFunc(const ApiFunc*);
+
+        void flushInstrs() { this->instrs.clear(); };
 
         virtual void generateSet() = 0;
 
@@ -147,11 +164,23 @@ class ApiFuzzerNew : public ApiFuzzer {
     std::vector<const ApiObject*> output_vars;
 
     public:
+        ApiFuzzerNew(size_t);
         ApiFuzzerNew(std::string&, std::string&, unsigned int, std::mt19937*);
         ~ApiFuzzerNew();
 
+        void fuzzerMetaInit(const std::string&);
+
+        const ApiObject* generateObject(const ApiType*);
+        const ApiObject* generateNewObject(const ApiType*,
+            const ApiObject* = nullptr);
+        const ApiObject* constructObject(const ApiType*,
+            const ApiObject* = nullptr);
         const MetaRelation* concretizeRelation(const MetaRelation*,
             const ApiObject*, bool);
+        void resetApiObjs() { this->objs.clear(); };
+        void printDepth() { std::cout << this->depth << std::endl; };
+        void setMetaInputVars(std::vector<const ApiObject*>& in_vars)
+            { this->meta_in_vars = in_vars; }
 
     private:
         void initPrimitiveTypes();
@@ -178,8 +207,6 @@ class ApiFuzzerNew : public ApiFuzzer {
         const FuncObject* parseRelationStringFunc(std::string);
         const ApiObject* parseRelationStringSubstr(std::string);
 
-        const ApiObject* generateObject(const ApiType*);
-        const ApiObject* generateNewObject(const ApiType*, const ApiObject* = nullptr);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*);
         const ApiObject* generatePrimitiveObject(const PrimitiveType*,
             std::string);
