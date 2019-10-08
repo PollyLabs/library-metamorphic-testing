@@ -35,7 +35,7 @@ MetaTest::~MetaTest()
 size_t
 MetaTest::getHash(void) const
 {
-    size_t string_hash;
+    size_t string_hash = 0;
     std::hash<std::string> string_hash_func;
     for (const MetaRelation* rel : this->getRelations())
     {
@@ -248,7 +248,6 @@ SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
     this->fuzzer->addInstr(new ApiComment(
         fmt::format("CURR META TEST: {}", this->getAbstractMetaRelChain())));
 
-    size_t rel_counter = 0;
     for (const ApiObject* meta_variant : this->meta_variants)
     {
         this->curr_meta_variant = meta_variant;
@@ -264,15 +263,9 @@ SetMetaTesterNew::genMetaTests(unsigned int rel_cnt)
     }
 }
 
-SetMetaTesterNew::SetMetaTesterNew(ApiFuzzerNew* _fuzzer
-    //const std::vector<const MetaRelation*>& _relations,
-    //const std::vector<const MetaRelation*>& _meta_checks,
-    //const std::vector<const ApiObject*>& _meta_in_vars,
-    //const std::vector<const MetaVarObject*>& _meta_vars,
-    //const std::vector<const ApiObject*>& _meta_variants,
-    //const ApiType* _meta_var_type, std::mt19937* _rng
-    ) : relations(_fuzzer->relations), meta_checks(_fuzzer->meta_checks),
-        meta_vars(_fuzzer->meta_vars), meta_in_vars(_fuzzer->meta_in_vars),
-        meta_variants(_fuzzer->meta_variants), fuzzer(_fuzzer),
-        meta_var_type(_fuzzer->meta_variant_type), rng(_fuzzer->getRNG()),
-        meta_var_name(_fuzzer->meta_variant_name) { }
+SetMetaTesterNew::SetMetaTesterNew(ApiFuzzerNew* _fuzzer) :
+        fuzzer(_fuzzer), meta_var_name(_fuzzer->meta_variant_name),
+        meta_var_type(_fuzzer->meta_variant_type),
+        relations(_fuzzer->relations), meta_checks(_fuzzer->meta_checks),
+        meta_in_vars(_fuzzer->meta_in_vars), meta_vars(_fuzzer->meta_vars),
+        meta_variants(_fuzzer->meta_variants), rng(_fuzzer->getRNG()) { }
