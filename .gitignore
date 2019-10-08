@@ -2,7 +2,6 @@ build/
 env/
 out/
 output/
-third_party/
 include_local/
 libs_local/
 doxygen/html
