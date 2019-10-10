@@ -6,4 +6,4 @@ RUN \
     git clone git://repo.or.cz/isl.git && \
     cd isl && git checkout maint && ./autogen.sh && \
     CFLAGS="-fprofile-arcs -ftest-coverage" ./configure && \
-    make -j6
+    make -j6 && export FUZZ_LIB_VERSION=`git log --format="%H" -n1`

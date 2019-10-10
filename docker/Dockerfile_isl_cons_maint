@@ -2,7 +2,7 @@ FROM alascu/metalib:base_isl_maint
 
 # Pull repo
 RUN \
-    git clone https://github.com/PollyLabs/library-metamorphic-testing.git
+    git clone --recursive https://github.com/PollyLabs/library-metamorphic-testing.git
 
 # Set workdir to repo location
 WORKDIR /home/library-metamorphic-testing
@@ -29,7 +29,9 @@ RUN \
 ENV \
     CPATH="/home/isl/include" \
     LIBRARY_PATH="/home/isl/.libs" \
-    LD_LIBRARY_PATH="/home/isl/.libs"
+    LD_LIBRARY_PATH="/home/isl/.libs" \
+    BUILD_SHARED_LIBS=true \
+    YAML_BUILD_SHARED_LIBS=ON
 
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4

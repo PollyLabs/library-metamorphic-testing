@@ -2,7 +2,7 @@ FROM alascu/metalib:base_z3
 
 # Pull repo
 RUN \
-    git clone https://github.com/PollyLabs/library-metamorphic-testing.git
+    git clone --recursive https://github.com/PollyLabs/library-metamorphic-testing.git
 
 # Set workdir to repo location
 WORKDIR /home/library-metamorphic-testing
@@ -30,7 +30,9 @@ RUN \
 ENV \
     CPATH="/home/z3/src/api/c++:/home/z3/src/api/" \
     LIBRARY_PATH="/home/z3/build" \
-    LD_LIBRARY_PATH="/home/z3/build"
+    LD_LIBRARY_PATH="/home/z3/build" \
+    BUILD_SHARED_LIBS=true \
+    YAML_BUILD_SHARED_LIBS=ON
 
 # Build project
 RUN mkdir build && cd build && cmake .. && make -j4

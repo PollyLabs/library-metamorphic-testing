@@ -4,4 +4,5 @@ FROM alascu/metalib:base
 RUN \ 
     git clone https://github.com/Z3Prover/z3.git && cd z3 && \
     python3.7 scripts/mk_make.py && cd build && \
-    CXXFLAGS="-ftest-coverage -fprofile-arcs" make -j6
+    CXXFLAGS="-ftest-coverage -fprofile-arcs" make -j6 && \
+    export FUZZ_LIB_VERSION=`git log --format="%H" -n1`

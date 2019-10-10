@@ -40,6 +40,3 @@ add_library(metalib_fuzz SHARED
     ${SRC_DIR}/clang_interface.cpp
     ${SRC_DIR}/test_emitter.cpp
     )
-#target_link_libraries(metalib_fuzz
-    #LLVM
-    #)
