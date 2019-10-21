@@ -1,7 +1,7 @@
 #ifndef API_FUZZER_HPP
 #define API_FUZZER_HPP
 
-#include <algorithm>
+#include "api_elements.hpp"
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -14,13 +14,22 @@
 #include <tuple>
 #include <vector>
 
-#include "api_elements.hpp"
 #include "set_meta_tester.hpp"
 
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 
+#define RECUR_LIMIT 10
+
+extern NodeT *null_node;
+
+typedef std::pair<std::vector<const MetaRelation*>, std::vector<const MetaRelation*> > original_simplified_mapping;
+
+extern int try_outs;
+
+
 extern char delim_front, delim_back, delim_mid;
+extern unsigned int RECUR_TIMES;
 
 typedef
     std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> ApiFunc_c;
@@ -41,6 +50,8 @@ std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> filterFuncList(
 template<typename T> std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
     filterFuncList(std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>,
         bool (ApiFunc::*)(T) const, T);
+
+extern std::stringstream new_ss_i, new_ss_mi, new_ss_p;
 
 class ApiFuzzer {
     protected:
@@ -153,7 +164,6 @@ class ApiFuzzer {
             std::vector<const ApiObject*>);
         std::string parseCondition(std::string, const ApiObject*,
             std::vector<const ApiObject*>);
-
 };
 
 class ApiFuzzerNew : public ApiFuzzer {
@@ -176,13 +186,28 @@ class ApiFuzzerNew : public ApiFuzzer {
         const ApiObject* constructObject(const ApiType*,
             const ApiObject* = nullptr);
         const MetaRelation* concretizeRelation(const MetaRelation*,
-            const ApiObject*, bool);
+            const ApiObject*, bool, bool);
         void resetApiObjs() { this->objs.clear(); };
         void printDepth() { std::cout << this->depth << std::endl; };
         void setMetaInputVars(std::vector<const ApiObject*>& in_vars)
             { this->meta_in_vars = in_vars; }
 
-    private:
+	std::map<size_t, std::vector<const ApiInstructionInterface*> > MetaVariant_Instr;
+	std::map<size_t, std::vector<const ApiInstructionInterface*> > InputVar_Instr;
+        std::vector<const ApiInstructionInterface*> InputInstrs;
+
+	DependenceTree replaceSubTree(DependenceTree tree, NodeT* node, NodeT* new_node);
+	EdgeT* getNewEdge(EdgeT* old_edge, NodeT* node, NodeT* new_node);
+	const ApiInstructionInterface* getNewInstruction(const ApiInstruction* old_instr, NodeT* node, NodeT* new_node);
+
+	void insertInstructionInTheTree(const ApiInstructionInterface* int_instr);
+
+	DependenceTree tree;
+	std::map<const ApiObject*, original_simplified_mapping> mvar_relations;
+        std::vector<const ApiInstructionInterface*> RED, FUZ_IP;
+        std::vector<const ApiObject*> MVAR;
+
+	private:
         void initPrimitiveTypes();
         void initInputs(YAML::Node);
         void initTypes(YAML::Node);
@@ -229,8 +254,8 @@ class ApiFuzzerNew : public ApiFuzzer {
         std::string getGeneratorData(std::string) const;
         std::string makeLinearExpr(std::vector<const ApiObject*>);
 
-        const FuncObject* concretizeGenerators(const MetaVarObject*);
-        const FuncObject* concretizeGenerators(const FuncObject*);
+        const FuncObject* concretizeGenerators(const MetaVarObject*, bool simplify);
+        const FuncObject* concretizeGenerators(const FuncObject*, bool simplify);
         std::map<const MetaVarObject*, const ApiObject*>
             makeConcretizationMap(std::vector<const ApiObject*>);
         const FuncObject* concretizeFuncObject(const FuncObject*,

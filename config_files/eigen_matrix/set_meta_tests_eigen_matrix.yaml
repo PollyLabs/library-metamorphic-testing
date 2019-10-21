@@ -1,0 +1,114 @@
+# %n, where n is an integer = input set
+# %e = empty set
+# %u = universe
+# %m = metamorphic test variable
+#
+# formula names taken from
+# https://www.allaboutcircuits.com/technical-articles/boolean-identities/
+---
+input_count: 3
+meta_var_type: "Eigen::MatrixXf"
+meta_test_count: 5
+variant_count: 20
+meta_check:
+    - "assert(compareM(%m, %m0))"
+
+generators:
+    zero:
+        identifier: 'Z'
+        relations:
+            - "subM(%1, %1)"
+            - "mulMS(%1, getZero())"
+    identity:
+        identifier: 'I'
+        relations:
+            - "getIdentity()"
+            - "mulM(%1, Inverse(%1))"
+            - "mulM(Inverse(%1), %1)"
+            - "mulM(mulM(mulM(%1, %2), Inverse(%2)), Inverse(%1))"
+relations:
+    identity_idempotent_absorption:
+        - "%m=addM(%1, %Z)"
+        - "%m=addM(%Z, %1)"
+        - "%m=subM(%1, %Z)"
+        - "%m=mulMS(subM(%Z, %1), getMinusOne())"
+        - "%m=mulM(%1, %I)"
+        - "%m=mulM(%I, %1)"
+        - "%m=subM(addM(%I, %1), %I)"
+        - "%m=mulM(%I.transpose().eval(), %1)"
+        - "%m=%1.transpose().eval().transpose().eval()"
+        - "%m=Inverse(Inverse(%1))"
+
+    addition:
+        - "%m=addM(%1, %2)"
+        - "%m=addM(%2, %1)"
+        - "%m=addM(%1, addM(%2, %Z))"
+        - "%m=addM(%1, mulM(%2, %I))"
+
+    substraction:
+        - "%m=subM(%1, %2)"
+        - "%m=addM(mulMS(%2, getMinusOne()), %1)"
+        - "%m=subM(%Z, addM(mulMS(%1, getMinusOne()), %2))"
+        - "%m=addM(%1, mulMS(%2, getMinusOne()))"
+        - "%m=addM(%1, subM(%Z, %2))"
+
+    multiplication:
+        - "%m=mulM(%1, %2)"
+        - "%m=addM(mulM(%1, %2), %Z)"
+        - "%m=mulM(mulM(%1, %2), %I)"
+        
+    multiplication_assoc:
+        - "%m=mulM(mulM(%1, %2), %3)"
+        - "%m=mulM(%1, mulM(%2, %3))"
+
+    distrib_mul_add:
+        - "%m=mulM(%1, addM(%2, %3))"
+        - "%m=addM(mulM(%1, %2), mulM(%1, %3))"
+
+    transpose:
+        - "%m=%1.transpose().eval()"
+        - "%m=%1.transpose().eval().transpose().eval().transpose().eval()"
+   
+    transpose-add:
+        - "%m=addM(%1, %2).transpose().eval()"
+        - "%m=addM(%1.transpose().eval(), %2.transpose().eval())"
+
+    transpose-scalar:
+        - "%m=mulMS(%1, getMinusOne()).transpose().eval()"
+        - "%m=mulMS(%1.transpose().eval(), getMinusOne())"
+
+    transpose-mul:
+        - "%m=mulM(%1, %2).transpose().eval()"
+        - "%m=mulM(%2.transpose().eval(), %1.transpose().eval())"
+
+    inverse-mul:
+        - "%m=Inverse(mulM(%1, %2))"
+        - "%m=mulM(Inverse(%2), Inverse(%1))"
+
+    inverse-transpose:
+       - "%m=Inverse(%1).transpose().eval()"
+       - "%m=Inverse(%1.transpose().eval())"
+###
+##    adjoint:
+##        - "%m=%1.adjoint().eval()"
+##
+##    adjoint-transpose:
+##        - "%m=%1.adjoint().eval().transpose().eval()"
+##        - "%m=%1.transpose().eval().adjoint().eval()"
+##
+##    adjoint-exp:
+##        - "%m=%1.wrap::operator*(%1).adjoint().eval()"
+##        - "%m=%1.adjoint().eval().wrap::operator*(%1.adjoint().eval())"
+##
+##    adjoint-ident:
+##        - "%m=%1.wrap::operator*(%1.wrap::operator+(%2).adjoint().eval()).wrap::operator*(%2)"
+##        - "%m=%2.wrap::operator*(%1.wrap::operator+(%2).adjoint().eval()).wrap::operator*(%1)"
+##
+##    adj_mul2:
+##        - "%m=%1.wrap::operator*(%2).adjoint().eval()"
+##        - "%m=%2.adjoint().eval().wrap::operator*(%1.adjoint().eval())"
+##
+##    adj_mul1:
+##        - "%m=%1.wrap::operator*(%1.adjoint().eval())"
+##        - "%m=%1.adjoint().eval().wrap::operator*(%1)"
+####        - "%m=wrap::operator*(%1.determinant(), getIdentity())"

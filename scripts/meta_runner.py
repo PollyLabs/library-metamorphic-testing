@@ -73,7 +73,7 @@ def generate_test(seed, test_id, runtime_data, log_data, par_data):
         par_data["stat_lock"].release()
     generator_cmd = [runtime_data["test_emitter_path"], "-s", seed, "-o",
         runtime_data["test_source_path"], "-c", runtime_data["config_file_path"]]
-    # print("CMD is " + " ".join(generator_cmd))
+##    print("Generate CMD is " + " ".join(generator_cmd))
     generator_proc = subprocess.Popen(generator_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     out, err = generator_proc.communicate()
     log_data.write("CMD:\n" + " ".join(generator_cmd) + "\n")
@@ -92,10 +92,12 @@ def compile_test(runtime_data, log_data):
     try:
         # Path below is hack
         timeout_value = str(runtime_data["timeout"])
+        print("runtime_data[test_source_path] " + " ".join(runtime_data["test_source_path"]))
+        print("runtime_data[test_source_path] " + " ".join(runtime_data["test_source_path"].rsplit("/", 1)[1]))
         compile_cmd = ["timeout", timeout_value,
             runtime_data["test_compile_bin"],
             runtime_data["test_source_path"].rsplit("/", 1)[1]]
-        # print("CMD is " + " ".join(compile_cmd))
+        #print("CMD is " + " ".join(compile_cmd))
         compile_proc = subprocess.run(compile_cmd, check=True,
             cwd=runtime_data["test_compile_dir"], stdout=subprocess.DEVNULL)
         print_debug("compile_test END True", runtime_data["debug"])
@@ -118,7 +120,7 @@ def execute_test(runtime_data, log_data, par_data):
     print_debug("execute_test START", runtime_data["debug"])
     timeout_value = str(runtime_data["timeout"])
     test_cmd = ["timeout", timeout_value, runtime_data["test_run_path"]]
-    # print("CMD is " + " ".join(test_cmd))
+##    print("CMD is " + " ".join(test_cmd))
     print_debug("execute_test > subprocess.Popen START", runtime_data["debug"])
     test_proc = subprocess.Popen(test_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     print_debug("execute_test > subprocess.Popen END", runtime_data["debug"])

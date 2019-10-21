@@ -4,6 +4,14 @@ char delim_front = '<';
 char delim_back = '>';
 char delim_mid = '=';
 
+unsigned int RECUR_TIMES = 0;
+
+unsigned int global_count = 0;
+
+std::stringstream new_ss_i, new_ss_mi, new_ss_p;
+
+NodeT *null_node;
+
 /*******************************************************************************
  * Helper functions
  ******************************************************************************/
@@ -484,6 +492,7 @@ ApiFuzzer::generateApiObject(std::string name, const ApiType* type,
     std::vector<const ApiObject*> init_func_args)
 {
     const ApiObject* new_obj = new ApiObject(name, this->getNextID(), type);
+
     const ApiInstruction* new_instr = new ApiInstruction(init_func, new_obj,
         target_obj, init_func_args);
     this->addObj(new_obj);
@@ -625,6 +634,10 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
     unsigned int _seed, std::mt19937* _rng) :
     ApiFuzzer(_seed, _rng)
 {
+	
+    null_node = new NodeT();
+    null_node->id = -1;
+
     /* Fuzzer initialization */
     YAML::Node api_fuzzer_data = YAML::LoadFile(api_fuzzer_path);
     this->initPrimitiveTypes();
@@ -672,6 +685,13 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
             i, this->current_output_var->toStr())));
         this->generateSet();
     }
+
+    for(std::vector<const ApiInstructionInterface*>::iterator it = instrs.begin(); it != instrs.end(); it++)
+    {
+	InputInstrs.push_back(*it);
+	FUZ_IP.push_back(*it);
+    } 
+	
     assert(this->output_vars.size() == input_var_count);
     this->meta_in_vars = this->output_vars;
 
@@ -686,6 +706,16 @@ ApiFuzzerNew::ApiFuzzerNew(std::string& api_fuzzer_path, std::string& meta_test_
         this->meta_vars.end());
     this->smt = std::unique_ptr<SetMetaTesterNew>(new SetMetaTesterNew(this));
     smt->genMetaTests(this->meta_test_count);
+
+    for(int k = FUZ_IP.size(); k < instrs.size(); k++)
+    {
+	RED.push_back(instrs.at(k));
+    }
+
+    for(std::vector<const ApiObject*>::iterator it = this->meta_variants.begin(); it != this->meta_variants.end(); it++)
+    {
+        MVAR.push_back(*it); 
+    }
 }
 
 /**
@@ -1170,6 +1200,7 @@ ApiFuzzerNew::initMetaGenerators(YAML::Node meta_gen_yaml)
     for (; meta_gen_it != meta_gen_yaml.end(); meta_gen_it++)
     {
         std::string gen_type = meta_gen_it->second["identifier"].as<std::string>();
+
         // TODO need to further customise this
         YAML::const_iterator gen_it = meta_gen_it->second["relations"].begin();
         std::vector<const MetaRelation*> gen_rels;
@@ -1429,17 +1460,20 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         fmt::format("Given null type to generate object for."));
     logDebug(fmt::format("Generating object of type {} at depth {}/{}.",
         obj_type->toStr(), this->depth, this->max_depth));
+
+    const ApiObject* res;	
+
     if (obj_type->checkFlag("singleton"))
     {
-        return this->getSingletonObject(obj_type);
+        res = this->getSingletonObject(obj_type);
     }
     else if (obj_type->isPrimitive())
     {
-        return this->generatePrimitiveObject((PrimitiveType*) obj_type);
+        res = this->generatePrimitiveObject((PrimitiveType*) obj_type);
     }
     else if (obj_type->isExplicit())
     {
-        return this->retrieveExplicitObject(
+        res = this->retrieveExplicitObject(
             dynamic_cast<const ExplicitType*>(obj_type));
     }
     else
@@ -1452,6 +1486,8 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
         }
         return this->generateNewObject(obj_type);
     }
+
+    return res;
 }
 
 /* @brief Evaluate given comprehension into corresponding object
@@ -1658,7 +1694,11 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
         CHECK_CONDITION(result_obj == nullptr,
             fmt::format("Not implemented new primitive object generation for "
                         "targeted result obj"));
-        return generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
+        const ApiObject* res = generatePrimitiveObject(dynamic_cast<const PrimitiveType*> (obj_type));
+
+//	NodeT* node = tree.insertNode(res);
+
+	return res;
     }
     //else if (result_obj && result_obj->toInitialize() && !result_obj->isDeclared())
     //{
@@ -1763,8 +1803,58 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
             fmt::format("Invalid types given for result object `{}` and "
                         "expected type `{}`.", result_obj->getType()->toStr(),
                         obj_type->toStr()));
+
         this->applyFunc(gen_func, target_obj, result_obj, ctor_args);
+
         --this->depth;
+
+	// Added by Pritam	
+	const ApiInstructionInterface* instrNode;
+	instrNode = this->instrs.at(this->instrs.size()-1);	
+
+	NodeT* node = tree.insertNode(result_obj);	
+
+	std::vector<NodeT*> d_child;
+
+	NodeT* target_node = null_node;	
+
+	if(target_obj != NULL)
+	{	
+		target_node = tree.insertNode(target_obj);
+
+		if(target_node != node)
+			d_child.push_back(target_node);
+	}
+
+//	tree.addEdge(node, target_node);
+
+	const ApiObject* param_obj;
+
+	for(std::vector<const ApiObject*>::iterator it = ctor_args.begin(); it != ctor_args.end(); it++)
+	{
+		NodeT* temp_node = null_node;
+
+		param_obj = *it;
+
+		if(param_obj != NULL)
+		{
+			temp_node = tree.insertNode(param_obj);
+		
+			if(temp_node != node)
+			if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+				d_child.push_back(temp_node);
+		}
+
+//		tree.addEdge(node, temp_node);
+	}	
+
+	tree.addEdge(node, d_child, instrNode);
+
+//	std::cout << "Adding Edge1" << std::endl;
+//	printEdge(tree.edges.at(tree.edges.size()-1));
+		
+	// End of Added Code
+
         return result_obj;
     }
 
@@ -1775,7 +1865,69 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
         var_name = var_name.replace(var_name.find('*'), 1, "");
     }
     --this->depth;
-    return generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
+
+    const ApiObject* res = generateApiObject(var_name, obj_type, gen_func, target_obj, ctor_args);
+
+    // Added by Pritam	
+    bool no_target = false;
+    bool no_param = false;	
+    const ApiInstructionInterface* instrNode;
+    instrNode = this->instrs.at(this->instrs.size()-1);	
+
+    NodeT* node = NULL;	
+    std::vector<NodeT*> d_child;
+    NodeT* target_node = null_node;	
+
+    if(res != NULL)
+    {	
+    	node = tree.insertNode(res);	
+
+	if(target_obj != NULL)
+        {	
+    		target_node = tree.insertNode(target_obj);
+
+		if(target_node != node)
+			d_child.push_back(target_node);
+    	}
+    }	
+    else
+    {
+	if(target_obj != NULL)
+        {	
+    		node = tree.insertNode(target_obj);
+    	}
+    }
+
+//    tree.addEdge(node, target_node);
+
+    const ApiObject* param_obj;
+
+    for(std::vector<const ApiObject*>::iterator it = ctor_args.begin(); it != ctor_args.end(); it++)
+    {
+       	 NodeT* temp_node = null_node;
+
+	param_obj = *it;
+
+        if(param_obj != NULL)
+	{
+		temp_node = tree.insertNode(param_obj);
+
+		if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+			d_child.push_back(temp_node);
+	}
+
+//	tree.addEdge(node, temp_node);
+    }	
+
+    if(node != NULL)	
+    {	
+	    tree.addEdge(node, d_child, instrNode);
+
+//	    std::cout << "Adding Edge2" << std::endl;
+//            printEdge(tree.edges.at(tree.edges.size()-1));
+    }
+
+    return res;
 }
 
 const ApiObject*
@@ -1813,11 +1965,123 @@ ApiFuzzerNew::constructObject(const ApiType* obj_type, const ApiObject* ret_obj)
                         "expected type `{}`.", ret_obj->getType()->toStr(),
                         obj_type->toStr()));
         this->applyFunc(ctor_func, target_obj, ret_obj, ctor_args);
+
+        // Added by Pritam	
+	const ApiInstructionInterface* instrNode;
+	instrNode = this->instrs.at(this->instrs.size()-1);	
+
+	NodeT* node = tree.insertNode(ret_obj);	
+
+	std::vector<NodeT*> d_child;
+
+	NodeT* target_node = null_node;	
+
+	if(target_obj != NULL)
+	{	
+		target_node = tree.insertNode(target_obj);
+
+		if(target_node != node)
+			d_child.push_back(target_node);
+	}
+
+//	tree.addEdge(node, target_node);
+
+	const ApiObject* param_obj;
+
+	for(std::vector<const ApiObject*>::iterator it = ctor_args.begin(); it != ctor_args.end(); it++)
+	{
+		NodeT* temp_node = null_node;
+
+		param_obj = *it;
+
+		if(param_obj != NULL)
+		{
+			temp_node = tree.insertNode(param_obj);
+		
+			if(temp_node != node)
+			if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+				d_child.push_back(temp_node);
+		}
+
+//		tree.addEdge(node, temp_node);
+	}	
+
+	tree.addEdge(node, d_child, instrNode);
+
+//	std::cout << "Adding Edge6" << std::endl;
+//	printEdge(tree.edges.at(tree.edges.size()-1));
+		
+	// End of Added Code
+
         return ret_obj;
     }
 
     std::string var_name = this->getGenericVariableName(obj_type);
-    return generateApiObject(var_name, obj_type, ctor_func, target_obj, ctor_args);
+
+    const ApiObject* res;
+
+    res = generateApiObject(var_name, obj_type, ctor_func, target_obj, ctor_args);
+
+    // Added by Pritam	
+	const ApiInstructionInterface* instrNode;
+	instrNode = this->instrs.at(this->instrs.size()-1);	
+
+	NodeT* node;
+	std::vector<NodeT*> d_child;
+
+	NodeT* target_node = null_node;	
+
+	if(res != NULL)
+	{
+		node = tree.insertNode(res);	
+
+		tree.addRoot(node);
+
+		if(target_obj != NULL && target_obj->getID() != res->getID())
+		{	
+			target_node = tree.insertNode(target_obj);
+
+			d_child.push_back(target_node);
+		}
+	}
+	else
+	{
+		if(target_obj != NULL)
+		{	
+			node = tree.insertNode(target_obj);
+
+			tree.addRoot(node);
+		}
+	}
+
+	const ApiObject* param_obj;
+
+	for(std::vector<const ApiObject*>::iterator it = ctor_args.begin(); it != ctor_args.end(); it++)
+	{
+		NodeT* temp_node = null_node;
+
+		param_obj = *it;
+
+		if(param_obj != NULL)
+		{
+			temp_node = tree.insertNode(param_obj);
+
+			if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+				d_child.push_back(temp_node);
+		}
+	}	
+
+	tree.addEdge(node, d_child, instrNode);
+
+//	std::cout << "Adding Edge5" << std::endl;
+//	printEdge(this->tree.edges.at(this->tree.edges.size()-1));
+		
+	// End of Added Code
+
+
+//    std::cout << "Construct Object: " << res->toStr() << std::endl;
+
+    return res;
 }
 
 /* @brief Return a reference to the input object with given name
@@ -2156,6 +2420,93 @@ ApiFuzzerNew::generateSet()
 *
 * @param seq_count The number of **base** random instructions to generate
 */
+
+void ApiFuzzerNew::insertInstructionInTheTree(const ApiInstructionInterface* int_instr)
+{
+	const ApiInstruction* instr;
+	
+	instr = dynamic_cast<const ApiInstruction*>(int_instr);
+
+        const ApiObject* t_obj = NULL;
+        const ApiObject* r_obj = NULL;
+        const ApiObject* p_obj = NULL;
+	std::vector<const ApiObject*> param_list;
+
+	t_obj = instr->getTargetObj();
+	r_obj = instr->getResultObj();
+	param_list = instr->getFuncParams();
+
+	NodeT* t_node = NULL;	
+	NodeT* r_node = NULL;	
+	NodeT* p_node = NULL;	
+	std::vector<NodeT*> param_nodes;
+	const ApiInstruction* new_instr;
+
+	if(t_obj)
+	{
+		t_node = this->tree.insertNode(t_obj);
+	}
+
+	if(r_obj)
+	{
+		r_node = this->tree.insertNode(r_obj);
+	}
+
+	if(r_node != NULL)
+	{
+		if(t_node != NULL && t_node != r_node)
+		{
+			param_nodes.push_back(t_node);
+		}
+	}
+	else
+	{
+		if(t_node != NULL)
+		{
+			r_node = t_node;	
+		}
+	}
+
+	for(std::vector<const ApiObject*>::iterator it = param_list.begin(); it != param_list.end(); it++)
+	{
+		p_obj = *it;
+
+		if(p_obj != NULL)
+		{
+			p_node = this->tree.insertNode(p_obj);
+
+			if(p_node != NULL)
+			{
+				if(find(param_nodes.begin(), param_nodes.end(), p_node) == param_nodes.end())
+					param_nodes.push_back(p_node);
+			}
+		}
+	}
+
+	if(r_obj != NULL)
+	{
+		if(instr->isDeclInstr())
+		{
+			r_obj->resetDeclared();
+		}
+	}
+	else
+	{
+		if(t_obj != NULL)
+		{
+			if(instr->isDeclInstr())
+			{
+				t_obj->resetDeclared();
+			}
+		}
+	}
+
+	this->tree.addEdge(r_node, param_nodes, int_instr);
+
+//	std::cout << "Adding Edge3" << std::endl;
+//	printEdge(this->tree.edges.at(this->tree.edges.size()-1));
+}
+
 void
 ApiFuzzerNew::generateSeq(size_t seq_count)
 {
@@ -2165,6 +2516,11 @@ ApiFuzzerNew::generateSeq(size_t seq_count)
     {
         const ApiFunc* seq_func = getRandomSetElem(func_list, this->getRNG());
         this->applyFunc(seq_func);
+
+	const ApiInstructionInterface* api_new_instr;
+	api_new_instr = this->instrs.at(this->instrs.size()-1);	
+	insertInstructionInTheTree(api_new_instr);
+
         seq_count--;
     }
 }
@@ -2200,7 +2556,18 @@ ApiFuzzerNew::generateDecl(YAML::Node instr_config)
     }
     else
     {
-        this->generateApiObjectDecl(var_name, var_type, true);
+        const ApiObject* obj = this->generateApiObjectDecl(var_name, var_type, true);
+
+	NodeT* new_node = this->tree.insertNode(obj);
+
+	std::vector<NodeT*> dests;
+	const ApiInstructionInterface* api_new_instr;
+	api_new_instr = this->instrs.at(this->instrs.size()-1);	
+
+	this->tree.addEdge(new_node, dests, api_new_instr);
+
+//	std::cout << "Adding Edge4" << std::endl;
+//	printEdge(this->tree.edges.at(this->tree.edges.size()-1));
     }
 }
 
@@ -2381,6 +2748,8 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
 void
 ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
 {
+    unsigned int start = this->instrs.size();
+
     CHECK_CONDITION(instr_config["func"].IsDefined(),
         "Fuzzer generation instruction must have `func` field defined.");
     std::string func_name = instr_config["func"].as<std::string>();
@@ -2400,6 +2769,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         func = this->getAnyFuncByName(func_name);
     }
+
     // Set target object, if any declared
     const ApiObject* target_obj = nullptr;
     if (instr_config["target"].IsDefined())
@@ -2429,6 +2799,7 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         target_obj = this->generateObject(func->getClassType());
     }
+
     // Set return object, if any declared
     const ApiObject* return_obj = nullptr;
     // TODO should we automatically create a return object if not defined?
@@ -2461,6 +2832,9 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         return_obj = this->generateObject(func->getReturnType());
     }
+
+    bool special = false;
+
     // Set function parameters
     std::vector<const ApiObject*> func_params;
     if (instr_config["func_params"].IsDefined())
@@ -2495,11 +2869,67 @@ ApiFuzzerNew::generateFunc(YAML::Node instr_config, int loop_counter)
     {
         func_params = this->getFuncArgs(func);
     }
+
     this->applyFunc(func, target_obj, return_obj,
         func_params);
+
+    // Added by Pritam	
+	const ApiInstructionInterface* instrNode;
+	instrNode = this->instrs.at(this->instrs.size()-1);	
+
+	NodeT* node;
+	std::vector<NodeT*> d_child;
+
+	NodeT* target_node = null_node;	
+
+	if(return_obj != NULL)
+	{
+		node = tree.insertNode(return_obj);	
+
+		tree.addRoot(node);
+
+		if(target_obj != NULL && target_obj->getID() != return_obj->getID())
+		{	
+			target_node = tree.insertNode(target_obj);
+
+			d_child.push_back(target_node);
+		}
+	}
+	else
+	{
+		if(target_obj != NULL)
+		{	
+			node = tree.insertNode(target_obj);
+
+			tree.addRoot(node);
+		}
+	}
+
+	const ApiObject* param_obj;
+
+	for(std::vector<const ApiObject*>::iterator it = func_params.begin(); it != func_params.end(); it++)
+	{
+		NodeT* temp_node = null_node;
+
+		param_obj = *it;
+
+		if(param_obj != NULL)
+		{
+			temp_node = tree.insertNode(param_obj);
+
+			if(find(d_child.begin(), d_child.end(), temp_node) == d_child.end())
+				d_child.push_back(temp_node);
+		}
+	}	
+
+	tree.addEdge(node, d_child, instrNode);
+
+//	std::cout << "Adding Edge5" << std::endl;
+//	printEdge(this->tree.edges.at(this->tree.edges.size()-1));
+		
+	// End of Added Code
 }
 
-[[deprecated]]
 std::string
 ApiFuzzerNew::getGeneratorData(std::string gen_desc) const
 {
@@ -2545,13 +2975,20 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
 * the given `mv_obj`
 */
 const FuncObject*
-ApiFuzzerNew::concretizeGenerators(const MetaVarObject* mv_obj)
+ApiFuzzerNew::concretizeGenerators(const MetaVarObject* mv_obj, bool simplify)
 {
     CHECK_CONDITION(mv_obj->isGenerator(),
         fmt::format("Asked to concretize non-generator metamorphic "\
                     " comprehension {}.", mv_obj->identifier));
-    return this->concretizeGenerators(
-        getRandomVectorElem(mv_obj->meta_relations, this->getRNG())->getBaseFunc());
+
+    if(!simplify)
+    {		
+    	return this->concretizeGenerators(getRandomVectorElem(mv_obj->meta_relations, this->getRNG())->getBaseFunc(), simplify);
+    }
+    else	
+    {		
+    	return this->concretizeGenerators(mv_obj->meta_relations.at(0)->getBaseFunc(), simplify);
+    }
 }
 
 /**
@@ -2568,22 +3005,24 @@ ApiFuzzerNew::concretizeGenerators(const MetaVarObject* mv_obj)
 * concrete ApiObject references
 */
 const FuncObject*
-ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj)
+ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj, bool simplify)
 {
     const ApiObject* target_obj = func_obj->getTarget();
+
     if (func_obj->getTarget())
     {
         const FuncObject* func_obj_param = dynamic_cast<const FuncObject*>(target_obj);
         const MetaVarObject* mv_target_obj = dynamic_cast<const MetaVarObject*>(target_obj);
         if (func_obj_param)
         {
-            target_obj = this->concretizeGenerators(func_obj_param);
+            target_obj = this->concretizeGenerators(func_obj_param, simplify);
         }
         else if (mv_target_obj && mv_target_obj->isGenerator())
         {
-            target_obj = this->concretizeGenerators(mv_target_obj);
+            target_obj = this->concretizeGenerators(mv_target_obj, simplify);
         }
     }
+
     std::vector<const ApiObject*> gen_concrete_params;
     for (const ApiObject* param : func_obj->getParams())
     {
@@ -2591,18 +3030,23 @@ ApiFuzzerNew::concretizeGenerators(const FuncObject* func_obj)
         const MetaVarObject* mv_obj_param = dynamic_cast<const MetaVarObject*>(param);
         if (func_obj_param)
         {
-            gen_concrete_params.push_back(this->concretizeGenerators(func_obj_param));
+            gen_concrete_params.push_back(this->concretizeGenerators(func_obj_param, simplify));
         }
         else if (mv_obj_param && mv_obj_param->isGenerator())
         {
-            gen_concrete_params.push_back(this->concretizeGenerators(mv_obj_param));
+            gen_concrete_params.push_back(this->concretizeGenerators(mv_obj_param, simplify));
         }
         else
         {
             gen_concrete_params.push_back(param);
         }
     }
-    return new FuncObject(func_obj->getFunc(), target_obj, gen_concrete_params);
+
+    FuncObject* res;
+    res = new FuncObject(func_obj->getFunc(), target_obj, gen_concrete_params);
+
+
+    return res;
 }
 
 /**
@@ -2658,6 +3102,7 @@ ApiFuzzerNew::makeConcretizationMap(std::vector<const ApiObject*> obj_list)
                 mv_obj->getIdentifier()));
         concrete_map.emplace(std::make_pair(mv_obj, value));
     }
+
     return concrete_map;
 }
 
@@ -2679,10 +3124,11 @@ ApiFuzzerNew::makeConcretizationMap(std::vector<const ApiObject*> obj_list)
 
 const MetaRelation*
 ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
-    const ApiObject* curr_meta_variant, bool first)
+    const ApiObject* curr_meta_variant, bool first, bool simplify)
 {
     const MetaVarObject* abstract_result_var =
         dynamic_cast<const MetaVarObject*>(abstract_rel->getStoreVar());
+
     const ApiObject* concrete_result_var = nullptr;
     if (abstract_result_var)
     {
@@ -2691,7 +3137,7 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
                 curr_meta_variant, this->meta_variants, this->meta_in_vars);
     }
     const FuncObject* unrolled_func_obj =
-        this->concretizeGenerators(abstract_rel->getBaseFunc());
+        this->concretizeGenerators(abstract_rel->getBaseFunc(), simplify);
     std::map<const MetaVarObject*, const ApiObject*> concretize_map
         = this->makeConcretizationMap(unrolled_func_obj->getAllObjs());
     // HACK should perform the initialization check better
@@ -2720,6 +3166,7 @@ ApiFuzzerNew::concretizeRelation(const MetaRelation* abstract_rel,
     }
     const FuncObject* concrete_func_obj =
         this->concretizeFuncObject(unrolled_func_obj, concretize_map);
+
     return new MetaRelation(abstract_rel->getAbstractRelation(),
         concrete_func_obj, concrete_result_var);
 }
@@ -2835,4 +3282,3 @@ ApiFuzzerNew::concretizeFuncObject(const FuncObject* func_obj,
     //return this->concretizeFuncObject(mv_obj->meta_relations.at(
         //(*this->rng)() % mv_obj->meta_relations.size())->getBaseFunc());
 //}
-

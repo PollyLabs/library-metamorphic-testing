@@ -1,5 +1,12 @@
 #include "test_emitter.hpp"
 
+#include <system_error>
+#include <pstream.h>
+#include <regex>
+#include <time.h>
+
+#define REDUCE 1
+
 static unsigned int indent = 0;
 const std::string default_config_file =
     "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl.yaml";
@@ -16,6 +23,8 @@ std::map<std::string, Modes> string_to_mode {
     {"SET_META_API", SET_META_API},
     {"SET_META_NEW", SET_META_NEW},
 };
+
+const char *command, *exe_command;
 
 void
 parseArgs(Arguments& args, int argc, char **argv)
@@ -106,6 +115,190 @@ mainPostSetup(std::stringstream &ss)
     writeLine(ss, "}");
 }
 
+std::pair<std::string, std::string> parseErrorMsg(std::string msg)
+{
+        std::string m_var1 = "", m_var2 = "", vars = "";
+        std::pair<std::string, std::string> result("","");
+
+//        std::regex r1("Assertion `[a-zA-Z0-9=._\\(\\)]+' failed");
+        std::regex r1("Assertion `"); //[a-zA-Z0-9=._\\(\\)]+' failed");
+        std::regex r2("r_[0-9]+");
+
+        std::smatch m1, m2;
+
+        std::regex_search(msg, m1, r1);
+
+//      std::cout << "Message: " << msg << " : " << m1.size() << " : " << m1.str(0) << std::endl;
+
+        int count = 1;
+
+        #if 1
+        if (m1.size() == 1)
+        {
+		vars = msg;
+
+                try
+                {
+                        std::sregex_iterator next(vars.begin(), vars.end(), r2);
+                        std::sregex_iterator end;
+
+                        while (next != end)
+                        {
+                                std::smatch match = *next;
+
+                                if(count == 1)
+                                {
+                                        m_var1 = match.str();
+                                }
+                                else if(count == 2)
+                                {
+                                        m_var2 = match.str();
+                                }
+
+                                count++;
+                                next++;
+                        } 
+                } catch (std::regex_error& e) {
+                        // Syntax error in the regular expression
+                }
+                
+//              std::cout << "Var1: " << m_var1 << std::endl;
+//              std::cout << "Var2: " << m_var2 << std::endl;
+        } 
+        #endif
+
+        result = std::make_pair(m_var1, m_var2);
+	
+	return result;
+}
+
+std::string Exec(const char* cmd)
+{
+	std::string err = "";
+
+//	redi::ipstream proc(cmd, redi::pstreams::pstderr);
+	redi::ipstream proc(cmd, redi::pstreams::pstdout | redi::pstreams::pstderr);
+	std::string line;
+
+	// read child's stdout
+//	while (std::getline(proc.out(), line))
+//	std::cout << "stdout: " << line << '\n';
+
+	// read child's stderr
+	while (std::getline(proc.err(), line))
+	{
+//		std::cout << "stderr: " << line << '\n';
+		err += line;
+	}
+
+	return err;
+}
+
+bool isAlertError(std::string exe_err)
+{
+	std::string var1 = "";	
+	std::string var2 = "";	
+
+	std::string delim = ",";
+        auto start = 0U;
+        auto end = exe_err.find(delim);
+
+        int count = 1;
+
+        while (end != std::string::npos)
+        {
+                if(count == 1)
+                {
+                        var1 = exe_err.substr(start, end - start);
+                }
+                else if(count == 2)
+                {
+                        var2 = exe_err.substr(start, end - start);
+                }
+
+                count++;
+
+                start = end + delim.length();
+                end = exe_err.find(delim, start);
+        }
+
+        var2 = exe_err.substr(start, end);
+
+	if(var1 == "" || var2 == "")
+	{
+		return false;
+	}
+
+	return true;
+}
+
+int timeout(int seconds)
+{
+    clock_t endwait;
+    endwait = clock () + seconds * CLOCKS_PER_SEC ;
+    while (clock() < endwait) {}
+
+    return  1;
+}
+
+std::string exeExec(const char* cmd)
+{
+        std::string err = "";
+
+        redi::ipstream proc(cmd, redi::pstreams::pstdout | redi::pstreams::pstderr);
+        std::string line, last_line;
+
+	last_line = "";
+
+        // read child's stdout
+//      while (std::getline(proc.out(), line))
+//      std::cout << "stdout: " << line << '\n';
+
+        std::size_t pos1;
+
+        // read child's stderr
+        while (std::getline(proc.err(), line))
+        {
+//              std::cout << "stderr: " << line << '\n';
+		last_line = line;
+
+                pos1 = line.find("Assertion `");  // Assumption that the error caused due to Assertion failure caused by meta variants
+
+                if (pos1 != std::string::npos)
+                        err += line;
+        }
+
+	#if 0
+	if( timeout(90) == 1 )
+	{
+//        	printf("Time Out\n");
+	        return "";
+    	}
+	#endif
+
+//	std::cout << "Err: " << err << std::endl;
+
+        std::pair<std::string, std::string> res;
+
+	if(err != "")
+	{
+		res = parseErrorMsg(err);
+        	std::string new_err = "";
+
+        	if(res.first != "")
+        	{
+                	new_err = res.first + "," + res.second;
+        	}
+
+//        	std::cout << "New Err: " << new_err << std::endl;
+        	return new_err;
+	}
+	else
+	{
+		return err;
+	}
+}
+
 int
 main(int argc, char** argv)
 {
@@ -116,7 +309,7 @@ main(int argc, char** argv)
     {
         args.config_file = default_config_file;
     }
-
+	
     YAML::Node config_data = loadYAMLFileWithCheck(args.config_file);
     std::string working_dir = config_data["working_dir"].as<std::string>();
     std::string api_fuzzer_path =
@@ -131,7 +324,7 @@ main(int argc, char** argv)
     }
 
     std::mt19937* rng = new std::mt19937(args.seed);
-    std::stringstream test_ss;
+    std::stringstream new_ss_m;
 
     YAML::Node api_fuzzer_data = loadYAMLFileWithCheck(api_fuzzer_path);
     std::vector<std::string> include_list = {
@@ -147,7 +340,7 @@ main(int argc, char** argv)
         }
     }
 
-    prepareHeader(test_ss, include_list, args, api_fuzzer_path, meta_test_path);
+    prepareHeader(new_ss_i, include_list, args, api_fuzzer_path, meta_test_path);
     std::vector<std::string> pre_setup_instrs;
     if (api_fuzzer_data["pre_setup"].IsDefined())
     {
@@ -156,19 +349,138 @@ main(int argc, char** argv)
             pre_setup_instrs.push_back(pre_setup_yaml.as<std::string>());
         }
     }
-    mainPreSetup(test_ss, pre_setup_instrs);
+    mainPreSetup(new_ss_i, pre_setup_instrs);
 
     std::unique_ptr<ApiFuzzerNew> api_fuzzer (
         new ApiFuzzerNew(api_fuzzer_path, meta_test_path, args.seed, rng));
     for (std::string instr : api_fuzzer->getInstrStrs())
     {
-        writeLine(test_ss, instr);
+        writeLine(new_ss_m, instr);
     }
 
-    mainPostSetup(test_ss);
+    mainPostSetup(new_ss_p);
 
     std::ofstream ofs;
     ofs.open(args.output_file);
-    ofs << test_ss.rdbuf();
+    ofs << new_ss_i.str();
+    ofs << new_ss_m.str();
+    ofs << new_ss_p.str();
     ofs.close();
+
+//    api_fuzzer->tree.traverse();
+
+    #if REDUCE 
+    // Code Added by Pritam
+
+    std::string compile_bin = config_data["meta_runner"]["test_compile_bin"].as<std::string>();
+    std::string compile_dir = working_dir + config_data["meta_runner"]["test_compile_dir"].as<std::string>();
+
+   // Extracting the test object for execution using string manipulations
+ 
+    std::string delim = "/";
+
+    auto start = 0U;
+    auto end = args.output_file.find(delim);
+    while (end != std::string::npos)
+    {
+        start = end + delim.length();
+        end = args.output_file.find(delim, start);
+    }
+
+    std::string testcase = args.output_file.substr(start, end);	
+ 
+    delim = ".";
+
+    start = 0U;
+    end = testcase.find(delim);
+
+    std::string testobj = testcase.substr(start, end);	
+
+   // Compiling the Test Case
+
+    std::string compile_cmd = compile_dir + "/" + compile_bin + " " + args.output_file;
+
+    command = compile_cmd.c_str();
+
+   // Executing the Test Case
+
+    std::string execute_cmd = compile_dir + "/" + testobj;
+       	
+    exe_command = execute_cmd.c_str();
+
+    std::string compile_err, exe_err;
+
+    std::pair<std::string, std::string> res;	
+
+//    std::cout << "Exe: " << exe_command << std::endl;
+
+    compile_err = Exec(command);
+    exe_err = exeExec(exe_command);
+
+//    std::cout << "Compile Error: " << compile_err << std::endl;
+//    std::cout << "Execution Error: " << exe_err << std::endl;
+
+    if(compile_err == "" && exe_err == "")
+    {
+        std::cout << "No Error\n";
+    }			
+    else	
+    {
+	if(compile_err != "")
+	{
+	        std::cout << "Compile Error: " << compile_err << std::endl;
+	}
+	else if(compile_err == "" && exe_err != "") //Compilation is successful and execution fails
+	{
+	        std::cout << "Execution Error: " << exe_err << std::endl;
+
+		std::vector<const ApiInstructionInterface*> list_inst, input_inst;
+
+		input_inst = api_fuzzer->InputInstrs;
+    
+		for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
+		{
+			writeLine(new_ss_mi, (*it)->toStr());
+		}
+
+		if(exe_err != "") // Execution failed but not because of the assertion failure
+		{
+			std::vector<const ApiInstructionInterface*> O_RED, O_FUZ_IP;
+			std::vector<const ApiObject*> O_MVAR;
+
+			while(true)
+			{
+				O_MVAR = MVAR;
+				O_RED = RED;
+				O_FUZ_IP = FUZ_IP;
+
+				MVAR = api_fuzzer->verticalReduction(compile_err, exe_err, MVAR, args.output_file); // Reducing the MetaTests/Meta Variants
+
+				// Reducing number of meta relations 
+
+				api_fuzzer->MHReduceInstrPrep(compile_err, exe_err, args.output_file); // Reducing Meta Relations
+
+				api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file); // Fuzzer Reduction
+
+				api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file); // Fine-grained Fuzzer Reduction
+
+				api_fuzzer->replaceMetaInputVariables(compile_err, exe_err, args.output_file); // Elimination Meta Input Variables
+
+				api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, args.output_file); // Simplifying Meta Relations
+
+				if(O_MVAR == MVAR && O_RED == RED && O_FUZ_IP == FUZ_IP)
+				{
+					break;
+				}
+			}
+		}
+		#if 0	
+		else
+                {
+                        std::cout << "Not an assertion failure" << std::endl;
+                }
+		#endif
+	  }	
+      }	
+    #endif
 }

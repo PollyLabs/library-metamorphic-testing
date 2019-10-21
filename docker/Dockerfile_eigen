@@ -1,0 +1,33 @@
+FROM alascu/metalib:base_eigen
+
+RUN \
+    git clone https://github.com/PollyLabs/library-metamorphic-testing.git && \
+    cd library-metamorphic-testing && git checkout eigen
+
+# Set workdir to repo location
+WORKDIR /home/library-metamorphic-testing
+
+# Setup output folder and link
+RUN mkdir /output && ln -s /output ./output
+
+# Copy config file template over and update paths
+RUN \
+    sed 's|<work_dir>|'`pwd`'\/|' \
+        < ./config_files/config.yaml.template \
+        > ./config_files/config_eigen.yaml && \
+    sed -i 's|<lib>|eigen_matrix|g' ./config_files/config_eigen.yaml && \
+    sed -i 's|lib_path:.*|lib_path: "/home/eigen/"|' ./config_files/config_eigen.yaml && \
+    sed -i 's|include_path:.*|include_path: "/home/eigen"|' ./config_files/config_eigen.yaml && \
+    sed -i 's|lib_build_dir:.*|lib_build_dir: "/home/eigen"|' ./config_files/config_eigen.yaml && \
+    sed -i 's|test_compile_bin:.*|test_compile_bin: "./compile_eigen.sh"|' ./config_files/config_eigen.yaml && \
+    sed -i 's|default_timeout:.*|default_timeout: 120|' ./config_files/config_eigen.yaml && \
+    ln -s `pwd`/scripts/compile/compile_eigen.sh ./out/compile_eigen.sh
+
+ENV \
+    CPATH="/home/eigen"
+
+# Build project
+RUN mkdir build && cd build && cmake .. && make -j4
+
+# Set command to run experiments
+CMD ["python3.7", "./scripts/meta_runner.py", "--config-file", "./config_files/config_eigen.yaml", "continuous", "--append-id"]

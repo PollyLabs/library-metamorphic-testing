@@ -1,0 +1,171 @@
+includes:
+    - "Eigen/Dense"
+    - "testing/eigen-matrix-helpers.h"
+
+pre_setup:
+##    - "typedef Eigen::Matrix<float,Dynamic,Dynamic> Eigen::MatrixXf;"
+
+inputs:
+    - name: 'var2'
+      descriptor: '<unsigned int=range=[1,10000]>'
+    - name: 'size'
+      descriptor: '<unsigned int=range=[10,10]>'
+    - name: 'depth_max'
+      descriptor: '<unsigned int=val=15>'
+    - name: 'Dynamic'
+      descriptor: '<unsigned int=range=[1,10]>'
+
+types:
+    - name: 'Eigen::MatrixXf'
+
+funcs:
+    - name: 'operator-'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []
+    - name: 'operator+'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []
+    - name: 'operator=='
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'bool'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []
+    - name: 'operator*'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []
+    - name: 'operator*'
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['int']
+      conditions: []
+    - name: 'operator*'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['int', 'Eigen::MatrixXf']
+      conditions: []
+    - name: 'getIdentity'
+      return_type: 'Eigen::MatrixXf'
+      param_types: []
+      conditions: []	
+      special: true
+    - name: 'setIdentity'
+      return_type: 'bool'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []	
+      special: true
+    - name: 'rows'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'unsigned int'
+      param_types: []
+      conditions: []	
+    - name: 'cols'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'unsigned int'
+      param_types: []
+      conditions: []	
+    - name: 'resize'	
+      enclosing_class: 'Eigen::MatrixXf'
+      param_types: ['unsigned int', 'unsigned int']
+      conditions: []	
+      special: true
+    - name: 'transpose'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: []
+      conditions: []	
+    - name: 'eval'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'Eigen::MatrixXf'
+      param_types: []
+      conditions: []	
+##    - name: 'adjoint'	
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: []
+##      conditions: []	
+##    - name: 'inverse'	
+##      enclosing_class: 'Eigen::MatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: []
+##      conditions: []	
+    - name: 'Inverse'	
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['Eigen::MatrixXf']
+      conditions: []	
+    - name: 'determinant'	
+      enclosing_class: 'Eigen::MatrixXf'
+      return_type: 'int'
+      param_types: []
+      conditions: []	
+    - name: 'getMinusOne'
+      return_type: 'int'
+      param_types: []
+      conditions: []	
+      special: true
+    - name: 'getInteger'
+      return_type: 'int'
+      param_types: ['int']
+      conditions: []	
+      special: true
+    - name: 'assert'
+      return_type: 'bool'
+      param_types: ['bool']
+      conditions: []
+      special: true
+##    - name: 'addMatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
+##      conditions: []
+##      special: true
+##    - name: 'subMatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
+##      conditions: []
+##    - name: 'mulMatrixXf'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['Eigen::MatrixXf', 'Eigen::MatrixXf']
+##      conditions: []
+
+constructors:
+    - name: 'Eigen::MatrixXf::Random'
+      return_type: 'Eigen::MatrixXf'
+      param_types: ['<unsigned int=val=3>', '<unsigned int=val=3>']
+##    - name: 'Eigen::MatrixXf::Random'
+##      return_type: 'Eigen::MatrixXf'
+##      param_types: ['<var=input=Dynamic>', '<var=input=Dynamic>']
+
+set_gen:
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'operator*'
+      target: '<special=output_var=>'
+      return: '<special=output_var=>'
+      func_params:
+        - '<var=new=Eigen::MatrixXf>'
+##        - '<special=output_var=>'
+    - type: 'for'
+      counter: '[0,<var=input=size>)'
+      func: 'operator+'
+      target: '<special=output_var=>'
+      return: '<special=output_var=>'
+      func_params:
+        - '<var=new=Eigen::MatrixXf>'
+##        - '<special=output_var=>'
+    - type: 'func'
+      func: 'Inverse'
+      return: '<special=output_var=>'
+      func_params:
+##        - '<var=new=Eigen::MatrixXf>'
+        - '<special=output_var=>'
+    - type: 'func'
+      func: 'operator-'
+      target: '<special=output_var=>'
+      return: '<special=output_var=>'
+      func_params:
+        - '<var=new=Eigen::MatrixXf>'
+##        - '<special=output_var=>'

@@ -85,6 +85,16 @@ class SetMetaTesterNew {
         {
             return this->curr_meta_variant;
         };
+	
+        std::vector<const MetaTest*> getMetaTests()
+	{
+		return meta_tests;
+	};
+
+	const std::vector<const MetaRelation*> getRelations()
+	{
+		return relations;
+	}
 
     private:
         void initMetaRels(std::map<std::string, std::set<std::string>>&, YAML::Node);
@@ -93,8 +103,7 @@ class SetMetaTesterNew {
         bool addMetaTest(MetaTest* expr);
         const MetaRelation* getConcreteMetaRel(std::string, const ApiObject*,
             std::vector<const ApiObject*>, bool) const;
-        std::vector<const ApiInstructionInterface*> testToApiInstrs(
-            const MetaTest*) const;
+        std::vector<const ApiInstructionInterface*> testToApiInstrs(const MetaTest*) const;
         void finalizeTest(MetaTest*) const;
 };
 
