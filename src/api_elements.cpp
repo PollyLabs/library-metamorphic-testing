@@ -1,5 +1,6 @@
 #include "api_elements.hpp"
 
+
 std::map<std::string, std::vector<char>> char_set =
     {
      {"numeric", {'0','1','2','3','4','5','6','7','8','9'}},
@@ -899,6 +900,8 @@ std::vector<const ApiInstructionInterface*> DependenceTree::traverse()
 
 	for(std::vector<NodeT*>::iterator it = roots.begin(); it != roots.end(); it++)
 	{
+//		std::cout << "Traversing the SubTree of the Root: " << (*it)->var->toStr() << std::endl;
+
 		temp = traverseSubTree(*it);
 
 		for(std::vector<const ApiInstructionInterface*>::iterator vit = temp.begin(); vit != temp.end(); vit++)
@@ -971,6 +974,9 @@ std::vector<const ApiInstructionInterface*> DependenceTree::traverseEdgeInSubTre
 
 	std::vector<const ApiInstructionInterface*> inst, temp;
 
+//	std::cout << "Traversing Depth First"<< std::endl;
+//	printEdge(edge);
+
 	for(std::vector<NodeT*>::iterator it = nodes.begin(); it != nodes.end(); it++)
 	{	
 		if((*it)->id == -1)
@@ -1000,6 +1006,11 @@ std::vector<const ApiInstructionInterface*> DependenceTree::traverseEdgeInSubTre
 	}
 	
 	inst.push_back(edge->instr);
+
+//	std::cout << "End of Depth First: " << inst.size() << std::endl;
+//	printEdge(edge);
+//	printVectorApiInstructions(inst);
+//	std::cout << "End End" << std::endl;
 
 	return inst;
 }
@@ -1085,7 +1096,7 @@ void printEdge(EdgeT* edge)
 {
 	if(edge->src->id != -1)
 	{
-		std::cout << "Edge Src: " << edge->src->var->toStr() << std::endl;
+//		std::cout << "Edge Src: " << edge->src->var->toStr() << std::endl;
 	}
 
 	std::vector<NodeT*> nodes = edge->dests;
@@ -1094,7 +1105,7 @@ void printEdge(EdgeT* edge)
 	{
 		if((*it)->id != -1)
 		{
-			std::cout << "Edge Dest: " << (*it)->var->toStr() << std::endl;
+//			std::cout << "Edge Dest: " << (*it)->var->toStr() << std::endl;
 		}
 	}
 

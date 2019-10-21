@@ -7,8 +7,6 @@
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 
-#include "api_fuzzer.hpp"
-
 extern const char *command, *exe_command;
 
 enum Modes {

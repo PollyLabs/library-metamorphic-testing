@@ -1,4 +1,4 @@
-#include "test_emitter.hpp"
+#include "reduction.hpp"
 
 #include <system_error>
 #include <pstream.h>
@@ -299,6 +299,11 @@ std::string exeExec(const char* cmd)
 	}
 }
 
+#ifdef EXPORT_IN_MAIN
+	BOOST_CLASS_EXPORT(ApiFuzzerNew)
+#endif
+
+
 int
 main(int argc, char** argv)
 {
@@ -324,7 +329,7 @@ main(int argc, char** argv)
     }
 
     std::mt19937* rng = new std::mt19937(args.seed);
-    std::stringstream new_ss_m;
+    std::stringstream new_ss;
 
     YAML::Node api_fuzzer_data = loadYAMLFileWithCheck(api_fuzzer_path);
     std::vector<std::string> include_list = {
@@ -351,11 +356,11 @@ main(int argc, char** argv)
     }
     mainPreSetup(new_ss_i, pre_setup_instrs);
 
-    std::unique_ptr<ApiFuzzerNew> api_fuzzer (
+    std::shared_ptr<ApiFuzzerNew> api_fuzzer (
         new ApiFuzzerNew(api_fuzzer_path, meta_test_path, args.seed, rng));
     for (std::string instr : api_fuzzer->getInstrStrs())
     {
-        writeLine(new_ss_m, instr);
+        writeLine(new_ss, instr);
     }
 
     mainPostSetup(new_ss_p);
@@ -363,13 +368,13 @@ main(int argc, char** argv)
     std::ofstream ofs;
     ofs.open(args.output_file);
     ofs << new_ss_i.str();
-    ofs << new_ss_m.str();
+    ofs << new_ss.str();
     ofs << new_ss_p.str();
     ofs.close();
 
 //    api_fuzzer->tree.traverse();
 
-    #if REDUCE 
+    #if 0 // REDUCE 
     // Code Added by Pritam
 
     std::string compile_bin = config_data["meta_runner"]["test_compile_bin"].as<std::string>();
@@ -434,52 +439,41 @@ main(int argc, char** argv)
 	{
 	        std::cout << "Execution Error: " << exe_err << std::endl;
 
+		Reduction* reduction = new Reduction();
+		reduction->api_fuzzer = api_fuzzer;
+
 		std::vector<const ApiInstructionInterface*> list_inst, input_inst;
 
 		input_inst = api_fuzzer->InputInstrs;
     
-		for(std::vector<const ApiInstructionInterface*>::iterator it = input_inst.begin(); it != input_inst.end(); it++)
-		{
-			writeLine(new_ss_mi, (*it)->toStr());
-		}
+		std::vector<const ApiInstructionInterface*> O_RED, O_FUZ_IP;
+		std::vector<const ApiObject*> O_MVAR;
 
-		if(exe_err != "") // Execution failed but not because of the assertion failure
+		while(true)
 		{
-			std::vector<const ApiInstructionInterface*> O_RED, O_FUZ_IP;
-			std::vector<const ApiObject*> O_MVAR;
+			O_MVAR = reduction->api_fuzzer->MVAR;
+			O_RED = reduction->api_fuzzer->RED;
+			O_FUZ_IP = reduction->api_fuzzer->FUZ_IP;
 
-			while(true)
+			reduction->api_fuzzer->MVAR = reduction->verticalReduction(compile_err, exe_err, reduction->api_fuzzer->MVAR, args.output_file); // Reducing the MetaTests/Meta Variants
+
+			// Reducing number of meta relations 
+
+			reduction->MHReduceInstrPrep(compile_err, exe_err, args.output_file); // Reducing Meta Relations
+
+			reduction->fuzzerReduction(compile_err, exe_err, args.output_file); // Fuzzer Reduction
+
+			reduction->reduceSubTree(compile_err, exe_err, args.output_file); // Fine-grained Fuzzer Reduction
+
+			//				reduction->replaceMetaInputVariables(compile_err, exe_err, args.output_file); // Elimination Meta Input Variables
+
+			reduction->simplifyMetaRelationsPrep(compile_err, exe_err, args.output_file); // Simplifying Meta Relations
+
+			if(O_MVAR == reduction->api_fuzzer->MVAR && O_RED == reduction->api_fuzzer->RED && O_FUZ_IP == reduction->api_fuzzer->FUZ_IP)
 			{
-				O_MVAR = MVAR;
-				O_RED = RED;
-				O_FUZ_IP = FUZ_IP;
-
-				MVAR = api_fuzzer->verticalReduction(compile_err, exe_err, MVAR, args.output_file); // Reducing the MetaTests/Meta Variants
-
-				// Reducing number of meta relations 
-
-				api_fuzzer->MHReduceInstrPrep(compile_err, exe_err, args.output_file); // Reducing Meta Relations
-
-				api_fuzzer->fuzzerReduction(compile_err, exe_err, args.output_file); // Fuzzer Reduction
-
-				api_fuzzer->reduceSubTree(compile_err, exe_err, args.output_file); // Fine-grained Fuzzer Reduction
-
-				api_fuzzer->replaceMetaInputVariables(compile_err, exe_err, args.output_file); // Elimination Meta Input Variables
-
-				api_fuzzer->simplifyMetaRelationsPrep(compile_err, exe_err, args.output_file); // Simplifying Meta Relations
-
-				if(O_MVAR == MVAR && O_RED == RED && O_FUZ_IP == FUZ_IP)
-				{
-					break;
-				}
+				break;
 			}
 		}
-		#if 0	
-		else
-                {
-                        std::cout << "Not an assertion failure" << std::endl;
-                }
-		#endif
 	  }	
       }	
     #endif

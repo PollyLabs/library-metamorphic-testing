@@ -5,6 +5,7 @@
 #include <string>
 #include <cassert>
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <random>
 #include <set>
@@ -160,6 +161,7 @@ class ExplicitType : public ApiType {
 };
 
 class ApiObject {
+
     protected:
         const size_t id;
         const std::string name;
@@ -632,4 +634,5 @@ void printVectorApiObjects(std::vector<const ApiObject*> var);
 void printVectorApiInstructions(std::vector<const ApiInstructionInterface*> instr);
 void printVectorEdges(std::vector<EdgeT*> edges);
 void printEdge(EdgeT* edge);
+
 #endif

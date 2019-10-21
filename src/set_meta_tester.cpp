@@ -154,9 +154,9 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
     original_simplified_mapping vecs;
     std::vector<const MetaRelation*> rel_temp1, rel_temp2;
 
-    if(mvar_relations.find(meta_variant_var) != mvar_relations.end())
+    if(this->fuzzer->mvar_relations.find(meta_variant_var) != this->fuzzer->mvar_relations.end())
    {	
-	vecs = mvar_relations[meta_variant_var];
+	vecs = this->fuzzer->mvar_relations[meta_variant_var];
 
     	rel_temp1 = vecs.first;
         rel_temp2 = vecs.second;
@@ -167,7 +167,7 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
 		rel_temp2.push_back(simp_res);
 
 		vecs = std::make_pair(rel_temp1, rel_temp2);
-		mvar_relations[meta_variant_var] = vecs;
+		this->fuzzer->mvar_relations[meta_variant_var] = vecs;
         }
     }
     else	
@@ -176,7 +176,7 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
 	rel_temp2.push_back(simp_res);
 
 	vecs = std::make_pair(rel_temp1, rel_temp2);
-	mvar_relations[meta_variant_var] = vecs;
+	this->fuzzer->mvar_relations[meta_variant_var] = vecs;
     }
 		
     #if 0	
