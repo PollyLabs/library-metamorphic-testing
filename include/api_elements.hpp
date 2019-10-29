@@ -26,6 +26,7 @@ enum PrimitiveTypeEnum {
     CHAR_SYMBOL,
     NQSTRING,
     STRING,
+    STDSTRING,
     UINT,
     INT,
     LONG,

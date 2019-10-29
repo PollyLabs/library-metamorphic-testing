@@ -36,6 +36,7 @@ addPrimitiveTypes(ApiFuzzerNew* afn)
 {
     afn->addType(new PrimitiveType("int"));
     afn->addType(new PrimitiveType("long"));
+    afn->addType(new PrimitiveType("std::string"));
 }
 
 void
@@ -61,6 +62,15 @@ addLibFunc(std::string name, std::string enclosing_class_name,
     bool special = false;
     if (return_type_name.compare("void"))
     {
+        size_t class_pos = return_type_name.find("class");
+        if (class_pos != std::string::npos)
+        {
+            return_type_name = return_type_name.erase(class_pos, sizeof("class"));
+            while (std::isspace(return_type_name[0]))
+            {
+                return_type_name = return_type_name.substr(1);
+            }
+        }
         return_type = getFuzzer()->getTypeByName(return_type_name);
     }
     else
@@ -198,6 +208,13 @@ resetApiObjs(std::set<std::pair<std::string, std::string>> init_vars)
         addLibDeclaredObj(new_var.first, new_var.second);
     }
 }
+
+int
+generateRand(int min, int max)
+{
+    return getFuzzer()->getRandInt(min, max);
+}
+
 
 } // namespace clang
 } // namespace fuzzer

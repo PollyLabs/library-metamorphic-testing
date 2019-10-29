@@ -1669,6 +1669,8 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
     std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
         ctor_func_candidates = this->filterFuncs(
             &ApiFunc::hasReturnType, obj_type);
+    ctor_func_candidates = filterFuncList(ctor_func_candidates,
+        &ApiFunc::checkFlag, std::string("!special"));
     if (this->depth >= this->max_depth)
     {
         logDebug(fmt::format("Reached max depth creating object type `{}`"
@@ -1682,8 +1684,8 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
     }
     else
     {
-        ctor_func_candidates = filterFuncList(ctor_func_candidates,
-            &ApiFunc::checkFlag, std::string("!special"));
+        //ctor_func_candidates = filterFuncList(ctor_func_candidates,
+            //&ApiFunc::checkFlag, std::string("!special"));
         ctor_func_candidates = filterFuncList(ctor_func_candidates,
             &ApiFunc::checkFlag, std::string("!max_depth"));
         std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>

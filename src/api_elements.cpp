@@ -15,6 +15,7 @@ std::map<std::string, std::vector<char>> char_set =
 std::map<std::string, PrimitiveTypeEnum> primitives_map = {
     { "char", CHAR },
     { "string", STRING },
+    { "std::string", STDSTRING },
     { "nqstring", NQSTRING },
     { "unsigned int", UINT },
     { "int", INT},

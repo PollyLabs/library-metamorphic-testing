@@ -22,6 +22,8 @@ std::string generateMetaTestInstructions(std::vector<std::string>&,
     const std::string&, const std::string&, const std::string&, size_t);
 void resetApiObjs(std::set<std::pair<std::string, std::string>>);
 
+int generateRand(int, int);
+
 } // namespace clang
 } // namespace fuzzer
 
