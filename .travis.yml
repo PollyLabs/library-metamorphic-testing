@@ -10,8 +10,11 @@ addons:
 git:
     depth: 1
 
+before_install:
+    - sudo apt-get remove --purge cmake
+
 script:
     - mkdir build
     - cd build
-    - cmake ..
-    - make
+    - cmake -G Ninja ..
+    - ninja
