@@ -4,7 +4,8 @@ compiler: clang
 dist: bionic
 addons:
     snaps:
-        - cmake
+        - name: cmake
+          confinement: classic
 
 git:
     depth: 1
