@@ -2,6 +2,9 @@
 language: c++
 compiler: clang
 dist: bionic
+addons:
+    snaps:
+        - cmake
 
 git:
     depth: 1
