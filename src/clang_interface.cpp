@@ -55,23 +55,14 @@ addLibFunc(std::string name, std::string enclosing_class_name,
     std::transform(param_type_names.begin(), param_type_names.end(),
         std::back_inserter(param_types), [](std::string type_name)
         {
-            return getFuzzer()->getTypeByName(type_name);
+            return getFuzzer()->getTypeByName(cleanTypeName(type_name));
         });
 
     const ApiType* return_type = nullptr;
     bool special = false;
     if (return_type_name.compare("void"))
     {
-        size_t class_pos = return_type_name.find("class");
-        if (class_pos != std::string::npos)
-        {
-            return_type_name = return_type_name.erase(class_pos, sizeof("class"));
-            while (std::isspace(return_type_name[0]))
-            {
-                return_type_name = return_type_name.substr(1);
-            }
-        }
-        return_type = getFuzzer()->getTypeByName(return_type_name);
+        return_type = getFuzzer()->getTypeByName(cleanTypeName(return_type_name));
     }
     else
     {
@@ -213,6 +204,29 @@ int
 generateRand(int min, int max)
 {
     return getFuzzer()->getRandInt(min, max);
+}
+
+std::string
+cleanTypeName(std::string type_name)
+{
+    std::vector<std::string> remove_decl_vec {"class", "const", "&"};
+    for (std::string remove_decl : remove_decl_vec)
+    {
+        size_t class_pos = type_name.find(remove_decl);
+        if (class_pos != std::string::npos)
+        {
+            type_name = type_name.erase(class_pos, remove_decl.length());
+        }
+    }
+    while (std::isspace(type_name.front()))
+    {
+        type_name = type_name.erase(0, 1);
+    }
+    while (std::isspace(type_name.back()))
+    {
+        type_name.pop_back();
+    }
+    return type_name;
 }
 
 

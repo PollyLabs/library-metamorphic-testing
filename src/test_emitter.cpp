@@ -4,8 +4,8 @@ static unsigned int indent = 0;
 const std::string default_config_file =
     "/home/sentenced/Documents/Internships/2018_ETH/work/sets/config_files/config_isl.yaml";
 
-//bool DEBUG = true;
-bool DEBUG = false;
+bool DEBUG = true;
+//bool DEBUG = false;
 bool META_TESTING = true;
 
 std::map<std::string, Modes> string_to_mode {

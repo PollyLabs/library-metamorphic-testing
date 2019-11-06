@@ -1,5 +1,5 @@
 ---
-working_dir: "/home/sentenced/Documents/Internships/2018_ETH/work/sets/"
+working_dir: "/home/sentenced/Documents/Internships/2018_ETH/work/testing_functional/"
 api_fuzzer_file: "./config_files/isl/api_fuzzer_isl.yaml"
 meta_test_file: "./config_files/isl/set_meta_tests_isl.yaml"
 test_emitter_output_file: "./out/test.cpp"

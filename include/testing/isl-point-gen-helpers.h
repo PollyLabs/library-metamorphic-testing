@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cassert>
 #include <vector>
 #include "isl-noexceptions.h"
 
+//__attribute__((annotate("expose")))
 isl::point
 get_point_with_coordinates(isl::space point_space, isl::val val0,
     isl::val val1, isl::val val2, isl::val val3, isl::val val4, isl::val val5,
