@@ -12,6 +12,7 @@ git:
 
 before_install:
     - sudo apt-get remove --purge cmake
+    - sudo apt-get install -y ninja-build
 
 script:
     - mkdir build
