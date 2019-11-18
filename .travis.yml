@@ -17,5 +17,5 @@ before_install:
 script:
     - mkdir build
     - cd build
-    - cmake -G Ninja ..
+    - /snap/bin/cmake -G Ninja ..
     - ninja
