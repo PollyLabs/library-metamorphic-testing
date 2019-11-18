@@ -12,14 +12,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 cmake_policy(SET CMP0077 NEW)
 set(BUILD_SHARED_LIBS ON)
-set(YAML_BUILD_SHARED_LIBS ON)
+#set(YAML_BUILD_SHARED_LIBS ON)
 add_subdirectory("./third_party/fmt")
 add_subdirectory("./third_party/yaml-cpp")
-
-#find_package(LLVM REQUIRED CONFIG)
-#find_package(Clang REQUIRED)
-#include_directories(${LLVM_INCLUDE_DIRS})
-#add_definitions(${LLVM_DEFINITIONS})
 
 include_directories("${INCLUDE_DIR}")
 link_directories("${LIB_DIR}")

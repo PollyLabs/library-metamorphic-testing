@@ -1,8 +1,6 @@
 #ifndef _CLANG_INTERFACE_HPP
 #define _CLANG_INTERFACE_HPP
 
-#include "clang/AST/Type.h"
-
 #include "api_fuzzer.hpp"
 
 namespace fuzzer {
