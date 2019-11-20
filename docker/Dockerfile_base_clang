@@ -1,0 +1,12 @@
+FROM alascu/metalib:base
+
+RUN \
+    git clone -b llvmorg-8.0.0 --single-branch https://github.com/llvm/llvm-project && \
+    mkdir llvm-build llvm-install && cd llvm-build && \
+    cmake -G "Ninja" \
+        -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;libcxx;libcxxabi' \
+        -DCMAKE_BUILD_TYPE=MinSizeRel \
+        -DLLVM_BUILD_LLVM_DYLIB=ON \
+        -DCMAKE_INSTALL_PREFIX=`pwd`/../llvm-install \
+        ../llvm-project/llvm/ && \
+    ninja -j6 && ninja install && cd .. && rm -rf llvm-project llvm-build
