@@ -18,8 +18,9 @@ std::map<std::string, PrimitiveTypeEnum> primitives_map = {
     { "std::string", STDSTRING },
     { "nqstring", NQSTRING },
     { "unsigned int", UINT },
-    { "int", INT},
-    { "long", LONG},
+    { "int", INT },
+    { "long", LONG },
+    { "double", DOUBLE },
     { "bool", BOOL },
 };
 

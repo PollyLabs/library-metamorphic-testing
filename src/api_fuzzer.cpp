@@ -171,14 +171,26 @@ int
 ApiFuzzer::getRandInt(int min, int max)
 {
     assert(max >= min);
-    return (*this->rng)() % (max - min + 1) + min;
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(*this->rng);
+    //return (*this->rng)() % (max - min + 1) + min;
 }
 
 long
 ApiFuzzer::getRandLong(long min, long max)
 {
     assert(max >= min);
-    return (*this->rng)() % (max - min + 1) + min;
+    std::uniform_int_distribution<long> dist(min, max);
+    return dist(*this->rng);
+    //return (*this->rng)() % (max - min + 1) + min;
+}
+
+double
+ApiFuzzer::getRandDouble(double min, double max)
+{
+    assert(max >= min);
+    std::uniform_real_distribution<> dist(min, max);
+    return dist(*this->rng);
 }
 
 unsigned int
@@ -1877,6 +1889,15 @@ ApiFuzzerNew::parseDescriptor<long>(std::string descriptor)
 }
 
 template<>
+double
+ApiFuzzerNew::parseDescriptor<double>(std::string descriptor)
+{
+    std::pair<double, double> double_range = this->parseRange(descriptor);
+    return this->getRandDouble(double_range.first, double_range.second);
+}
+
+
+template<>
 std::string
 ApiFuzzerNew::parseDescriptor<std::string>(std::string descriptor)
 {
@@ -1974,7 +1995,8 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
                 std::string("all"));
         }
         case INT:
-        case LONG: {
+        case LONG:
+        case DOUBLE: {
             std::string range = "[-10,10]";
             range = fmt::format("{}range{}{}{}", delim_front, delim_mid,
                 range, delim_back);
@@ -2040,6 +2062,10 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
         case LONG: {
             return this->generatePrimitiveObject<long>(obj_type,
                 obj_type->toStr(), this->parseDescriptor<long>(descriptor));
+        }
+        case DOUBLE: {
+            return this->generatePrimitiveObject<double>(obj_type,
+                obj_type->toStr(), this->parseDescriptor<double>(descriptor));
         }
         case BOOL:
         default:

@@ -30,6 +30,7 @@ enum PrimitiveTypeEnum {
     UINT,
     INT,
     LONG,
+    DOUBLE,
     BOOL,
 };
 
@@ -48,7 +49,6 @@ class ApiObject;
 class ApiFunc;
 class MetaRelation;
 class MetaVarObject;
-
 struct ApiFunctionElems {
     const ApiObject* result;
     const ApiObject* class_instance;
