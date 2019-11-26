@@ -7,10 +7,11 @@ RUN \
     git clone git://repo.or.cz/isl.git && \
     cd isl && git checkout maint && ./autogen.sh && \
     CFLAGS="-fprofile-arcs -ftest-coverage" ./configure \
-        --with-clang=system --prefix=`pwd`/../isl-install && \
+        --with-clang=system --prefix=$(readlink -f $(pwd)/../isl-install) && \
     make -j6 && make install && cd .. && rm -rf isl
 
 RUN \
+    apt-get install -y pkg-config && \
     git clone --recursive https://github.com/0152la/SpecAST && cd SpecAST && \
     cd third_party/library-metamorphic-testing/ && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=Release -DMETALIB_LIB_ONLY=ON -DYAML_BUILD_SHARED_LIBS=ON .. && \
