@@ -1,13 +1,13 @@
-FROM alascu/metalib:base_clang_8
+FROM alascu/metalib:base_clang
 
 # Get and build isl with coverage info
 RUN \
-    apt-get install -y automake libtool libgmp-dev llvm libclang-dev && \
+    apt-get install -y automake libtool libgmp-dev && \
     pip3 install pyyaml && \
     git clone git://repo.or.cz/isl.git && \
     cd isl && git checkout maint && ./autogen.sh && \
     CFLAGS="-fprofile-arcs -ftest-coverage" ./configure \
-        --with-clang=system --prefix=$(readlink -f $(pwd)/../isl-install) && \
+        --prefix=$(readlink -f $(pwd)/../isl-install) && \
     make -j6 && make install && cd .. && rm -rf isl
 
 RUN \
@@ -23,3 +23,12 @@ RUN \
             -DCMAKE_C_COMPILER=/home/llvm-install/bin/clang \
             -DCMAKE_CXX_COMPILER=/home/llvm-install/bin/clang++ .. && \
     ninja -j4
+
+RUN \
+    cd SpecAST && \
+    curl www.doc.ic.ac.uk/~al2510/SpecASTInputs/isl_point.tar --output isl_point.tar && \
+    tar -xf isl_point.tar && rm isl_point.tar && cd isl_point && \
+    mkdir build && cd build && \
+    PKG_CONFIG_PATH=/home/isl-install/lib/pkgconfig \
+        cmake -G Ninja -DLLVM_INSTALL_LOC=/home/llvm-install .. && \
+    cd ../../ && ln -s ./isl_point/build/compile_commands.json

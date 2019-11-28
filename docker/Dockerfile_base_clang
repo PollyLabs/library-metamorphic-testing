@@ -10,3 +10,6 @@ RUN \
         -DCMAKE_INSTALL_PREFIX=`pwd`/../llvm-install \
         ../llvm-project/llvm/ && \
     ninja -j6 && ninja install && cd .. && rm -rf llvm-project llvm-build
+
+ENV \
+    LD_LIBRARY_PATH=/home/llvm-install/lib
