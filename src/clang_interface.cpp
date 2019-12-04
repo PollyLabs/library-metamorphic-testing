@@ -48,6 +48,14 @@ addLibType(std::string name)
 }
 
 void
+addLibTemplateType(std::string name, size_t template_count)
+{
+    getFuzzer()->addType(new TemplateType(name, template_count));
+    logDebug(fmt::format("Added lib template type {} with {} template params",
+        name, template_count));
+}
+
+void
 addLibFunc(std::string name, std::string enclosing_class_name,
     std::string return_type_name, std::vector<std::string> param_type_names,
     bool statik, bool ctor)
@@ -91,7 +99,7 @@ void
 addLibDeclaredObj(std::string name, std::string type_name)
 {
     const ApiObject* new_obj = getFuzzer()->addNewNamedObj(name,
-        getFuzzer()->getTypeByName(type_name));
+        getFuzzer()->getTypeByName(cleanTypeName(type_name)));
     new_obj->setDeclared();
     logDebug(fmt::format("Added lib obj {}", new_obj->toStrWithType()));
     //std::cout << new_obj->toStrWithType() << std::endl;

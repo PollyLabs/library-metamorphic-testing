@@ -373,6 +373,7 @@ ApiFuzzer::getTypeByName(std::string type_check) const
         std::cout << "\t" << type->toStr() << std::endl;
     }
     assert(false);
+    return nullptr;
 }
 
 const ApiObject*
@@ -1659,6 +1660,7 @@ ApiFuzzerNew::retrieveExplicitObject(const ExplicitType* expl_type)
         fmt::format("Not implemented explicit object generation for type {}",
             expl_type->getDefinition()));
     assert(false);
+    return nullptr;
 }
 
 const ApiObject*
@@ -2007,6 +2009,7 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
                 fmt::format("`{}` type enum default value not implemented.",
                 obj_type->toStr()));
             assert(false);
+            return nullptr;
     }
 }
 
@@ -2072,6 +2075,7 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
             CHECK_CONDITION(false, fmt::format("`{}` type enum not implemented.",
                 obj_type->toStr()));
             assert(false);
+            return nullptr;
     }
 }
 
@@ -2372,6 +2376,7 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
                         range_obj->getType()->toStr()));
         }
         assert(false);
+        return -1;
     }
     else
     {
@@ -2387,6 +2392,7 @@ ApiFuzzerNew::parseRangeSubstr(std::string range_substr)
         return atoi(range_substr.c_str());
     }
     assert(false);
+    return -1;
 }
 
 /**

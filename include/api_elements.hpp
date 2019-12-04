@@ -32,6 +32,7 @@ enum PrimitiveTypeEnum {
     LONG,
     DOUBLE,
     BOOL,
+    INVALID
 };
 
 extern std::map<std::string, std::vector<char>> char_set;
@@ -57,8 +58,9 @@ struct ApiFunctionElems {
 
 
 class ApiType {
-    const std::string name;
-    std::map<std::string, bool> flags;
+    protected:
+        const std::string name;
+        std::map<std::string, bool> flags;
 
     public:
         ApiType(std::string _name) : ApiType(_name, false, false) {};
@@ -89,9 +91,10 @@ class ApiType {
         //virtual bool isSingleton() const { return false; };
         virtual bool isPrimitive() const { return false; };
         virtual bool isExplicit() const { return false; };
+        virtual bool isTemplate() const { return false; };
 
         virtual const ApiType* getUnderlyingType() const { return this; };
-        virtual const PrimitiveTypeEnum getTypeEnum() const { assert(false); };
+        virtual const PrimitiveTypeEnum getTypeEnum() const { assert(false); return INVALID;};
 
         static bool pointerCmp(const ApiType* lhs, const ApiType* rhs)
         {
@@ -157,6 +160,18 @@ class ExplicitType : public ApiType {
         //const ApiObject* retrieveObj() const;
 };
 
+class TemplateType : public ApiType {
+    const std::string name;
+    const size_t template_count;
+
+    public:
+        TemplateType(std::string, size_t);
+
+        bool isTemplate() const { return true; };
+
+        size_t getTemplateCount() const { return this->template_count; };
+};
+
 class ApiObject {
     protected:
         const size_t id;
@@ -219,7 +234,7 @@ class PrimitiveObject : public ApiObject {
         bool isDeclared() const { return true; };
 
         std::string toStr() const;
-        std::string toStrWithType() const { assert(false); };
+        std::string toStrWithType() const { assert(false); return ""; };
 };
 
 class NamedObject : public ApiObject {
@@ -238,7 +253,7 @@ class ExprObject : public ApiObject {
             ApiObject(_expr, _id, _type) {};
 
         std::string toStr() const { return this->name; };
-        std::string toStrWithType() const { assert(false); };
+        std::string toStrWithType() const { assert(false);  return ""; };
 };
 
 class FuncObject : public ApiObject {
@@ -259,7 +274,18 @@ class FuncObject : public ApiObject {
         std::vector<const ApiObject*> getAllObjs(void) const;
 
         std::string toStr() const;
-        std::string toStrWithType() const { assert(false); };
+        std::string toStrWithType() const { assert(false); return ""; };
+};
+
+class TemplateObject : public ApiObject
+{
+    std::vector<const ApiType*> template_types;
+
+    public:
+        TemplateObject(std::string, size_t, const ApiType*,
+            std::vector<const ApiType*>&);
+
+        std::string toStr() const;
 };
 
 class ApiFunc {
@@ -482,8 +508,8 @@ class MetaVarObject : public ApiObject {
         bool isGenerator() const { return !this->meta_relations.empty(); };
         bool isInput() const;
 
-        std::string toStr() const { assert(false); };
-        std::string toStrWithType() const { assert(false); };
+        std::string toStr() const { assert(false); return ""; };
+        std::string toStrWithType() const { assert(false); return ""; };
 };
 
 #include "api_elements.tpp"

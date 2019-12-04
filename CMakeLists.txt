@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 14)
 #set(CMAKE_CXX_COMPILER clang++)
 #set(CMAKE_CXX_FLAGS -fsanitize=address)
 
+if (${CMAKE_BUILD_TYPE} EQUAL Debug)
+    add_compile_definitions(DEBUG)
+endif()
+
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(LIB_DIR ${PROJECT_SOURCE_DIR}/libs)
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -19,7 +23,6 @@ add_subdirectory("./third_party/yaml-cpp")
 include_directories("${INCLUDE_DIR}")
 link_directories("${LIB_DIR}")
 link_directories("/usr/local_lib")
-file(GLOB SOURCES "src/*.cpp")
 
 add_library(metalib_fuzz SHARED
     ${SRC_DIR}/api_elements.cpp
