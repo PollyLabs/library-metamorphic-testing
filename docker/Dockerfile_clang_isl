@@ -10,8 +10,12 @@ RUN \
         --prefix=$(readlink -f $(pwd)/../isl-install) && \
     make -j6 && make install && cd .. && rm -rf isl
 
+ENV \
+    PKG_CONFIG_PATH=/home/isl-install/lib/pkgconfig \
+    LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/isl-install/lib
+
 RUN \
-    apt-get install -y pkg-config && \
+    apt-get install -y pkgconf && \
     git clone --recursive https://github.com/0152la/SpecAST && cd SpecAST && \
     cd third_party/library-metamorphic-testing/ && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=Release -DMETALIB_LIB_ONLY=ON -DYAML_BUILD_SHARED_LIBS=ON .. && \
@@ -31,4 +35,8 @@ RUN \
     mkdir build && cd build && \
     PKG_CONFIG_PATH=/home/isl-install/lib/pkgconfig \
         cmake -G Ninja -DLLVM_INSTALL_LOC=/home/llvm-install .. && \
-    cd ../../ && ln -s ./isl_point/build/compile_commands.json
+    cd ../../ && ln -s ./isl_point/build/compile_commands.json && \
+    mv ./isl_point/make_test.sh . && chmod u+x make_test.sh && \
+    mkdir -p output && cp ./isl_point/runtime/* ./output
+
+WORKDIR /home/SpecAST
