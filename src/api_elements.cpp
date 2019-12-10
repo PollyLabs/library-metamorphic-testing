@@ -188,8 +188,16 @@ ExplicitType::extractExplicitTypeDecl(std::string type_str)
  ******************************************************************************/
 
 TemplateType::TemplateType(std::string _name,
-    size_t _template_count) : name(_name), template_count(_template_count),
-        ApiType(fmt::format("{}_T{}>", _name, _template_count)) {}
+    size_t _template_count) : ApiType(_name), template_count(_template_count)
+{
+    //std::string template_str = std::accumulate(std::begin(_template_list),
+        //std::end(_template_list),
+        //std::string(), [](std::string acc, const ApiType* template_type)
+        //{
+            //return acc + ',' + template_type->toStr();
+        //});
+    //this->name = fmt::format("{}<{}>", _base_type->toStr(), template_str);
+}
 
 /*******************************************************************************
  * ApiObject functions
@@ -303,32 +311,21 @@ FuncObject::toStr() const
  ******************************************************************************/
 
 TemplateObject::TemplateObject(std::string _name, size_t _id,
-    const ApiType* _base_type, std::vector<const ApiType*>& _template_types) :
-        ApiObject(_name, _id, _base_type)
-{
-    CHECK_CONDITION(_base_type->isTemplate(),
-        fmt::format("Expected template type, got {}", _base_type->toStr()));
-    const TemplateType* base_template_type =
-        dynamic_cast<const TemplateType*>(_base_type);
-    CHECK_CONDITION(_template_types.size() == base_template_type->getTemplateCount(),
-        fmt::format("Expected template type with {} templates, got {}.",
-            base_template_type->getTemplateCount(),
-            _template_types.size()));
-    this->template_types = _template_types;
-}
+    const TemplateInstance _ti): ApiObject(_name, _id, _ti.getBaseType()),
+        template_instance(_ti) {};
 
-std::string
-TemplateObject::toStr() const
-{
-    std::string type_name = fmt::format("{}<{}>", this->getType()->toStr(),
-        std::accumulate(std::begin(this->template_types),
-            std::end(this->template_types), std::string(),
-            [](std::string acc, const ApiType* template_type)
-            {
-                return acc + ',' + template_type->toStr();
-            }));
-    return fmt::format("{} {}", type_name, this->name);
-}
+//std::string
+//templateObject::toStr() const
+//{
+    //std::string type_name = fmt::format("{}<{}>", this->getType()->toStr(),
+        //std::accumulate(std::begin(this->template_types),
+            //std::end(this->template_list), std::string(),
+            //[](std::string acc, const ApiType* template_type)
+            //{
+                //return acc + ',' + template_type->toStr();
+            //}));
+    //return fmt::format("{} {}", type_name, this->name);
+//}
 
 /*******************************************************************************
  * MetaVarObject functions

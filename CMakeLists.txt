@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 project(LibMetaTesting)
-#set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
-#set(CMAKE_CXX_COMPILER clang++)
-#set(CMAKE_CXX_FLAGS -fsanitize=address)
 
 if (${CMAKE_BUILD_TYPE} EQUAL Debug)
     add_compile_definitions(DEBUG)

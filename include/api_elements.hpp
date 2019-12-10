@@ -160,9 +160,9 @@ class ExplicitType : public ApiType {
         //const ApiObject* retrieveObj() const;
 };
 
-class TemplateType : public ApiType {
-    const std::string name;
-    const size_t template_count;
+class TemplateType : public ApiType
+{
+    size_t template_count;
 
     public:
         TemplateType(std::string, size_t);
@@ -170,7 +170,23 @@ class TemplateType : public ApiType {
         bool isTemplate() const { return true; };
 
         size_t getTemplateCount() const { return this->template_count; };
+
+        std::string toStr() const { return fmt::format("{}_T{}", name, template_count); };
 };
+
+class TemplateInstance
+{
+    const TemplateType* base_type;
+    std::vector<TemplateInstance> templates;
+
+    public:
+        TemplateInstance(const TemplateType* _base_type,
+            std::vector<TemplateInstance> _templates) :
+                base_type(_base_type), templates(_templates) {};
+
+        const TemplateType* getBaseType() const { return this->base_type; };
+};
+
 
 class ApiObject {
     protected:
@@ -277,15 +293,15 @@ class FuncObject : public ApiObject {
         std::string toStrWithType() const { assert(false); return ""; };
 };
 
+
 class TemplateObject : public ApiObject
 {
-    std::vector<const ApiType*> template_types;
+    private:
+        const TemplateType* base_type;
+        TemplateInstance template_instance;
 
     public:
-        TemplateObject(std::string, size_t, const ApiType*,
-            std::vector<const ApiType*>&);
-
-        std::string toStr() const;
+        TemplateObject(std::string, size_t, const TemplateInstance);
 };
 
 class ApiFunc {

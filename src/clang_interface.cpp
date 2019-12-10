@@ -18,7 +18,7 @@ getFuzzer()
             seed));
         fuzzer_instance = new ApiFuzzerNew(seed);
         addPrimitiveTypes(fuzzer_instance);
-
+        addBaseFuncs(fuzzer_instance);
     }
     return fuzzer_instance;
 }
@@ -38,6 +38,16 @@ addPrimitiveTypes(ApiFuzzerNew* afn)
     afn->addType(new PrimitiveType("long"));
     afn->addType(new PrimitiveType("std::string"));
     afn->addType(new PrimitiveType("double"));
+    afn->addType(new PrimitiveType("bool"));
+}
+
+void
+addBaseFuncs(ApiFuzzerNew* afn)
+{
+    const ApiFunc* assert_func = new ApiFunc("assert", nullptr, nullptr,
+        std::vector<const ApiType*>({afn->getTypeByName("bool")}),
+        std::vector<std::string>(), true);
+    afn->addFunc(assert_func);
 }
 
 void
@@ -48,11 +58,24 @@ addLibType(std::string name)
 }
 
 void
-addLibTemplateType(std::string name, size_t template_count)
+addLibTemplateType(std::string base_name, size_t template_count)
 {
-    getFuzzer()->addType(new TemplateType(name, template_count));
-    logDebug(fmt::format("Added lib template type {} with {} template params",
-        name, template_count));
+    const TemplateType* template_t = new TemplateType(base_name, template_count);
+    getFuzzer()->addType(template_t);
+    logDebug(fmt::format("Added lib template type {}", template_t->toStr()));
+    //addLibType(base_name);
+    //const ApiType* base_type = getFuzzer()->getTypeByName(base_name);
+    //std::vector<const ApiType*> template_type_list;
+    //std::transform(std::begin(template_list), std::end(template_list),
+        //std::back_inserter(template_type_list),
+        //[](std::string template_str)
+        //{
+            //return getFuzzer()->getTypeByName(template_str);
+        //});
+    //const TemplateType* template_t = new TemplateType(base_type,
+        //template_type_list);
+    //getFuzzer()->addType(template_t);
+    //logDebug(fmt::format("Added lib template type {}", template_t->toStr()));
 }
 
 void
@@ -98,11 +121,12 @@ addLibFunc(std::string name, std::string enclosing_class_name,
 void
 addLibDeclaredObj(std::string name, std::string type_name)
 {
+    const ApiType* new_obj_type =
+        getFuzzer()->getTypeByName(cleanTypeName(type_name));
     const ApiObject* new_obj = getFuzzer()->addNewNamedObj(name,
-        getFuzzer()->getTypeByName(cleanTypeName(type_name)));
+            getFuzzer()->getTypeByName(cleanTypeName(type_name)));
     new_obj->setDeclared();
     logDebug(fmt::format("Added lib obj {}", new_obj->toStrWithType()));
-    //std::cout << new_obj->toStrWithType() << std::endl;
 }
 
 /**

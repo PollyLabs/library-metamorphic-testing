@@ -266,6 +266,17 @@ ApiFuzzer::addNewNamedObj(std::string name, const ApiType* type)
     return new_obj;
 }
 
+const ApiObject*
+ApiFuzzer::addNewTemplateObj(std::string name, std::string template_str)
+{
+    const TemplateInstance templates =
+        this->getTemplateInstanceFromString(template_str);
+    const ApiObject* new_obj =
+        new TemplateObject(name, this->getNextID(), templates);
+    this->addObj(new_obj);
+    return new_obj;
+}
+
 void
 ApiFuzzer::addObj(const ApiObject* obj)
 {
@@ -359,6 +370,9 @@ ApiFuzzer::getMetaVar(std::string id_check) const
 const ApiType*
 ApiFuzzer::getTypeByName(std::string type_check) const
 {
+    type_check = type_check.find('<') != std::string::npos
+        ? type_check.substr(0, type_check.find('<'))
+        : type_check;
     for (const ApiType* type : this->getTypeList())
     {
         if (type->hasName(type_check))
@@ -375,6 +389,31 @@ ApiFuzzer::getTypeByName(std::string type_check) const
     assert(false);
     return nullptr;
 }
+
+TemplateInstance
+ApiFuzzer::getTemplateInstanceFromString(std::string type_name)
+{
+    size_t template_start = type_name.find('<');
+    CHECK_CONDITION(
+        template_start != std::string::npos && type_name.back() != '>',
+        fmt::format("Could not find template section in type name {}.",
+            type_name));
+
+    const ApiType* base_type = this->getTypeByName(type_name.substr(0, template_start));
+    std::vector<TemplateInstance> instances;
+    std::string template_str_list = type_name.substr(template_start + 1);
+    template_str_list.pop_back();
+    std::istringstream template_iss(template_str_list);
+    std::string buffer;
+    while(std::getline(template_iss, buffer, ','))
+    {
+        instances.push_back(this->getTemplateInstanceFromString(buffer));
+    }
+    CHECK_CONDITION(base_type->isTemplate(),
+        fmt::format("Expected template type, got {}.", base_type->toStr()));
+    return TemplateInstance(dynamic_cast<const TemplateType*>(base_type), instances);
+}
+
 
 const ApiObject*
 ApiFuzzer::getObjectByName(std::string obj_name) const
@@ -768,6 +807,7 @@ ApiFuzzerNew::fuzzerMetaInit(const std::string& meta_test_path)
         meta_test_data["input_count"]);
     this->initMetaGenerators(meta_test_data["generators"]);
     this->initMetaRelations(meta_test_data["relations"]);
+    this->initMetaChecks(meta_test_data["meta_check"]);
 }
 
 
