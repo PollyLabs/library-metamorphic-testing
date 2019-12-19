@@ -58,6 +58,14 @@ addLibType(std::string name)
 }
 
 void
+addLibType(std::string name, bool ptr, bool sngl)
+{
+    getFuzzer()->addType(new ApiType(name, ptr, sngl));
+    logDebug(fmt::format("Added lib type {} with pointer {}, singleton {}",
+        name, ptr, sngl));
+}
+
+void
 addLibTemplateType(std::string base_name, size_t template_count)
 {
     const TemplateType* template_t = new TemplateType(base_name, template_count);

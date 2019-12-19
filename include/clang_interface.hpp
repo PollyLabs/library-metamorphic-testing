@@ -12,6 +12,7 @@ void setSeed(size_t);
 void addPrimitiveTypes(ApiFuzzerNew*);
 void addBaseFuncs(ApiFuzzerNew*);
 void addLibType(std::string);
+void addLibType(std::string, bool, bool);
 void addLibTemplateType(std::string, size_t);
 void addLibDeclaredObj(std::string, std::string);
 void addLibFunc(std::string, std::string, std::string, std::vector<std::string>,
