@@ -16,7 +16,7 @@ void addLibType(std::string, bool, bool);
 void addLibTemplateType(std::string, size_t);
 void addLibDeclaredObj(std::string, std::string);
 void addLibFunc(std::string, std::string, std::string, std::vector<std::string>,
-    bool, bool);
+    bool, bool, bool);
 std::pair<std::string, std::string>
     generateObjectInstructions(std::string, std::string);
 std::string generateMetaTestInstructions(std::vector<std::string>&,

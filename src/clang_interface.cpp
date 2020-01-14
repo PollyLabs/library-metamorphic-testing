@@ -35,6 +35,7 @@ void
 addPrimitiveTypes(ApiFuzzerNew* afn)
 {
     afn->addType(new PrimitiveType("int"));
+    afn->addType(new PrimitiveType("unsigned int"));
     afn->addType(new PrimitiveType("long"));
     afn->addType(new PrimitiveType("std::string"));
     afn->addType(new PrimitiveType("double"));
@@ -89,7 +90,7 @@ addLibTemplateType(std::string base_name, size_t template_count)
 void
 addLibFunc(std::string name, std::string enclosing_class_name,
     std::string return_type_name, std::vector<std::string> param_type_names,
-    bool statik, bool ctor)
+    bool statik, bool ctor, bool special)
 {
     std::vector<const ApiType*> param_types;
     std::transform(param_type_names.begin(), param_type_names.end(),
@@ -99,7 +100,6 @@ addLibFunc(std::string name, std::string enclosing_class_name,
         });
 
     const ApiType* return_type = nullptr;
-    bool special = false;
     if (return_type_name.compare("void"))
     {
         return_type = getFuzzer()->getTypeByName(cleanTypeName(return_type_name));
