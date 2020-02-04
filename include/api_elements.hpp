@@ -92,6 +92,7 @@ class ApiType {
         virtual bool isPrimitive() const { return false; };
         virtual bool isExplicit() const { return false; };
         virtual bool isTemplate() const { return false; };
+        virtual bool isEnum() const { return false; };
 
         virtual const ApiType* getUnderlyingType() const { return this; };
         virtual const PrimitiveTypeEnum getTypeEnum() const { assert(false); return INVALID;};
@@ -174,6 +175,18 @@ class TemplateType : public ApiType
         std::string toStr() const { return fmt::format("{}_T{}", name, template_count); };
 };
 
+class EnumType : public ApiType
+{
+    mutable std::set<std::string> values;
+
+    public:
+        EnumType(std::string _name) : ApiType(_name) {};
+        void addValue(std::string value) const { this->values.insert(value); };
+        bool checkValue(std::string value) const { return this->values.count(value); };
+
+        bool isEnum() const { return true; };
+};
+
 class TemplateInstance
 {
     const TemplateType* base_type;
@@ -198,10 +211,8 @@ class ApiObject {
     public:
         mutable bool declared;
 
-        ApiObject(std::string _name, size_t _id, const ApiType* _type,
-            bool _initialize = true) :
-            id(_id), name(_name), type(_type), initialize(_initialize),
-            declared(false) {};
+        ApiObject(std::string, size_t, const ApiType*,
+            bool = true);
         virtual ~ApiObject() = default;
 
         const ApiType* getType() const { return this->type; };

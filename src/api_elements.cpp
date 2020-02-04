@@ -203,6 +203,18 @@ TemplateType::TemplateType(std::string _name,
  * ApiObject functions
  ******************************************************************************/
 
+ApiObject::ApiObject(std::string _name, size_t _id, const ApiType* _type,
+    bool _initialize) :
+    id(_id), name(_name), type(_type), initialize(_initialize), declared(false)
+{
+    if (_type && _type->isEnum())
+    {
+        CHECK_CONDITION(dynamic_cast<const EnumType*>(_type)->checkValue(_name),
+            fmt::format("Invalid enum value {} for type {}.",
+                _name, _type->toStr()));
+    }
+}
+
 FuncObject::FuncObject(const ApiFunc* _func, const ApiObject* _target,
     std::vector<const ApiObject*> _params) :
     ApiObject(_func->getName(), -1, _func->getReturnType()), func(_func),

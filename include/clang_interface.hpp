@@ -13,6 +13,8 @@ void addPrimitiveTypes(ApiFuzzerNew*);
 void addBaseFuncs(ApiFuzzerNew*);
 void addLibType(std::string);
 void addLibType(std::string, bool, bool);
+void addLibEnumType(std::string);
+void addLibEnumVal(std::string, std::string);
 void addLibTemplateType(std::string, size_t);
 void addLibDeclaredObj(std::string, std::string);
 void addLibFunc(std::string, std::string, std::string, std::vector<std::string>,
@@ -24,6 +26,7 @@ std::string generateMetaTestInstructions(std::vector<std::string>&,
 void resetApiObjs(std::set<std::pair<std::string, std::string>>);
 
 int generateRand(int, int);
+double generateRand(double, double);
 std::string cleanTypeName(std::string);
 
 } // namespace clang

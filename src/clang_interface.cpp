@@ -67,6 +67,32 @@ addLibType(std::string name, bool ptr, bool sngl)
 }
 
 void
+addLibEnumType(std::string name)
+{
+    getFuzzer()->addType(new EnumType(name));
+    logDebug(fmt::format("Added lib enum type {}", name));
+}
+
+void
+addLibEnumVal(std::string name, std::string enum_name)
+{
+    if (size_t enum_pos = enum_name.find("enum ");
+        enum_pos != std::string::npos)
+    {
+        CHECK_CONDITION(enum_pos == 0, fmt::format(
+            "Found `enum ` string at position {} instead of 0!", enum_pos));
+        enum_name = enum_name.substr(sizeof("enum ") - 1);
+    }
+    const ApiType* get_type = getFuzzer()->getTypeByName(enum_name);
+    CHECK_CONDITION(get_type->isEnum(),
+        fmt::format("Expected {} type to be enumType!", enum_name));
+    const EnumType* enum_type = dynamic_cast<const EnumType*>(get_type);
+    enum_type->addValue(name);
+    logDebug(fmt::format("Added enum value {} to type {}.",
+        name, enum_name));
+}
+
+void
 addLibTemplateType(std::string base_name, size_t template_count)
 {
     const TemplateType* template_t = new TemplateType(base_name, template_count);
@@ -247,10 +273,16 @@ generateRand(int min, int max)
     return getFuzzer()->getRandInt(min, max);
 }
 
+double
+generateRand(double min, double max)
+{
+    return getFuzzer()->getRandDouble(min, max);
+}
+
 std::string
 cleanTypeName(std::string type_name)
 {
-    std::vector<std::string> remove_decl_vec {"class", "const", "&"};
+    std::vector<std::string> remove_decl_vec {"class", "const", "&", "enum"};
     for (std::string remove_decl : remove_decl_vec)
     {
         size_t class_pos = type_name.find(remove_decl);
