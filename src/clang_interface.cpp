@@ -35,6 +35,7 @@ void
 addPrimitiveTypes(ApiFuzzerNew* afn)
 {
     afn->addType(new PrimitiveType("int"));
+    afn->addType(new PrimitiveType("int32_t"));
     afn->addType(new PrimitiveType("unsigned int"));
     afn->addType(new PrimitiveType("long"));
     afn->addType(new PrimitiveType("std::string"));
