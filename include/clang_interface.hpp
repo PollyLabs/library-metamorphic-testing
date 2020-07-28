@@ -27,6 +27,7 @@ void resetApiObjs(std::set<std::pair<std::string, std::string>>);
 
 int generateRand(int, int);
 double generateRand(double, double);
+std::string generateRandStr(uint8_t, uint8_t);
 std::string cleanTypeName(std::string);
 
 } // namespace clang

@@ -193,6 +193,21 @@ ApiFuzzer::getRandDouble(double min, double max)
     return dist(*this->rng);
 }
 
+std::string
+ApiFuzzer::getRandString(uint8_t min_len, uint8_t max_len)
+{
+    std::string rand_str = "";
+    std::uniform_int_distribution<uint8_t> dist(min_len, max_len);
+    uint8_t str_len = dist(*this->rng);
+    std::string str_type = "low_alpha";
+    std::uniform_int_distribution<uint8_t> chr_dist(0, char_set.at(str_type).size() - 1);
+    for (int i = 0; i < str_len; ++i)
+    {
+        rand_str += char_set.at(str_type).at(chr_dist(*this->rng));
+    }
+    return "\"" + rand_str + "\"";
+}
+
 unsigned int
 ApiFuzzer::getNextID() const
 {

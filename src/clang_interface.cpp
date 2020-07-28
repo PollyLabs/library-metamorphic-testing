@@ -281,6 +281,12 @@ generateRand(double min, double max)
 }
 
 std::string
+generateRandStr(uint8_t min, uint8_t max)
+{
+    return getFuzzer()->getRandString(min, max);
+}
+
+std::string
 cleanTypeName(std::string type_name)
 {
     std::vector<std::string> remove_decl_vec {"class", "const", "&", "enum"};

@@ -94,6 +94,7 @@ class ApiFuzzer {
         int getRandInt(int = 0, int = std::numeric_limits<int>::max());
         long getRandLong(long = 0, long = std::numeric_limits<long>::max());
         double getRandDouble(double = 0, double = std::numeric_limits<double>::max());
+        std::string getRandString(uint8_t = 0, uint8_t = std::numeric_limits<uint8_t>::max());
         unsigned int getNextID() const;
 
         bool hasTypeName(std::string);
