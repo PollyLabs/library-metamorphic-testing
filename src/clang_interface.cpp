@@ -17,6 +17,7 @@ getFuzzer()
         logDebug(fmt::format("Generating new ApiFuzzerNew instance with seed {}.",
             seed));
         fuzzer_instance = new ApiFuzzerNew(seed);
+        fuzzer_instance->setMaxDepthObjGen(true);
         addPrimitiveTypes(fuzzer_instance);
         addBaseFuncs(fuzzer_instance);
     }

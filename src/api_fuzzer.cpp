@@ -1761,10 +1761,12 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
             non_ctor_func_cands = filterFuncList(ctor_func_candidates,
                 &ApiFunc::checkFlag, std::string("!ctor"));
         // TODO this currently forces tests to be produced with full depth
-        //if (!non_ctor_func_cands.empty())
-        //{
-            //ctor_func_candidates = non_ctor_func_cands;
-        //}
+        if (this->max_depth_obj_gen && !non_ctor_func_cands.empty())
+        {
+            logDebug(fmt::format("Filtering constructor functions at depth {}.",
+                this->depth));
+            ctor_func_candidates = non_ctor_func_cands;
+        }
     }
     if (ctor_func_candidates.empty())
     {

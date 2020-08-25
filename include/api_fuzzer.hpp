@@ -72,6 +72,8 @@ class ApiFuzzer {
         size_t meta_variant_count;
         size_t meta_test_count;
 
+        bool max_depth_obj_gen = false;
+
         ApiFuzzer(unsigned int _seed, std::mt19937* _rng):
             types(std::set<const ApiType*, decltype(&ApiType::pointerCmp)>
                 (&ApiType::pointerCmp)),
@@ -126,6 +128,8 @@ class ApiFuzzer {
         void addFunc(const ApiFunc*);
 
         void flushInstrs() { this->instrs.clear(); };
+
+        void setMaxDepthObjGen(bool val) { this->max_depth_obj_gen = val; };
 
         virtual void generateSet() = 0;
 
