@@ -1514,12 +1514,35 @@ ApiFuzzerNew::generateObject(const ApiType* obj_type)
     {
         if (this->depth >= this->max_depth)
         {
-            logDebug(fmt::format("Max depth reached; constructing object of type {}",
-                obj_type->toStr()));
-            return this->constructObject(obj_type);
+            logDebug(fmt::format("Max depth reached."));
+            //logDebug(fmt::format("Attempting to retrieve existing object of type {}.",
+                //obj_type->toStr()));
+            ////const ApiObject* obj = this->retrieveObjectByType(obj_type);
+            const ApiObject* obj = nullptr;
+            //if (obj)
+            //{
+                //logDebug(fmt::format("Retrieved object {}.", obj->toStr()));
+            //}
+            //else
+            {
+                logDebug(fmt::format("Unable to find existing object of type {},"
+                        " falling back to constructing.", obj_type->toStr()));
+                obj = this->constructObject(obj_type);
+            }
+            return obj;
         }
         return this->generateNewObject(obj_type);
     }
+}
+
+const ApiObject*
+ApiFuzzerNew::retrieveObjectByType(const ApiType* obj_type)
+{
+    std::vector<const ApiObject*> candidate_objs =
+        this->filterObjs(&ApiObject::hasType, obj_type);
+    if (candidate_objs.empty())
+        return nullptr;
+    return getRandomVectorElem(candidate_objs, this->getRNG());
 }
 
 /* @brief Evaluate given comprehension into corresponding object

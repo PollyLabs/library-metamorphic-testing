@@ -222,6 +222,7 @@ class ApiFuzzerNew : public ApiFuzzer {
             std::string, std::string);
         template<typename T> const ApiObject* generatePrimitiveObject(
             const PrimitiveType*, std::string, T);
+        const ApiObject* retrieveObjectByType(const ApiType*);
         const ApiObject* retrieveExplicitObject(const ExplicitType*);
         template<typename T> T parseDescriptor(std::string);
         void generateSet();
