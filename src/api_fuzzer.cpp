@@ -1881,6 +1881,16 @@ ApiFuzzerNew::constructObject(const ApiType* obj_type, const ApiObject* ret_obj)
         obj_type);
     ctor_func_candidates = filterFuncList(ctor_func_candidates,
         &ApiFunc::checkFlag, std::string("ctor"));
+    if (ctor_func_candidates.empty())
+    {
+        logDebug(
+            fmt::format("No constructor found for type {}, fall back to callable check.",
+            obj_type->toStr()));
+        ctor_func_candidates = filterFuncList(
+                filterFuncs(&ApiFunc::hasReturnType, obj_type),
+                &ApiFunc::isCallable,
+                std::make_pair(this->getObjList(), ApiFunc_c()));
+    }
     CHECK_CONDITION(!ctor_func_candidates.empty(),
         fmt::format("Unable to find constructor for type {}.", obj_type->toStr()));
     const ApiFunc* ctor_func = getRandomSetElem(ctor_func_candidates, this->getRNG());

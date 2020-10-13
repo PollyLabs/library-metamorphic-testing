@@ -381,8 +381,6 @@ class ApiFunc {
         typedef std::vector<const ApiObject*> ApiObject_c;
         bool isCallable(std::pair<ApiObject_c, ApiFunc_c>) const;
 
-
-
         inline bool operator<(const ApiFunc& other) const {
             return this->printSignature() < other.printSignature();
         }
