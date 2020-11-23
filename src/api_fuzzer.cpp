@@ -1897,11 +1897,23 @@ ApiFuzzerNew::constructObject(const ApiType* obj_type, const ApiObject* ret_obj)
     logDebug(fmt::format("Constructing object of type {} with ctor {}.",
         obj_type->toStr(), ctor_func->getName()));
     const ApiObject* target_obj = nullptr;
+
+    if (ctor_func->getClassType() != nullptr)
+    {
+        std::vector<const ApiObject*> candidate_objs =
+            this->filterObjs(&ApiObject::hasType, ctor_func->getClassType());
+        CHECK_CONDITION(!candidate_objs.empty(),
+            fmt::format("Could not find candidate target object of type `{}` for"
+                " ctor function `{}`.",
+                ctor_func->getClassType()->toStr(), ctor_func->getName()));
+        target_obj = getRandomVectorElem(candidate_objs, this->getRNG());
+    }
+
     //std::cout << (ctor_func->getClassType() == nullptr) << std::endl;
     //std::cout << ctor_func->checkFlag("statik") << std::endl;
-    CHECK_CONDITION((ctor_func->getClassType() == nullptr ||
-        ctor_func->checkFlag("statik")),
-        fmt::format("Unexpected class type for ctor {}.", ctor_func->getName()));
+    //CHECK_CONDITION((ctor_func->getClassType() == nullptr ||
+        //ctor_func->checkFlag("statik")),
+        //fmt::format("Unexpected class type for ctor {}.", ctor_func->getName()));
 
     ApiObject_c ctor_args = this->getFuncArgs(ctor_func);
     for (const ApiObject* ctor_arg : ctor_args)
