@@ -19,6 +19,9 @@
 
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
+#include "effolkronium/random.hpp"
+
+using Random = effolkronium::random_static;
 
 extern char delim_front, delim_back, delim_mid;
 
@@ -56,7 +59,6 @@ class ApiFuzzer {
         const unsigned int seed;
         std::mt19937* rng;
 
-
         virtual const ApiObject* generateObject(const ApiType*) = 0;
 
     public:
@@ -82,7 +84,8 @@ class ApiFuzzer {
             instrs(std::vector<const ApiInstructionInterface*>()),
             objs(std::vector<const ApiObject*>()),
             all_objs(std::vector<const ApiObject*>()),
-            next_obj_id(0), depth(0), max_depth(10), seed(_seed), rng(_rng) {};
+            next_obj_id(0), depth(0), max_depth(10), seed(_seed), rng(_rng)
+            { Random::seed(_seed); };
         virtual ~ApiFuzzer() = default;
 
         std::vector<const ApiInstructionInterface*> getInstrList() const;
@@ -96,6 +99,7 @@ class ApiFuzzer {
         int getRandInt(int = 0, int = std::numeric_limits<int>::max());
         long getRandLong(long = 0, long = std::numeric_limits<long>::max());
         double getRandDouble(double = 0, double = std::numeric_limits<double>::max());
+        float getRandFloat(float = 0.0, float = std::numeric_limits<float>::max());
         std::string getRandString(uint8_t = 0, uint8_t = std::numeric_limits<uint8_t>::max());
         unsigned int getNextID() const;
 

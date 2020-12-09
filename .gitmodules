@@ -4,3 +4,6 @@
 [submodule "third_party/yaml-cpp"]
 	path = third_party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
+[submodule "third_party/random"]
+	path = third_party/random
+	url = git@github.com:effolkronium/random.git

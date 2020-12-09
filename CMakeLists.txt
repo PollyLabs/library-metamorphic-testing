@@ -16,6 +16,7 @@ set(BUILD_SHARED_LIBS ON)
 #set(YAML_BUILD_SHARED_LIBS ON)
 add_subdirectory("./third_party/fmt")
 add_subdirectory("./third_party/yaml-cpp")
+add_subdirectory("./third_party/random")
 
 include_directories("${INCLUDE_DIR}")
 link_directories("${LIB_DIR}")
@@ -30,6 +31,7 @@ add_library(metalib_fuzz SHARED
     )
 target_link_libraries(metalib_fuzz fmt)
 target_link_libraries(metalib_fuzz yaml-cpp)
+target_link_libraries(metalib_fuzz effolkronium_random)
 
 if (METALIB_LIB_ONLY)
     return()

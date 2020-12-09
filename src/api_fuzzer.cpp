@@ -171,8 +171,9 @@ int
 ApiFuzzer::getRandInt(int min, int max)
 {
     assert(max >= min);
-    std::uniform_int_distribution<int> dist(min, max);
-    return dist(*this->rng);
+    return Random::get<int>(min, max);
+    //std::uniform_int_distribution<int> dist(min, max);
+    //return dist(*this->rng);
     //return (*this->rng)() % (max - min + 1) + min;
 }
 
@@ -180,8 +181,9 @@ long
 ApiFuzzer::getRandLong(long min, long max)
 {
     assert(max >= min);
-    std::uniform_int_distribution<long> dist(min, max);
-    return dist(*this->rng);
+    return Random::get<long>(min, max);
+    //std::uniform_int_distribution<long> dist(min, max);
+    //return dist(*this->rng);
     //return (*this->rng)() % (max - min + 1) + min;
 }
 
@@ -189,8 +191,16 @@ double
 ApiFuzzer::getRandDouble(double min, double max)
 {
     assert(max >= min);
-    std::uniform_real_distribution<> dist(min, max);
-    return dist(*this->rng);
+    return Random::get<double>(min, max);
+    //std::uniform_real_distribution<> dist(min, max);
+    //return dist(*this->rng);
+}
+
+float
+ApiFuzzer::getRandFloat(float min, float max)
+{
+    assert(max >= min);
+    return Random::get<float>(min, max);
 }
 
 std::string
@@ -204,6 +214,7 @@ ApiFuzzer::getRandString(uint8_t min_len, uint8_t max_len)
     for (int i = 0; i < str_len; ++i)
     {
         rand_str += char_set.at(str_type).at(chr_dist(*this->rng));
+        //rand_str += Random::get('a', 'z')
     }
     return "\"" + rand_str + "\"";
 }
@@ -2001,6 +2012,13 @@ ApiFuzzerNew::parseDescriptor<double>(std::string descriptor)
     return this->getRandDouble(double_range.first, double_range.second);
 }
 
+template<>
+float
+ApiFuzzerNew::parseDescriptor<float>(std::string descriptor)
+{
+    std::pair<float, float> float_range = this->parseRange(descriptor);
+    return this->getRandFloat(float_range.first, float_range.second);
+}
 
 template<>
 std::string
@@ -2101,7 +2119,8 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
         }
         case INT:
         case LONG:
-        case DOUBLE: {
+        case DOUBLE:
+        case FLOAT: {
             std::string range = "[-10,10]";
             range = fmt::format("{}range{}{}{}", delim_front, delim_mid,
                 range, delim_back);
@@ -2172,6 +2191,10 @@ ApiFuzzerNew::generatePrimitiveObject(const PrimitiveType* obj_type,
         case DOUBLE: {
             return this->generatePrimitiveObject<double>(obj_type,
                 obj_type->toStr(), this->parseDescriptor<double>(descriptor));
+        }
+        case FLOAT: {
+            return this->generatePrimitiveObject<float>(obj_type,
+                obj_type->toStr(), this->parseDescriptor<float>(descriptor));
         }
         case BOOL:
         default:

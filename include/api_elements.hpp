@@ -31,6 +31,7 @@ enum PrimitiveTypeEnum {
     INT,
     LONG,
     DOUBLE,
+    FLOAT,
     BOOL,
     INVALID
 };

@@ -5,9 +5,6 @@ namespace clang {
 
 static ApiFuzzerNew* fuzzer_instance = nullptr;
 size_t seed = -1;
-const std::string meta_test_path =
-    "/home/sentenced/Documents/Internships/2018_ETH/work/testing_functional/"
-    "config_files/isl/set_meta_tests_isl.yaml";
 
 ApiFuzzerNew*
 getFuzzer()
@@ -18,6 +15,7 @@ getFuzzer()
             seed));
         fuzzer_instance = new ApiFuzzerNew(seed);
         fuzzer_instance->setMaxDepthObjGen(true);
+        effolkronium::random_static::seed(seed);
         addPrimitiveTypes(fuzzer_instance);
         addBaseFuncs(fuzzer_instance);
     }
@@ -42,6 +40,7 @@ addPrimitiveTypes(ApiFuzzerNew* afn)
     afn->addType(new PrimitiveType("long"));
     afn->addType(new PrimitiveType("std::string"));
     afn->addType(new PrimitiveType("double"));
+    afn->addType(new PrimitiveType("float"));
     afn->addType(new PrimitiveType("bool"));
 }
 
