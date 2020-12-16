@@ -201,7 +201,6 @@ class TemplateInstance
         const TemplateType* getBaseType() const { return this->base_type; };
 };
 
-
 class ApiObject {
     protected:
         const size_t id;

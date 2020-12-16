@@ -394,11 +394,19 @@ ApiFuzzer::getMetaVar(std::string id_check) const
 }
 
 const ApiType*
-ApiFuzzer::getTypeByName(std::string type_check) const
+ApiFuzzer::getTypeByName(std::string type_check)
 {
     type_check = type_check.find('<') != std::string::npos
         ? type_check.substr(0, type_check.find('<'))
         : type_check;
+    bool pointer_type = type_check.back() == '*';
+    if (pointer_type)
+    {
+        type_check.pop_back();
+        type_check = type_check.substr(0, type_check.find_last_not_of(' ') + 1);
+    }
+
+    // Check if type is already logged
     for (const ApiType* type : this->getTypeList())
     {
         if (type->hasName(type_check))
@@ -406,6 +414,25 @@ ApiFuzzer::getTypeByName(std::string type_check) const
             return type;
         }
     }
+
+    // If we could not find the type logged, check if it is a pointer to an
+    // existing type
+    if (pointer_type)
+    {
+        logDebug(fmt::format("Checking for underlying type of pointer type {}.",
+            type_check));
+        const ApiType* underlying_type = this->getTypeByName(type_check);
+        if (underlying_type)
+        {
+            logDebug(
+                fmt::format("Adding new wrapping pointer type for base type {}.",
+                underlying_type->toStr()));
+            const ApiType* pointer_wrapper = new ApiType(underlying_type->toStr(), true, false);
+            this->addType(pointer_wrapper);
+            return pointer_wrapper;
+        }
+    }
+
     std::cout << "Could not find type " << type_check << std::endl;
     std::cout << "List of types:" << std::endl;
     for (const ApiType* type : this->getTypeList())

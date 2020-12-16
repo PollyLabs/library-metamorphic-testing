@@ -20,6 +20,7 @@ std::map<std::string, PrimitiveTypeEnum> primitives_map = {
     { "unsigned int", UINT },
     { "int", INT },
     { "int32_t", LONG },
+    { "uint32_t", UINT },
     { "int64_t", DOUBLE },
     { "long", LONG },
     { "double", DOUBLE },

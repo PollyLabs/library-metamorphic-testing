@@ -106,7 +106,7 @@ class ApiFuzzer {
         bool hasTypeName(std::string);
         bool hasFuncName(std::string);
 
-        const ApiType* getTypeByName(std::string) const;
+        const ApiType* getTypeByName(std::string);
         TemplateInstance getTemplateInstanceFromString(std::string);
         const ApiObject* getObjectByName(std::string) const;
         template<typename T> std::vector<const ApiObject*> filterObjs(
