@@ -99,16 +99,15 @@ class ApiType {
         virtual const PrimitiveTypeEnum getTypeEnum() const { assert(false); return INVALID;};
 
         static bool pointerCmp(const ApiType* lhs, const ApiType* rhs)
-        {
-            return lhs->toStr() < rhs->toStr();
-        }
+            { return lhs->toStr() < rhs->toStr(); }
+
+        std::string getName() const { return this->name; };
 
         bool operator<(const ApiType& other) const
-        {
-            return this->toStr() < other.toStr();
-        };
+            { return this->toStr() < other.toStr(); };
 
-        std::string toStr() const { return this->name; };
+        std::string toStr() const
+            { return this->checkFlag("pointer") ? this->name + '*' : this->name; };
 };
 
 class PrimitiveType : public ApiType {

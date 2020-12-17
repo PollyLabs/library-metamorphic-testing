@@ -267,7 +267,7 @@ ApiFuzzer::addInstrVector(std::vector<const ApiInstructionInterface*> instr_vec)
 std::string
 ApiFuzzer::getGenericVariableName(const ApiType* type) const
 {
-    return type->toStr().substr(type->toStr().rfind(':') + 1);
+    return type->getName().substr(type->getName().rfind(':') + 1);
 }
 
 const ApiObject*
@@ -400,6 +400,7 @@ ApiFuzzer::getTypeByName(std::string type_check)
         ? type_check.substr(0, type_check.find('<'))
         : type_check;
     bool pointer_type = type_check.back() == '*';
+    const ApiType* underlying_type = nullptr;
     if (pointer_type)
     {
         type_check.pop_back();
@@ -411,6 +412,11 @@ ApiFuzzer::getTypeByName(std::string type_check)
     {
         if (type->hasName(type_check))
         {
+            if (pointer_type)
+            {
+                underlying_type = type;
+                break;
+            }
             return type;
         }
     }
@@ -419,9 +425,6 @@ ApiFuzzer::getTypeByName(std::string type_check)
     // existing type
     if (pointer_type)
     {
-        logDebug(fmt::format("Checking for underlying type of pointer type {}.",
-            type_check));
-        const ApiType* underlying_type = this->getTypeByName(type_check);
         if (underlying_type)
         {
             logDebug(
@@ -431,6 +434,7 @@ ApiFuzzer::getTypeByName(std::string type_check)
             this->addType(pointer_wrapper);
             return pointer_wrapper;
         }
+        type_check += '*';
     }
 
     std::cout << "Could not find type " << type_check << std::endl;
