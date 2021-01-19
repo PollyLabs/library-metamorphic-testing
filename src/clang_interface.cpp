@@ -43,6 +43,7 @@ addPrimitiveTypes(ApiFuzzerNew* afn)
     afn->addType(new PrimitiveType("double"));
     afn->addType(new PrimitiveType("float"));
     afn->addType(new PrimitiveType("bool"));
+    afn->addType(new PrimitiveType("size_t"));
 }
 
 void

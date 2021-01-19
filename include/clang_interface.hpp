@@ -30,6 +30,9 @@ double generateRand(double, double);
 std::string generateRandStr(uint8_t, uint8_t);
 std::string cleanTypeName(std::string);
 
+template<typename T> T getRandElem(const std::vector<T>& vec) {
+    return vec.at(getFuzzer()->getRandInt(0, vec.size() - 1)); }
+
 } // namespace clang
 } // namespace fuzzer
 

@@ -21,6 +21,7 @@ std::map<std::string, PrimitiveTypeEnum> primitives_map = {
     { "int", INT },
     { "int32_t", LONG },
     { "uint32_t", UINT },
+    { "size_t", UINT },
     { "int64_t", DOUBLE },
     { "long", LONG },
     { "double", DOUBLE },
