@@ -1847,6 +1847,7 @@ ApiFuzzerNew::generateNewObject(const ApiType* obj_type, const ApiObject* result
             getRandomVectorElem(fallback_objs, this->rng);
         logDebug(fmt::format("Found object of type {} with name {}.",
             obj_type->toStr(), fallback_obj->toStr()));
+        --this->depth;
         return fallback_obj;
     }
     CHECK_CONDITION(ctor_func_candidates.size() != 0,
