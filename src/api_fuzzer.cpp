@@ -171,9 +171,9 @@ int
 ApiFuzzer::getRandInt(int min, int max)
 {
     assert(max >= min);
-    return Random::get<int>(min, max);
-    //std::uniform_int_distribution<int> dist(min, max);
-    //return dist(*this->rng);
+    //return Random::get<int>(min, max);
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(*this->rng);
     //return (*this->rng)() % (max - min + 1) + min;
 }
 
@@ -181,9 +181,9 @@ long
 ApiFuzzer::getRandLong(long min, long max)
 {
     assert(max >= min);
-    return Random::get<long>(min, max);
-    //std::uniform_int_distribution<long> dist(min, max);
-    //return dist(*this->rng);
+    //return Random::get<long>(min, max);
+    std::uniform_int_distribution<long> dist(min, max);
+    return dist(*this->rng);
     //return (*this->rng)() % (max - min + 1) + min;
 }
 
@@ -191,16 +191,18 @@ double
 ApiFuzzer::getRandDouble(double min, double max)
 {
     assert(max >= min);
-    return Random::get<double>(min, max);
-    //std::uniform_real_distribution<> dist(min, max);
-    //return dist(*this->rng);
+    //return Random::get<double>(min, max);
+    std::uniform_real_distribution<double> dist(min, max);
+    return dist(*this->rng);
 }
 
 float
 ApiFuzzer::getRandFloat(float min, float max)
 {
     assert(max >= min);
-    return Random::get<float>(min, max);
+    //return Random::get<float>(min, max);
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(*this->rng);
 }
 
 std::string
