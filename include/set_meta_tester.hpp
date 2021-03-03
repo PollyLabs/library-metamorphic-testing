@@ -8,15 +8,13 @@
 #include <queue>
 #include <random>
 
+#include "api_fuzz_rand_gen.hpp"
 #include "api_elements.hpp"
 
 #include "yaml-cpp/yaml.h"
 #include "fmt/format.h"
 
 class ApiFuzzerNew;
-int getRandInt(std::mt19937*, int, int);
-std::string getRandSetElem(std::mt19937*, std::set<std::string>&);
-
 
 class MetaInstr {
     protected:
@@ -75,7 +73,7 @@ class SetMetaTesterNew {
         std::vector<const MetaTest*> meta_tests;
         std::set<size_t> meta_test_hashes;
 
-        std::mt19937* rng;
+        ApiFuzzRandGen* rng;
 
     public:
         SetMetaTesterNew(ApiFuzzerNew* fuzzer);

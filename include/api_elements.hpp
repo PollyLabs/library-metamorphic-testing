@@ -12,6 +12,8 @@
 
 #include "fmt/format.h"
 
+#include "api_fuzz_rand_gen.hpp"
+
 // TODO move to api_elements
 enum ApiTypeFlag {
     POINTER,
@@ -36,7 +38,6 @@ enum PrimitiveTypeEnum {
     INVALID
 };
 
-extern std::map<std::string, std::vector<char>> char_set;
 extern std::map<std::string, PrimitiveTypeEnum> primitives_map;
 extern char delim_front, delim_back, delim_mid;
 extern bool DEBUG;
@@ -46,6 +47,7 @@ void CHECK_CONDITION(bool, std::string);
 std::string getStringWithDelims(std::vector<std::string>, char);
 template<typename T> std::string makeArgString(std::vector<T>);
 
+class ApiFuzzRandGen;
 class ApiType;
 class ApiObject;
 class ApiFunc;
@@ -512,10 +514,10 @@ class MetaVarObject : public ApiObject {
         const std::string identifier;
         const ApiType* type;
         std::vector<const MetaRelation*> meta_relations;
-        std::mt19937* rng;
+        ApiFuzzRandGen* rng;
 
         MetaVarObject(std::string _identifier, const ApiType* _type,
-            std::mt19937* _rng) :
+            ApiFuzzRandGen* _rng) :
             ApiObject(_identifier, -1, _type), identifier(_identifier),
             rng(_rng) {};
 

@@ -57,7 +57,7 @@ class ApiFuzzer {
         size_t depth;
         size_t max_depth;
         const unsigned int seed;
-        std::mt19937* rng;
+        ApiFuzzRandGen* rng;
 
         virtual const ApiObject* generateObject(const ApiType*) = 0;
 
@@ -84,7 +84,8 @@ class ApiFuzzer {
             instrs(std::vector<const ApiInstructionInterface*>()),
             objs(std::vector<const ApiObject*>()),
             all_objs(std::vector<const ApiObject*>()),
-            next_obj_id(0), depth(0), max_depth(10), seed(_seed), rng(_rng)
+            next_obj_id(0), depth(0), max_depth(10), seed(_seed),
+            rng(new ApiFuzzRandGen_mt19937(_rng))
             { Random::seed(_seed); };
         virtual ~ApiFuzzer() = default;
 
@@ -94,13 +95,8 @@ class ApiFuzzer {
         std::vector<const ApiObject*> getAllObjList() const;
         std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)> getFuncList() const;
         std::set<const ApiType*, decltype(&ApiType::pointerCmp)> getTypeList() const;
-        std::mt19937* getRNG() const { return this->rng; };
+        ApiFuzzRandGen* getRNG() const { return this->rng; };
 
-        int getRandInt(int = 0, int = std::numeric_limits<int>::max());
-        long getRandLong(long = 0, long = std::numeric_limits<long>::max());
-        double getRandDouble(double = 0, double = std::numeric_limits<double>::max());
-        float getRandFloat(float = 0.0, float = std::numeric_limits<float>::max());
-        std::string getRandString(uint8_t = 0, uint8_t = std::numeric_limits<uint8_t>::max());
         unsigned int getNextID() const;
 
         bool hasTypeName(std::string);

@@ -23,6 +23,7 @@ link_directories("${LIB_DIR}")
 link_directories("/usr/local_lib")
 
 add_library(metalib_fuzz SHARED
+    ${SRC_DIR}/api_fuzz_rand_gen.cpp
     ${SRC_DIR}/api_elements.cpp
     ${SRC_DIR}/api_fuzzer.cpp
     ${SRC_DIR}/set_meta_tester.cpp
@@ -38,6 +39,7 @@ if (METALIB_LIB_ONLY)
 endif()
 
 add_executable(test_emitter
+    ${SRC_DIR}/api_fuzz_rand_gen.cpp
     ${SRC_DIR}/api_elements.cpp
     ${SRC_DIR}/api_fuzzer.cpp
     ${SRC_DIR}/set_meta_tester.cpp

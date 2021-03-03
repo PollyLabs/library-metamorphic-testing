@@ -23,39 +23,39 @@ CHECK_YAML_FIELD(YAML::Node node, std::string field_name)
 
 template<typename T>
 T
-getRandomVectorElem(const std::vector<T>& vector_in, std::mt19937* rng)
+getRandomVectorElem(const std::vector<T>& vector_in, ApiFuzzRandGen* rng)
 {
-    unsigned int rand_val = (*rng)();
+    unsigned int rand_val = rng->getRandInt(0, vector_in.size() - 1);
     logDebug(fmt::format("RAND GEN {}", rand_val));
     CHECK_CONDITION(vector_in.size() != 0,
         fmt::format("Attempt to get element of empty vector."));
-    return vector_in.at(rand_val % vector_in.size());
+    return vector_in.at(rand_val);
 }
 
 template<typename T>
 T
-getRandomSetElem(const std::set<T>& set_in, std::mt19937* rng)
+getRandomSetElem(const std::set<T>& set_in, ApiFuzzRandGen* rng)
 {
     typename std::set<T>::iterator it = set_in.begin();
-    unsigned int rand_val = (*rng)();
+    unsigned int rand_val = rng->getRandInt(0, set_in.size() - 1);
     logDebug(fmt::format("RAND GEN {}", rand_val));
     CHECK_CONDITION(set_in.size() != 0,
         fmt::format("Attempt to get element of empty set."));
-    int advance_count = rand_val % set_in.size();
+    int advance_count = rand_val;
     std::advance(it, advance_count);
     return *it;
 }
 
 template<typename T, typename U>
 T
-getRandomSetElem(const std::set<T,U>& set_in, std::mt19937* rng)
+getRandomSetElem(const std::set<T,U>& set_in, ApiFuzzRandGen* rng)
 {
     typename std::set<T,U>::iterator it = set_in.begin();
-    unsigned int rand_val = (*rng)();
+    unsigned int rand_val = rng->getRandInt(0, set_in.size() - 1);
     logDebug(fmt::format("RAND GEN {}", rand_val));
     CHECK_CONDITION(set_in.size() != 0,
         fmt::format("Attempt to get element of empty set."));
-    int advance_count = rand_val % set_in.size();
+    int advance_count = rand_val;
     std::advance(it, advance_count);
     return *it;
 }
@@ -165,60 +165,6 @@ std::set<const ApiFunc*, decltype(&ApiFunc::pointerCmp)>
 ApiFuzzer::getFuncList() const
 {
     return this->funcs;
-}
-
-int
-ApiFuzzer::getRandInt(int min, int max)
-{
-    assert(max >= min);
-    //return Random::get<int>(min, max);
-    std::uniform_int_distribution<int> dist(min, max);
-    return dist(*this->rng);
-    //return (*this->rng)() % (max - min + 1) + min;
-}
-
-long
-ApiFuzzer::getRandLong(long min, long max)
-{
-    assert(max >= min);
-    //return Random::get<long>(min, max);
-    std::uniform_int_distribution<long> dist(min, max);
-    return dist(*this->rng);
-    //return (*this->rng)() % (max - min + 1) + min;
-}
-
-double
-ApiFuzzer::getRandDouble(double min, double max)
-{
-    assert(max >= min);
-    //return Random::get<double>(min, max);
-    std::uniform_real_distribution<double> dist(min, max);
-    return dist(*this->rng);
-}
-
-float
-ApiFuzzer::getRandFloat(float min, float max)
-{
-    assert(max >= min);
-    //return Random::get<float>(min, max);
-    std::uniform_real_distribution<float> dist(min, max);
-    return dist(*this->rng);
-}
-
-std::string
-ApiFuzzer::getRandString(uint8_t min_len, uint8_t max_len)
-{
-    std::string rand_str = "";
-    std::uniform_int_distribution<uint8_t> dist(min_len, max_len);
-    uint8_t str_len = dist(*this->rng);
-    std::string str_type = "low_alpha";
-    std::uniform_int_distribution<uint8_t> chr_dist(0, char_set.at(str_type).size() - 1);
-    for (int i = 0; i < str_len; ++i)
-    {
-        rand_str += char_set.at(str_type).at(chr_dist(*this->rng));
-        //rand_str += Random::get('a', 'z')
-    }
-    return "\"" + rand_str + "\"";
 }
 
 unsigned int
@@ -708,7 +654,7 @@ ApiFuzzer::getFuncArgs(const ApiFunc* func)
     for (const ApiType* param_type : param_types)
     {
         if (!param_type->isExplicit() &&
-                (this->getRandInt(0, this->max_depth) < this->depth ||
+                (this->getRNG()->getRandInt(0, this->max_depth) < this->depth ||
                  this->depth >= this->max_depth))
         {
             std::vector<const ApiObject*> candidate_params =
@@ -2019,7 +1965,7 @@ ApiFuzzerNew::parseDescriptor<unsigned int>(std::string descriptor)
 {
     std::pair<int, int> int_range = this->parseRange(descriptor);
     return static_cast<unsigned int>
-        (this->getRandInt(int_range.first, int_range.second));
+        (this->getRNG()->getRandInt(int_range.first, int_range.second));
 }
 
 template<>
@@ -2027,7 +1973,7 @@ int
 ApiFuzzerNew::parseDescriptor<int>(std::string descriptor)
 {
     std::pair<int, int> int_range = this->parseRange(descriptor);
-    return this->getRandInt(int_range.first, int_range.second);
+    return this->getRNG()->getRandInt(int_range.first, int_range.second);
 }
 
 template<>
@@ -2035,7 +1981,7 @@ long
 ApiFuzzerNew::parseDescriptor<long>(std::string descriptor)
 {
     std::pair<long, long> long_range = this->parseRange(descriptor);
-    return this->getRandLong(long_range.first, long_range.second);
+    return this->getRNG()->getRandLong(long_range.first, long_range.second);
 }
 
 template<>
@@ -2043,7 +1989,7 @@ double
 ApiFuzzerNew::parseDescriptor<double>(std::string descriptor)
 {
     std::pair<double, double> double_range = this->parseRange(descriptor);
-    return this->getRandDouble(double_range.first, double_range.second);
+    return this->getRNG()->getRandDouble(double_range.first, double_range.second);
 }
 
 template<>
@@ -2051,7 +1997,7 @@ float
 ApiFuzzerNew::parseDescriptor<float>(std::string descriptor)
 {
     std::pair<float, float> float_range = this->parseRange(descriptor);
-    return this->getRandFloat(float_range.first, float_range.second);
+    return this->getRNG()->getRandFloat(float_range.first, float_range.second);
 }
 
 template<>
@@ -2059,13 +2005,13 @@ std::string
 ApiFuzzerNew::parseDescriptor<std::string>(std::string descriptor)
 {
     std::pair<size_t, size_t> len_range = this->parseRange(descriptor);
-    size_t len = this->getRandInt(len_range.first, len_range.second);
-    std::mt19937* rng = this->getRNG();
+    size_t len = this->getRNG()->getRandInt(len_range.first, len_range.second);
+    ApiFuzzRandGen* rng = this->getRNG();
     auto rand_char = [&rng]() -> char
         {
             std::map<std::string, std::vector<char>>::iterator rand_char_set =
                 char_set.begin();
-            std::advance(rand_char_set, (*rng)() % char_set.size());
+            std::advance(rand_char_set, rng->getRandInt(0, char_set.size() - 1));
             return getRandomVectorElem((*rand_char_set).second, rng);
         };
     std::string new_str(len, 0);
@@ -2087,7 +2033,7 @@ ApiFuzzerNew::parseDescriptor<char>(std::string descriptor)
     {
         restricted_char_set_it = char_set.begin();
         std::advance(restricted_char_set_it,
-            this->getRandInt(0, char_set.size() - 1));
+            this->getRNG()->getRandInt(0, char_set.size() - 1));
     }
     return getRandomVectorElem((*restricted_char_set_it).second, this->getRNG());
 }
@@ -2716,11 +2662,11 @@ ApiFuzzerNew::makeLinearExpr(std::vector<const ApiObject*> expr_objs)
     std::vector<const ApiObject*>::iterator it;
     for (it = expr_objs.begin(); it != std::prev(expr_objs.end(), 1); ++it)
     {
-        expr_ss << this->getRandInt(0, 10) << '*' << (*it)->toStr();
-        expr_ss << (this->getRandInt(0, 1) ? '+' : '-');
+        expr_ss << this->getRNG()->getRandInt(0, 10) << '*' << (*it)->toStr();
+        expr_ss << (this->getRNG()->getRandInt(0, 1) ? '+' : '-');
     }
-    expr_ss << this->getRandInt(0, 10) << '*' << (*it)->toStr();
-    expr_ss << expr_ops[this->getRandInt(0, (sizeof(expr_ops) / sizeof(expr_ops[0])))]
+    expr_ss << this->getRNG()->getRandInt(0, 10) << '*' << (*it)->toStr();
+    expr_ss << expr_ops[this->getRNG()->getRandInt(0, (sizeof(expr_ops) / sizeof(expr_ops[0])))]
         << "0";
     return expr_ss.str();
 }

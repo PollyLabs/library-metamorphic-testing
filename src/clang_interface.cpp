@@ -134,13 +134,10 @@ addLibFunc(std::string name, std::string enclosing_class_name,
     {
         return_type = getFuzzer()->getTypeByName(cleanTypeName(return_type_name));
     }
-    else
+    else if (!enclosing_class_name.empty())
     {
         assert(ctor);
         return_type = getFuzzer()->getTypeByName(enclosing_class_name);
-    }
-    if (ctor)
-    {
         enclosing_class_name = "";
     }
 
@@ -274,19 +271,19 @@ resetApiObjs(std::set<std::pair<std::string, std::string>> init_vars)
 int
 generateRand(int min, int max)
 {
-    return getFuzzer()->getRandInt(min, max);
+    return getFuzzer()->getRNG()->getRandInt(min, max);
 }
 
 double
 generateRand(double min, double max)
 {
-    return getFuzzer()->getRandDouble(min, max);
+    return getFuzzer()->getRNG()->getRandDouble(min, max);
 }
 
 std::string
 generateRandStr(uint8_t min, uint8_t max)
 {
-    return getFuzzer()->getRandString(min, max);
+    return getFuzzer()->getRNG()->getRandString(min, max);
 }
 
 std::string

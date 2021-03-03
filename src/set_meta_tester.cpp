@@ -1,21 +1,6 @@
 #include "set_meta_tester.hpp"
 #include "api_fuzzer.hpp"
 
-int
-getRandInt(std::mt19937* rng, int min, int max)
-{
-    return (*rng)() % (max - min + 1) + min;
-}
-
-std::string
-getRandSetElem(std::mt19937* rng, std::set<std::string>& set_in)
-{
-    assert(set_in.size() > 0);
-    std::set<std::string>::const_iterator it = set_in.begin();
-    std::advance(it, getRandInt(rng, 0, set_in.size() - 1));
-    return *it;
-}
-
 size_t
 MetaInstr::getHash(void) const
 {
@@ -77,7 +62,7 @@ SetMetaTesterNew::makeAbstractMetaRelChain(unsigned int rel_count)
     while (rel_count > 0)
     {
         std::set<std::string>::const_iterator it = abstract_relations.begin();
-        std::advance(it, getRandInt(this->rng, 0, abstract_relations.size() - 1));
+        std::advance(it, rng->getRandInt(0, abstract_relations.size() - 1));
         this->abstract_rel_chain.push(*it);
         rel_count--;
     }
@@ -139,7 +124,7 @@ SetMetaTesterNew::getConcreteMetaRel(std::string rel_type,
     CHECK_CONDITION(!concrete_relation_candidates.empty(),
         fmt::format("No concrete candidates for relation `{}` found", rel_type));
     const MetaRelation* concrete_relation = concrete_relation_candidates.at(
-        getRandInt(this->rng, 0, concrete_relation_candidates.size() - 1));
+        rng->getRandInt(0, concrete_relation_candidates.size() - 1));
     return this->fuzzer->concretizeRelation(concrete_relation, meta_variant_var, first);
     //const MetaRelation* concretized_relation =
         //concrete_relation->concretizeVars(meta_variant_var, this->meta_variants,
