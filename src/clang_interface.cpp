@@ -187,8 +187,8 @@ generateObjectInstructions(std::string type_name, std::string indent)
     const ApiType* new_obj_type = getFuzzer()->getTypeByName(type_name);
     const ApiObject* new_obj = getFuzzer()->generateNewObject(new_obj_type);
     std::vector<std::string> instrs_str_vec = getFuzzer()->getInstrStrs();
-    instrs_str_vec.push_back("// END FUZZING");
-    instrs_str_vec.insert(instrs_str_vec.begin(), "// START FUZZING");
+    instrs_str_vec.insert(instrs_str_vec.begin(), "fuzz::mfr_fuzz_start(\"" + new_obj->toStr() + "\");");
+    instrs_str_vec.push_back("fuzz::mfr_fuzz_end(\"" + new_obj->toStr() + "\");");
     std::string instrs_str = std::accumulate(std::begin(instrs_str_vec),
         std::end(instrs_str_vec), std::string(),
         [indent](std::string acc, std::string nxt)
